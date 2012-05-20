@@ -155,9 +155,11 @@ class RAPIDLexer(object):
         'ID', 
         
         # constants 
-        'INT_CONST_DEC', 'INT_CONST_OCT', 'INT_CONST_HEX',
+        'INT_CONST_DEC', 
+        'INT_CONST_OCT',        #probabile da eliminare
+        'INT_CONST_HEX',        #probabile da eliminare
         'FLOAT_CONST', 
-        'CHAR_CONST',
+        'CHAR_CONST',               #probabile da eliminare
         
         # String literals
         'STRING_LITERAL',

@@ -207,7 +207,13 @@ class Node(object):
 
         for (child_name, child) in self.children():
             if isinstance(child, str):
-                buf.write("%s\n" % child)
+                buf.write("string: %s\n" % child)
+            elif isinstance(child, int):
+                buf.write("int : %d\n" % child)
+            elif isinstance(child, float):
+                buf.write("float: %f\n" % child)
+            elif isinstance(child, bool):
+                buf.write("bool: %b\n" % child)
             else:
                 child.show(
                     buf,

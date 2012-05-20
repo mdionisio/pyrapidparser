@@ -230,7 +230,7 @@ class RAPIDParser(PLYParser):
         else:
             p[0] = rapid_ast.DataDefATS( "LOCAL", p[2], self._coord(p.lineno(1)))
             
-    def p_routine_definition_list_3(self, p):
+    def p_routine_definition_list_4(self, p):
         """ data_definition         : persistent_definition
                                              | LOCAL persistent_definition
         """
@@ -239,7 +239,7 @@ class RAPIDParser(PLYParser):
         else:
             p[0] = rapid_ast.DataDefATS( "LOCAL", p[2], self._coord(p.lineno(1)))
             
-    def p_routine_definition_list_4(self, p):
+    def p_routine_definition_list_5(self, p):
         """ data_definition         : constant_definition
                                              | LOCAL constant_definition
         """
@@ -260,30 +260,42 @@ class RAPIDParser(PLYParser):
     def p_variable_definition(self, p):
         """ variable_definition         : VAR data_type variable_instance SEMI
         """
-        pass
+        p[0] = rapid_ast.VarDefinitionAST(p[2], p[3], self._coord(p.lineno(1)))
         
     def p_variable_instance_1(self, p):
         """ variable_instance         : identifier
                                                 | identifier EQUALS constant_expression
         """
-        pass
+        if len(p)==2:
+            p[0] = rapid_ast.VarInstanceAST(p[1], None, [], self._coord(p.lineno(1)))
+        else:
+            p[0] = rapid_ast.VarInstanceAST(p[1], p[3], [], self._coord(p.lineno(1)))
         
     def p_variable_instance_2(self, p):
         """ variable_instance         : identifier LBRACE dim_list RBRACE
                                                 | identifier LBRACE dim_list RBRACE EQUALS constant_expression
         """
-        pass
+        if len(p)==5:
+            p[0] = rapid_ast.VarInstanceAST(p[1], None, p[3], self._coord(p.lineno(1)))
+        else:
+            p[0] = rapid_ast.VarInstanceAST(p[1], p[6], p[3], self._coord(p.lineno(1)))
         
     def p_dim_list(self, p):
         """ dim_list         : dim
                                   | dim_list dim
         """
-        pass
+        if len(p)==2:
+            p[0] = [ p[1] ]
+        else:
+            attriblist = p[1]
+            attriblist.append(p[2])
+            p[0] = attriblist
+            
         
     def p_dim(self, p):
         """ dim         : constant_expression
         """
-        pass
+        p[0] = p[1]
         
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revB_en_library.pdf
@@ -293,70 +305,108 @@ class RAPIDParser(PLYParser):
     def p_expression_1(self, p):
         """ expression         : expr
         """
-        pass
+        p[0] = rapid_ast.ExpressionAST(p[1], self._coord(p.lineno(1)))
         
     def p_expression_2(self, p):
         """ expression         : PLACEHOLDER_EXP
         """
-        pass
+        p[0] = rapid_ast.ExpressionAST(None, self._coord(p.lineno(1)))
         
     def p_expr(self, p):
-        """ expr         : NOT
+        """ expr         : NOT logical_term_list
                              | logical_term_list
         """
-        pass
+        if len(p)==2:
+            p[0] = p[1]
+        else:
+            p[0] = rapid_ast.Operator1AST("NOT", p[2])
         
     def p_logical_term_list(self, p):
         """ logical_term_list         : logical_term
                                                | logical_term OR logical_term_list
                                                | logical_term XOR logical_term_list
         """
-        pass
+        if len(p)==2:
+            p[0] = p[1]
+        else:
+            p[0] = rapid_ast.Operator2AST(p[2], p[1], p[3], self._coord(p.lineno(1)))
         
     def p_logical_term(self, p):
         """ logical_term         : relation_list
         """
-        pass
+        p[0] = p[1]
         
     def p_relation_list(self, p):
         """ relation_list         : relation
                                         | relation AND relation_list
         """
-        pass
+        if len(p)==2:
+            p[0] = p[1]
+        else:
+            p[0] = rapid_ast.Operator2AST(p[2], p[1], p[3], self._coord(p.lineno(1)))
         
     def p_relation(self, p):
         """ relation         : simple_expr
                                   | simple_expr relop simple_expr
         """
-        pass
+        if len(p)==2:
+            p[0] = p[1]
+        else:
+            p[0] = rapid_ast.Operator2AST(p[2], p[1], p[3], self._coord(p.lineno(1)))
     
     def p_simple_expr(self, p):
         """ simple_expr         : addop term simple_expr_list
                                         | term simple_expr_list
         """
-        pass        
+        if len(p)==3:
+            term = p[1]
+            simple_expr_list = p[2]
+        else:
+            term = rapid_ast.Operator1AST(p[1], p[2], self._coord(p.lineno(1)))
+            simple_expr_list = p[3]
+            
+        if simple_expr_list is None:
+            p[0] = term
+        else:
+            p[0] = rapid_ast.Operator2AST(simple_expr_list[0], term, simple_expr_list[1], self._coord(p.lineno(1)))
         
     def p_simple_expr_list(self, p):
         """ simple_expr_list         :  
                                               | addop term simple_expr_list
         """
-        pass        
+        if len(p)==1:
+            p[0] = None
+        else:
+            if p[3] is None:
+                p[0] = [ ( p[1], p[2] ) ]
+            else:
+                p[0] = [ ( p[1], rapid_ast.Operator2AST(p[3][0], p[2], p[3][1], self._coord(p.lineno(1))) ) ]
         
     def p_term(self, p):
         """ term         : primary primary_list
         """
-        pass        
+        if p[2] is None:
+            p[0] = p[1]
+        else:
+            p[0] = rapid_ast.Operator2AST(p[2][0], p[1], p[2][1], self._coord(p.lineno(1)))
+        
         
     def p_primary_list(self, p):
         """ primary_list         : 
                                         | mulop primary primary_list
         """
-        pass        
+        if len(p)==1:
+            p[0] = None
+        else:
+            if p[3] is None:
+                p[0] = [ ( p[1], p[2] ) ]
+            else:
+                p[0] = [ ( p[1], rapid_ast.Operator2AST(p[3][0], p[2], p[3][1], self._coord(p.lineno(1))) ) ]         
         
     def p_primary_1(self, p):
         """ primary         : literal
         """
-        pass        
+        p[0] = p[1]        
         
     def p_primary_2(self, p):
         """ primary         : variable
@@ -391,7 +441,7 @@ class RAPIDParser(PLYParser):
     def p_primary_8(self, p):
         """ primary         : LPAREN expr RPAREN
         """
-        pass        
+        p[0] = p[2]
         
     def p_relop(self, p):
         """ relop         : LT
@@ -401,13 +451,13 @@ class RAPIDParser(PLYParser):
                               | EQ
                               | NE
         """
-        pass        
+        p[0] = p[1]        
         
     def p_addop(self, p):
         """ addop         :  PLUS
                                 |  MINUS
         """
-        pass        
+        p[0] = p[1]
         
     def p_mulop(self, p):
         """ mulop         : TIMES
@@ -415,7 +465,7 @@ class RAPIDParser(PLYParser):
                                 | DIV
                                 | MOD
         """
-        pass        
+        p[0] = p[1]
         
     def p_aggregate(self, p):
         """ aggregate         :  
@@ -453,11 +503,47 @@ class RAPIDParser(PLYParser):
         ########### todo
         pass 
         
-    def p_literal(self, p):
-        """ literal         :  
+    ###
+    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revB_en_library.pdf
+    ###  Literals.    par:3.4
+    ###    
+        
+    def p_literal_1(self, p):
+        """ literal         :  num_literal
         """
-        ########### todo
-        pass 
+        p[0] = rapid_ast.LiteralATS( p[1], self._coord(p.lineno(1)) ) 
+        
+    def p_literal_2(self, p):
+        """ literal         :  string_literal
+        """
+        p[0] = rapid_ast.LiteralATS( p[1], self._coord(p.lineno(1)) ) 
+        
+    def p_literal_3(self, p):
+        """ literal         :  bool_literal
+        """
+        p[0] = rapid_ast.LiteralATS( p[1], self._coord(p.lineno(1)) ) 
+        
+    ###
+    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revB_en_library.pdf
+    ###  Num literals.    par:2.5
+    ###  
+        
+    def p_num_literal(self, p):
+        """ num_literal         :  INT_CONST_DEC
+                                        |  FLOAT_CONST
+        """
+        p[0] = p[1]
+        
+    def p_string_literal(self, p):
+        """ string_literal         :  STRING_LITERAL
+        """
+        p[0] = p[1]
+        
+    def p_bool_literal(self, p):
+        """ bool_literal         :  TRUE
+                                       | FALSE
+        """
+        p[0] = ( p[1]=="TRUE" )
         
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revB_en_library.pdf
@@ -467,7 +553,7 @@ class RAPIDParser(PLYParser):
     def p_constant_expression(self, p):
         """ constant_expression         : expression
         """
-        pass
+        p[0] = rapid_ast.ConstExpressionAST( p[1], self._coord(p.lineno(1)))
         
     ###
         
@@ -625,11 +711,50 @@ ALIAS num another_num;
 LOCAL ALIAS num another_num1;
 ENDMODULE
 """
+
+    text = r"""
+MODULE syun1(SYSMODULE)
+! my comment
+RECORD pippo
+ num numero;
+ string string;
+ENDRECORD
+ALIAS num another_num;
+LOCAL ALIAS num another_num1;
+VAR num pippo;
+ENDMODULE
+"""
+
+    text = r"""
+MODULE syun1(SYSMODULE)
+! my comment
+RECORD pippo
+ num numero;
+ string string;
+ENDRECORD
+ALIAS num another_num;
+LOCAL ALIAS num another_num1;
+VAR num pippo{3};
+ENDMODULE
+"""
+
+    text = r"""
+MODULE syun1(SYSMODULE)
+! my comment
+RECORD pippo
+ num numero;
+ string string;
+ENDRECORD
+ALIAS num another_num;
+LOCAL ALIAS num another_num1;
+VAR num pippo := 5;
+ENDMODULE
+"""
     
     ## set debuglevel to 2 for debugging
     t = parser.parse(text, 'x.rapid', debuglevel=0)
     
     sys.stdout.write("end parse: "+ str(time.time() - t1))
     
-    t.show(showcoord=True)
+    t.show(attrnames=True, nodenames=True, showcoord=True)
 
