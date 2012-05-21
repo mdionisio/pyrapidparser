@@ -222,8 +222,8 @@ class RAPIDParser(PLYParser):
         p[0] = rapid_ast.DataDefATS(None, None, self._coord(p.lineno(1)))
         
     def p_routine_definition_list_3(self, p):
-        """ data_definition         : variable_definition
-                                             | LOCAL variable_definition
+        """ data_definition         : variable_declaration
+                                             | LOCAL variable_declaration
         """
         if len(p)==2:
             p[0] = rapid_ast.DataDefATS( None, p[1], self._coord(p.lineno(1)))
@@ -231,8 +231,8 @@ class RAPIDParser(PLYParser):
             p[0] = rapid_ast.DataDefATS( "LOCAL", p[2], self._coord(p.lineno(1)))
             
     def p_routine_definition_list_4(self, p):
-        """ data_definition         : persistent_definition
-                                             | LOCAL persistent_definition
+        """ data_definition         : persistent_declaration
+                                             | LOCAL persistent_declaration
         """
         if len(p)==2:
             p[0] = rapid_ast.DataDefATS( None, p[1], self._coord(p.lineno(1)))
@@ -248,8 +248,9 @@ class RAPIDParser(PLYParser):
         else:
             p[0] = rapid_ast.DataDefATS( "LOCAL", p[2], self._coord(p.lineno(1)))
             
-    def p_routine_definition_list_5(self, p):
-        """ data_definition         : TASK persistent_definition
+    def p_routine_definition_list_6(self, p):
+        """ data_definition         : TASK persistent_declaration
+                                             |  TASK variable_declaration
         """
         p[0] = rapid_ast.DataDefATS( "TASK", p[1], self._coord(p.lineno(1)))
         
@@ -257,28 +258,28 @@ class RAPIDParser(PLYParser):
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revB_en_library.pdf
     ###  Variable declarations.    par:2.22
     ###
-    def p_variable_definition(self, p):
-        """ variable_definition         : VAR data_type variable_instance SEMI
+    def p_variable_declaration(self, p):
+        """ variable_declaration         : VAR data_type variable_definition SEMI
         """
-        p[0] = rapid_ast.VarDefinitionAST(p[2], p[3], self._coord(p.lineno(1)))
+        p[0] = rapid_ast.VarDeclarationAST(p[2], p[3], self._coord(p.lineno(1)))
         
-    def p_variable_instance_1(self, p):
-        """ variable_instance         : identifier
+    def p_variable_declaration_1(self, p):
+        """ variable_definition         : identifier
                                                 | identifier EQUALS constant_expression
         """
         if len(p)==2:
-            p[0] = rapid_ast.VarInstanceAST(p[1], None, [], self._coord(p.lineno(1)))
+            p[0] = rapid_ast.VarDefinitionAST(p[1], None, [], self._coord(p.lineno(1)))
         else:
-            p[0] = rapid_ast.VarInstanceAST(p[1], p[3], [], self._coord(p.lineno(1)))
+            p[0] = rapid_ast.VarDefinitionAST(p[1], p[3], [], self._coord(p.lineno(1)))
         
-    def p_variable_instance_2(self, p):
-        """ variable_instance         : identifier LBRACE dim_list RBRACE
+    def p_variable_declaration_2(self, p):
+        """ variable_definition         : identifier LBRACE dim_list RBRACE
                                                 | identifier LBRACE dim_list RBRACE EQUALS constant_expression
         """
         if len(p)==5:
-            p[0] = rapid_ast.VarInstanceAST(p[1], None, p[3], self._coord(p.lineno(1)))
+            p[0] = rapid_ast.VarDefinitionAST(p[1], None, p[3], self._coord(p.lineno(1)))
         else:
-            p[0] = rapid_ast.VarInstanceAST(p[1], p[6], p[3], self._coord(p.lineno(1)))
+            p[0] = rapid_ast.VarDefinitionAST(p[1], p[6], p[3], self._coord(p.lineno(1)))
         
     def p_dim_list(self, p):
         """ dim_list         : dim
@@ -637,8 +638,8 @@ class RAPIDParser(PLYParser):
         
     ###
         
-    def p_persistent_definition(self, p):
-        """ persistent_definition         : 
+    def p_persistent_declaration(self, p):
+        """ persistent_declaration         : 
         """
         pass
         
