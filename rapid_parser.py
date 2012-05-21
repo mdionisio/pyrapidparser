@@ -159,16 +159,17 @@ class RAPIDParser(PLYParser):
         """
         p[0] = p[1]
     
-    def p_module_attributelist(self, p):
+    def p_module_attributelist_1(self, p):
         """ module_attributelist    : module_attribute
-                                                | module_attributelist COMMA module_attribute
         """
-        if len(p)==2:
-            p[0] = [ p[1] ]
-        else:
-            attriblist = p[1]
-            attriblist.append(p[3])
-            p[0] = attriblist
+        p[0] = [ p[1] ]
+            
+    def p_module_attributelist(self, p):
+        """ module_attributelist    : module_attributelist COMMA module_attribute
+        """
+        attriblist = p[1]
+        attriblist.append(p[3])
+        p[0] = attriblist
         
     def p_module_attribute(self, p):
         """ module_attribute         : SYSMODULE
@@ -179,77 +180,163 @@ class RAPIDParser(PLYParser):
         """
         p[0] = rapid_ast.ModuleAttributeAST(p[1], self._coord(p.lineno(1)) )
         
-    def p_type_definition_list(self, p):
+    def p_type_definition_list_1(self, p):
         """ type_definition_list         : 
-                                                     | type_definition_list type_definition
         """
-        if len(p)==1:
-            p[0] = []
-        else:
-            attriblist = p[1]
-            attriblist.append(p[2])
-            p[0] = attriblist
-        
-    def p_data_definition_list(self, p):
-        """ data_definition_list         : 
-        """
-        #todo
         p[0] = []
         
-    def p_routine_definition_list(self, p):
-        """ routine_definition_list         : 
-                                                     | routine_definition_list data_definition
+    def p_type_definition_list_2(self, p):
+        """ type_definition_list         : type_definition_list type_definition
         """
-        if len(p)==1:
-            p[0] = []
-        else:
-            attriblist = p[1]
-            attriblist.append(p[2])
-            p[0] = attriblist
+        attriblist = p[1]
+        attriblist.append(p[2])
+        p[0] = attriblist
+        
+    def p_data_definition_list_1(self, p):
+        """ data_definition_list         : 
+        """
+        p[0] = []
+            
+    def p_data_definition_list_2(self, p):
+        """ data_definition_list         : data_definition_list data_declaration
+        """
+        attriblist = p[1]
+        attriblist.append(p[2])
+        p[0] = attriblist
+        
+    def p_routine_definition_list_1(self, p):
+        """ routine_definition_list         :
+        """
+        p[0] = []
+            
+    def p_routine_definition_list_2(self, p):
+        """ routine_definition_list         : routine_definition_list routine_declaration
+        """
+        attriblist = p[1]
+        attriblist.append(p[2])
+        p[0] = attriblist
+    
+    ###
+    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
+    ###  Routine Declaration.    par:5
+    ###
+            
+    def p_routine_declaration_1(self, p):
+        """ routine_declaration         : COMMENT
+        """
+        p[0] = rapid_ast.CommentAST(p[1], self._coord(p.lineno(1)))
+        
+    def p_routine_declaration_2(self, p):
+        """ routine_declaration         : PLACEHOLDER_RDN
+        """
+        p[0] =  rapid_ast.RoutineDeclarationATS(None, None, self._coord(p.lineno(1)))
+        
+    def p_routine_declaration_3(self, p):
+        """ routine_declaration         : procedure_declaration
+                                                    | function_declaration
+                                                    | trap_declaration
+        """
+        p[0] =  rapid_ast.RoutineDeclarationATS(None, p[1], self._coord(p.lineno(1)))
+        
+    def p_routine_declaration_4(self, p):
+        """ routine_declaration         : LOCAL procedure_declaration
+                                                    | LOCAL function_declaration
+                                                    | LOCAL trap_declaration
+        """
+        p[0] =  rapid_ast.RoutineDeclarationATS(None, p[1], self._coord(p.lineno(1)))
+        
+    ###
+    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
+    ###  Procedure declarations.    par:5.3
+    ###
+        
+    def p_procedure_declaration(self, p):
+        """ procedure_declaration         : PROC procedure_name LPAREN parameter_list RPAREN routine_backward routine_error routine_undo ENDPROC
+        """
+        p[0] = rapid_ast.ProcedureDeclarationAST(p[2], p[4], p[6], p[7], p[8], self._coord(p.lineno(1)))
+        
+    def p_procedure_name(self, p):
+        """ procedure_name         : identifier
+        """
+        p[0] = p[1]
+        
+    def p_parameter_list(self, p):
+        """ parameter_list         : 
+        """
+        p[0] = []
+        
+    def p_routine_backward(self, p):
+        """ routine_backward         : 
+        """
+        p[0] = None
+        
+    def p_routine_error(self, p):
+        """ routine_error         : 
+        """
+        p[0] = None
+        
+    def p_routine_undo(self, p):
+        """ routine_undo         : 
+        """
+        p[0] = None
+    
+    def p_function_declaration(self, p):
+        """ function_declaration         : 
+        """  
+        pass
+        
+    def p_trap_declaration(self, p):
+        """ trap_declaration         : 
+        """        
+        pass
+
             
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revB_en_library.pdf
     ###  Data Declaration.    par:2.18
     ###
-    def p_routine_definition_list_1(self, p):
-        """ data_definition         : COMMENT
+    def p_data_declaration_1(self, p):
+        """ data_declaration         : COMMENT
         """
         p[0] = rapid_ast.CommentAST(p[1], self._coord(p.lineno(1)))
         
-    def p_routine_definition_list_2(self, p):
-        """ data_definition         : PLACEHOLDER_DDN
+    def p_data_declaration_2(self, p):
+        """ data_declaration         : PLACEHOLDER_DDN
         """
         p[0] = rapid_ast.DataDefATS(None, None, self._coord(p.lineno(1)))
         
-    def p_routine_definition_list_3(self, p):
-        """ data_definition         : variable_declaration
-                                             | LOCAL variable_declaration
+    def p_data_declaration_3(self, p):
+        """ data_declaration         : variable_declaration
         """
-        if len(p)==2:
-            p[0] = rapid_ast.DataDefATS( None, p[1], self._coord(p.lineno(1)))
-        else:
-            p[0] = rapid_ast.DataDefATS( "LOCAL", p[2], self._coord(p.lineno(1)))
+        p[0] = rapid_ast.DataDefATS( None, p[1], self._coord(p.lineno(1)))
             
-    def p_routine_definition_list_4(self, p):
-        """ data_definition         : persistent_declaration
-                                             | LOCAL persistent_declaration
+    def p_data_declaration_4(self, p):
+        """ data_declaration         : LOCAL variable_declaration
         """
-        if len(p)==2:
-            p[0] = rapid_ast.DataDefATS( None, p[1], self._coord(p.lineno(1)))
-        else:
-            p[0] = rapid_ast.DataDefATS( "LOCAL", p[2], self._coord(p.lineno(1)))
+        p[0] = rapid_ast.DataDefATS( "LOCAL", p[2], self._coord(p.lineno(1)))
             
-    def p_routine_definition_list_5(self, p):
-        """ data_definition         : constant_declaration
-                                             | LOCAL constant_declaration
+    def p_data_declaration_5(self, p):
+        """ data_declaration         : persistent_declaration
         """
-        if len(p)==2:
-            p[0] = rapid_ast.DataDefATS( None, p[1], self._coord(p.lineno(1)))
-        else:
-            p[0] = rapid_ast.DataDefATS( "LOCAL", p[2], self._coord(p.lineno(1)))
+        p[0] = rapid_ast.DataDefATS( None, p[1], self._coord(p.lineno(1)))
             
-    def p_routine_definition_list_6(self, p):
-        """ data_definition         : TASK persistent_declaration
+    def p_data_declaration_6(self, p):
+        """ data_declaration         : LOCAL persistent_declaration
+        """
+        p[0] = rapid_ast.DataDefATS( "LOCAL", p[2], self._coord(p.lineno(1)))
+            
+    def p_data_declaration_7(self, p):
+        """ data_declaration         : constant_declaration
+        """
+        p[0] = rapid_ast.DataDefATS( None, p[1], self._coord(p.lineno(1)))
+            
+    def p_data_declaration_8(self, p):
+        """ data_declaration         : LOCAL constant_declaration
+        """
+        p[0] = rapid_ast.DataDefATS( "LOCAL", p[2], self._coord(p.lineno(1)))
+            
+    def p_data_declaration_9(self, p):
+        """ data_declaration         : TASK persistent_declaration
                                              |  TASK variable_declaration
         """
         p[0] = rapid_ast.DataDefATS( "TASK", p[1], self._coord(p.lineno(1)))
@@ -265,33 +352,35 @@ class RAPIDParser(PLYParser):
         
     def p_variable_declaration_1(self, p):
         """ variable_definition         : identifier
-                                                | identifier EQUALS constant_expression
         """
-        if len(p)==2:
-            p[0] = rapid_ast.VarDefinitionAST(p[1], None, [], self._coord(p.lineno(1)))
-        else:
-            p[0] = rapid_ast.VarDefinitionAST(p[1], p[3], [], self._coord(p.lineno(1)))
-        
-    def p_variable_declaration_2(self, p):
-        """ variable_definition         : identifier LBRACE dim_list RBRACE
-                                                | identifier LBRACE dim_list RBRACE EQUALS constant_expression
-        """
-        if len(p)==5:
-            p[0] = rapid_ast.VarDefinitionAST(p[1], None, p[3], self._coord(p.lineno(1)))
-        else:
-            p[0] = rapid_ast.VarDefinitionAST(p[1], p[6], p[3], self._coord(p.lineno(1)))
-        
-    def p_dim_list(self, p):
-        """ dim_list         : dim
-                                  | dim_list dim
-        """
-        if len(p)==2:
-            p[0] = [ p[1] ]
-        else:
-            attriblist = p[1]
-            attriblist.append(p[2])
-            p[0] = attriblist
+        p[0] = rapid_ast.VarDefinitionAST(p[1], None, [], self._coord(p.lineno(1)))
             
+    def p_variable_declaration_2(self, p):
+        """ variable_definition         : identifier EQUALS constant_expression
+        """
+        p[0] = rapid_ast.VarDefinitionAST(p[1], p[3], [], self._coord(p.lineno(1)))
+        
+    def p_variable_declaration_3(self, p):
+        """ variable_definition         : identifier LBRACE dim_list RBRACE
+        """
+        p[0] = rapid_ast.VarDefinitionAST(p[1], None, p[3], self._coord(p.lineno(1)))
+            
+    def p_variable_declaration_4(self, p):
+        """ variable_definition         : identifier LBRACE dim_list RBRACE EQUALS constant_expression
+        """
+        p[0] = rapid_ast.VarDefinitionAST(p[1], p[6], p[3], self._coord(p.lineno(1)))
+        
+    def p_dim_list_1(self, p):
+        """ dim_list         : dim
+        """
+        p[0] = [ p[1] ]
+            
+    def p_dim_list_2(self, p):
+        """ dim_list         : dim_list dim
+        """
+        attriblist = p[1]
+        attriblist.append(p[2])
+        p[0] = attriblist            
         
     def p_dim(self, p):
         """ dim         : constant_expression
@@ -313,75 +402,87 @@ class RAPIDParser(PLYParser):
         """
         p[0] = rapid_ast.ExpressionAST(None, self._coord(p.lineno(1)))
         
-    def p_expr(self, p):
-        """ expr         : NOT logical_term_list
-                             | logical_term_list
+    def p_expr_1(self, p):
+        """ expr         : logical_term_list
         """
-        if len(p)==2:
-            p[0] = p[1]
-        else:
-            p[0] = rapid_ast.Operator1AST("NOT", p[2])
+        p[0] = p[1]
+            
+    def p_expr_2(self, p):
+        """ expr         : NOT logical_term_list
+        """
+        p[0] = rapid_ast.Operator1AST("NOT", p[2])
         
-    def p_logical_term_list(self, p):
+    def p_logical_term_list_1(self, p):
         """ logical_term_list         : logical_term
-                                               | logical_term OR logical_term_list
+        """
+        p[0] = p[1]
+        
+    def p_logical_term_list_2(self, p):
+        """ logical_term_list         : logical_term OR logical_term_list
                                                | logical_term XOR logical_term_list
         """
-        if len(p)==2:
-            p[0] = p[1]
-        else:
-            p[0] = rapid_ast.Operator2AST(p[2], p[1], p[3], self._coord(p.lineno(1)))
+        p[0] = rapid_ast.Operator2AST(p[2], p[1], p[3], self._coord(p.lineno(1)))
         
     def p_logical_term(self, p):
         """ logical_term         : relation_list
         """
         p[0] = p[1]
         
-    def p_relation_list(self, p):
+    def p_relation_list_1(self, p):
         """ relation_list         : relation
-                                        | relation AND relation_list
         """
-        if len(p)==2:
-            p[0] = p[1]
-        else:
-            p[0] = rapid_ast.Operator2AST(p[2], p[1], p[3], self._coord(p.lineno(1)))
+        p[0] = p[1]
+            
+    def p_relation_list_2(self, p):
+        """ relation_list         : relation AND relation_list
+        """
+        p[0] = rapid_ast.Operator2AST(p[2], p[1], p[3], self._coord(p.lineno(1)))
         
-    def p_relation(self, p):
+    def p_relation_1(self, p):
         """ relation         : simple_expr
-                                  | simple_expr relop simple_expr
         """
-        if len(p)==2:
-            p[0] = p[1]
-        else:
-            p[0] = rapid_ast.Operator2AST(p[2], p[1], p[3], self._coord(p.lineno(1)))
-    
-    def p_simple_expr(self, p):
-        """ simple_expr         : addop term simple_expr_list
-                                        | term simple_expr_list
+        p[0] = p[1]
+            
+    def p_relation_2(self, p):
+        """ relation         : simple_expr relop simple_expr
         """
-        if len(p)==3:
-            term = p[1]
-            simple_expr_list = p[2]
-        else:
-            term = rapid_ast.Operator1AST(p[1], p[2], self._coord(p.lineno(1)))
-            simple_expr_list = p[3]
+        p[0] = rapid_ast.Operator2AST(p[2], p[1], p[3], self._coord(p.lineno(1)))
+        
+        
+    def p_simple_expr_1(self, p):
+        """ simple_expr         : term simple_expr_list
+        """
+        term = p[1]
+        simple_expr_list = p[2]
             
         if simple_expr_list is None:
             p[0] = term
         else:
             p[0] = rapid_ast.Operator2AST(simple_expr_list[0], term, simple_expr_list[1], self._coord(p.lineno(1)))
-        
-    def p_simple_expr_list(self, p):
-        """ simple_expr_list         :  
-                                              | addop term simple_expr_list
+    
+    def p_simple_expr_2(self, p):
+        """ simple_expr         : addop term simple_expr_list
         """
-        if len(p)==1:
-            p[0] = None
+        term = rapid_ast.Operator1AST(p[1], p[2], self._coord(p.lineno(1)))
+        simple_expr_list = p[3]
+            
+        if simple_expr_list is None:
+            p[0] = term
         else:
-            if p[3] is None:
-                p[0] = [ ( p[1], p[2] ) ]
-            else:
-                p[0] = [ ( p[1], rapid_ast.Operator2AST(p[3][0], p[2], p[3][1], self._coord(p.lineno(1))) ) ]
+            p[0] = rapid_ast.Operator2AST(simple_expr_list[0], term, simple_expr_list[1], self._coord(p.lineno(1)))
+            
+    def p_simple_expr_list_1(self, p):
+        """ simple_expr_list         :  
+        """
+        p[0] = None
+        
+    def p_simple_expr_list_2(self, p):
+        """ simple_expr_list         :  addop term simple_expr_list
+        """
+        if p[3] is None:
+            p[0] = [ ( p[1], p[2] ) ]
+        else:
+            p[0] = [ ( p[1], rapid_ast.Operator2AST(p[3][0], p[2], p[3][1], self._coord(p.lineno(1))) ) ]
         
     def p_term(self, p):
         """ term         : primary primary_list
@@ -391,41 +492,29 @@ class RAPIDParser(PLYParser):
         else:
             p[0] = rapid_ast.Operator2AST(p[2][0], p[1], p[2][1], self._coord(p.lineno(1)))
         
-        
-    def p_primary_list(self, p):
+    def p_primary_list_1(self, p):
         """ primary_list         : 
-                                        | mulop primary primary_list
         """
-        if len(p)==1:
-            p[0] = None
+        p[0] = None
+        
+    def p_primary_list_2(self, p):
+        """ primary_list         : mulop primary primary_list
+        """
+        if p[3] is None:
+            p[0] = [ ( p[1], p[2] ) ]
         else:
-            if p[3] is None:
-                p[0] = [ ( p[1], p[2] ) ]
-            else:
-                p[0] = [ ( p[1], rapid_ast.Operator2AST(p[3][0], p[2], p[3][1], self._coord(p.lineno(1))) ) ]         
+            p[0] = [ ( p[1], rapid_ast.Operator2AST(p[3][0], p[2], p[3][1], self._coord(p.lineno(1))) ) ]         
         
     def p_primary_1(self, p):
         """ primary         : literal
-        """
-        p[0] = p[1]        
-        
-    def p_primary_2(self, p):
-        """ primary         : variable
+                                    | variable
+                                    | function_call
+                                    | aggregate
         """
         #variable, constant, persistend and parameter are egual for parsing
-        p[0] = p[1]
+        p[0] = p[1]            
         
-    def p_primary_4(self, p):
-        """ primary         : function_call
-        """
-        p[0] = p[1]        
-        
-    def p_primary_5(self, p):
-        """ primary         : aggregate
-        """
-        p[0] = p[1]        
-        
-    def p_primary_6(self, p):
+    def p_primary_2(self, p):
         """ primary         : LPAREN expr RPAREN
         """
         p[0] = p[2]
@@ -464,46 +553,49 @@ class RAPIDParser(PLYParser):
         """
         p[0] = rapid_ast.AggregateAST(p[2], self._coord(p.lineno(1)))
 
-    def p_aggregate_list(self, p):
+    def p_aggregate_list_1(self, p):
         """ aggregate_list         : expr
-                                        | expr COMMA aggregate_list
         """
-        if len(p)==2:
-            p[0] = [ p[1] ]
-        else:
-            attriblist = p[3]
-            attriblist.insert(0, p[1])
-            p[0] = attriblist
+        p[0] = [ p[1] ]
+            
+    def p_aggregate_list_2(self, p):
+        """ aggregate_list         : expr COMMA aggregate_list
+        """
+        attriblist = p[3]
+        attriblist.insert(0, p[1])
+        p[0] = attriblist
             
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
     ###  Function calls.    par:3.10
     ### 
         
-    def p_function_call(self, p):
-        """ function_call         :  function LPAREN function_argument_list RPAREN
-                                         |  function LPAREN  RPAREN
+    def p_function_call_1(self, p):
+        """ function_call         : function LPAREN  RPAREN
         """
-        if len(p)==4:
-            p[0] = rapid_ast.FunctionCallAST(p[1], [], self._coord(p.lineno(1)))
-        else:
-            p[0] = rapid_ast.FunctionCallAST(p[1], p[3], self._coord(p.lineno(1)))
+        p[0] = rapid_ast.FunctionCallAST(p[1], [], self._coord(p.lineno(1)))
+            
+    def p_function_call_2(self, p):
+        """ function_call         :  function LPAREN function_argument_list RPAREN
+        """
+        p[0] = rapid_ast.FunctionCallAST(p[1], p[3], self._coord(p.lineno(1)))
         
     def p_function(self, p):
         """ function         :  identifier
         """
         p[0] = p[1]
         
-    def p_function_argument_list(self, p):
+    def p_function_argument_list_1(self, p):
         """ function_argument_list         :  function_argument 
-                                                         |  function_argument COMMA function_argument_list
         """
-        if len(p)==2:
-            p[0] = [ p[1] ]
-        else:
-            attriblist = p[3]
-            attriblist.insert(0, p[1])
-            p[0] = attriblist    
+        p[0] = [ p[1] ]
+            
+    def p_function_argument_list_2(self, p):
+        """ function_argument_list         :  function_argument COMMA function_argument_list
+        """
+        attriblist = p[3]
+        attriblist.insert(0, p[1])
+        p[0] = attriblist    
             
     def p_function_argument(self, p):
         """ function_argument         :  required_function_argument
@@ -568,16 +660,17 @@ class RAPIDParser(PLYParser):
         """
         p[0] = rapid_ast.VariableAST(p[1], p[3], None, self._coord(p.lineno(1)) )
         
-    def p_index_list(self, p):
+    def p_index_list_1(self, p):
         """ index_list         : expr
-                                        | expr COMMA index_list
         """
-        if len(p)==2:
-            p[0] = [ p[1] ]
-        else:
-            attriblist = p[3]
-            attriblist.insert(0, p[1])
-            p[0] = attriblist
+        p[0] = [ p[1] ]        
+            
+    def p_index_list_2(self, p):
+        """ index_list         : expr COMMA index_list
+        """
+        attriblist = p[3]
+        attriblist.insert(0, p[1])
+        p[0] = attriblist
         
     def p_variable_component(self, p):
         """ variable_component         :  variable PERIOD identifier
@@ -671,22 +764,23 @@ class RAPIDParser(PLYParser):
     
     def p_type_definition_3(self, p):
         """ type_definition         : record_definition
-                                                | LOCAL record_definition
         """
-        if len(p)==2:
-            p[0] = rapid_ast.TypeDefAST(None, p[1], self._coord(p.lineno(1)))
-        else:
-            p[0] = rapid_ast.TypeDefAST("LOCAL", p[2], self._coord(p.lineno(1)))
-        
+        p[0] = rapid_ast.TypeDefAST(None, p[1], self._coord(p.lineno(1)))
+            
     def p_type_definition_4(self, p):
-        """ type_definition         : alias_definition
-                                                | LOCAL alias_definition
+        """ type_definition         :  LOCAL record_definition
         """
-        if len(p)==2:
-            p[0] = rapid_ast.TypeDefAST(None, p[1], self._coord(p.lineno(1)))
-        else:
-            p[0] = rapid_ast.TypeDefAST("LOCAL", p[2], self._coord(p.lineno(1)))
+        p[0] = rapid_ast.TypeDefAST("LOCAL", p[2], self._coord(p.lineno(1)))
         
+    def p_type_definition_5(self, p):
+        """ type_definition         : alias_definition
+        """
+        p[0] = rapid_ast.TypeDefAST(None, p[1], self._coord(p.lineno(1)))
+        
+    def p_type_definition_6(self, p):
+        """ type_definition         :  LOCAL alias_definition
+        """
+        p[0] = rapid_ast.TypeDefAST("LOCAL", p[2], self._coord(p.lineno(1)))
     
     def p_data_type(self, p):
         """ data_type         : identifier
@@ -703,16 +797,17 @@ class RAPIDParser(PLYParser):
         """
         p[0] = rapid_ast.RecordDefAST(p[2], p[3], self._coord(p.lineno(1)))
         
-    def p_record_component_list(self, p):
+    def p_record_component_list_1(self, p):
         """ record_component_list         : record_component_definition
-                                                         | record_component_definition record_component_list
         """
-        if len(p)==2:
-            p[0] =[ p[1] ]
-        else:
-            attriblist = p[2]
-            attriblist.insert(0, p[1])
-            p[0] = attriblist
+        p[0] =[ p[1] ]
+            
+    def p_record_component_list_2(self, p):
+        """ record_component_list         : record_component_definition record_component_list
+        """
+        attriblist = p[2]
+        attriblist.insert(0, p[1])
+        p[0] = attriblist
         
     def p_record_component_definition(self, p):
         """ record_component_definition         : data_type record_component_name SEMI
@@ -859,6 +954,8 @@ VAR num p9 := func(\par1 := 2);
 VAR num p10 := func(\par1 ? a);
 PERS pippo p11;
 CONST pippo p12;
+PROC ppippo()
+ENDPROC
 ENDMODULE
 """
     
