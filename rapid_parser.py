@@ -411,34 +411,20 @@ class RAPIDParser(PLYParser):
     def p_primary_2(self, p):
         """ primary         : variable
         """
-        pass        
-        
-    def p_primary_3(self, p):
-        """ primary         : persistent
-        """
-        pass        
+        #variable, constant, persistend and parameter are egual for parsing
+        p[0] = p[1]
         
     def p_primary_4(self, p):
-        """ primary         : constant
-        """
-        pass        
-        
-    def p_primary_5(self, p):
-        """ primary         : parameter
-        """
-        pass        
-        
-    def p_primary_6(self, p):
         """ primary         : function_call
         """
-        pass        
+        p[0] = p[1]        
         
-    def p_primary_7(self, p):
+    def p_primary_5(self, p):
         """ primary         : aggregate
         """
-        pass        
+        p[0] = p[1]        
         
-    def p_primary_8(self, p):
+    def p_primary_6(self, p):
         """ primary         : LPAREN expr RPAREN
         """
         p[0] = p[2]
@@ -467,41 +453,135 @@ class RAPIDParser(PLYParser):
         """
         p[0] = p[1]
         
+    ###
+    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
+    ###  Aggregates.    par:3.9
+    ### 
+        
     def p_aggregate(self, p):
-        """ aggregate         :  
+        """ aggregate         :  LBRACKET aggregate_list RBRACKET
         """
-        ########### todo
-        pass            
+        p[0] = rapid_ast.AggregateAST(p[2], self._coord(p.lineno(1)))
+
+    def p_aggregate_list(self, p):
+        """ aggregate_list         : expr
+                                        | expr COMMA aggregate_list
+        """
+        if len(p)==2:
+            p[0] = [ p[1] ]
+        else:
+            attriblist = p[3]
+            attriblist.insert(0, p[1])
+            p[0] = attriblist
+            
+    ###
+    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
+    ###  Function calls.    par:3.10
+    ### 
         
     def p_function_call(self, p):
-        """ function_call         :  
+        """ function_call         :  function LPAREN function_argument_list RPAREN
+                                         |  function LPAREN  RPAREN
         """
-        ########### todo
-        pass            
+        if len(p)==4:
+            p[0] = rapid_ast.FunctionCallAST(p[1], [], self._coord(p.lineno(1)))
+        else:
+            p[0] = rapid_ast.FunctionCallAST(p[1], p[3], self._coord(p.lineno(1)))
         
-    def p_parameter(self, p):
-        """ parameter         :  
+    def p_function(self, p):
+        """ function         :  identifier
         """
-        ########### todo
-        pass            
+        p[0] = p[1]
         
-    def p_constant(self, p):
-        """ constant         :  
+    def p_function_argument_list(self, p):
+        """ function_argument_list         :  function_argument 
+                                                         |  function_argument COMMA function_argument_list
         """
-        ########### todo
-        pass
-
-    def p_persistent(self, p):
-        """ persistent         :  
+        if len(p)==2:
+            p[0] = [ p[1] ]
+        else:
+            attriblist = p[3]
+            attriblist.insert(0, p[1])
+            p[0] = attriblist    
+            
+    def p_function_argument(self, p):
+        """ function_argument         :  required_function_argument
+                                                    | optional_function_argument
+                                                    | conditional_function_argument
         """
-        ########### todo
-        pass 
+        p[0] = p[1]
         
-    def p_variable(self, p):
-        """ variable         :  
+    def p_required_function_argument_1(self, p):
+        """ required_function_argument         :  identifier EQUALS expr
         """
-        ########### todo
-        pass 
+        p[0] = rapid_ast.FunctionArgument("Required", p[1], p[3], self._coord(p.lineno(1)))
+        
+    def p_required_function_argument_2(self, p):
+        """ required_function_argument         : expr
+        """
+        p[0] = rapid_ast.FunctionArgument("Required", None, p[1], self._coord(p.lineno(1)))
+        
+    def p_optional_function_argument_1(self, p):
+        """ optional_function_argument         :  CONSLASH identifier EQUALS expr
+        """
+        p[0] = rapid_ast.FunctionArgument("Optional", p[2], p[4], self._coord(p.lineno(1)))
+        
+    def p_optional_function_argument_2(self, p):
+        """ optional_function_argument         :  CONSLASH identifier
+        """
+        p[0] = rapid_ast.FunctionArgument("Optional", p[2], None, self._coord(p.lineno(1)))
+    
+    def p_conditional_function_argument(self, p):
+        """ conditional_function_argument         :  CONSLASH identifier CONDOP variable
+        """
+        p[0] = rapid_ast.FunctionArgument("Conditional", p[2], p[4], self._coord(p.lineno(1)))
+        
+                
+    ###
+    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
+    ###  Variables.    par:3.5
+    ### 
+        
+    def p_variable_1(self, p):
+        """ variable         :  entire_variable
+        """
+        p[0] = p[1]
+        
+    def p_variable_2(self, p):
+        """ variable         :  variable_element
+        """
+        p[0] = p[1]
+        
+    def p_variable_3(self, p):
+        """ variable         :  variable_component
+        """
+        p[0] = p[1]
+        
+    def p_entire_variable(self, p):
+        """ entire_variable         :  identifier
+        """
+        p[0] = rapid_ast.VariableAST(p[1], [], None, self._coord(p.lineno(1)) )
+        
+    def p_variable_element(self, p):
+        """ variable_element         :  identifier LBRACE index_list RBRACE
+        """
+        p[0] = rapid_ast.VariableAST(p[1], p[3], None, self._coord(p.lineno(1)) )
+        
+    def p_index_list(self, p):
+        """ index_list         : expr
+                                        | expr COMMA index_list
+        """
+        if len(p)==2:
+            p[0] = [ p[1] ]
+        else:
+            attriblist = p[3]
+            attriblist.insert(0, p[1])
+            p[0] = attriblist
+        
+    def p_variable_component(self, p):
+        """ variable_component         :  variable PERIOD identifier
+        """
+        p[0] = rapid_ast.VariableAST(p[1], [], p[3], self._coord(p.lineno(1)) )
         
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revB_en_library.pdf
@@ -748,6 +828,29 @@ ENDRECORD
 ALIAS num another_num;
 LOCAL ALIAS num another_num1;
 VAR num pippo := 5;
+ENDMODULE
+"""
+
+    text = r"""
+MODULE syun1(SYSMODULE)
+! my comment
+RECORD pippo
+ num numero;
+ string string;
+ENDRECORD
+ALIAS num another_num;
+LOCAL ALIAS num another_num1;
+VAR pippo p1;
+VAR num p2 := p1.numero;
+VAR num p3 := p2;
+VAR num p4{3} := [ 1.2, p1.numero, p3  ] ;
+VAR num p5 := func();
+VAR num p6 := func(1);
+VAR num p7 := func(1, p6);
+VAR num p7 := func(par1 := 1);
+VAR num p8 := func(\par1);
+VAR num p9 := func(\par1 := 2);
+VAR num p10 := func(\par1 ? a);
 ENDMODULE
 """
     
