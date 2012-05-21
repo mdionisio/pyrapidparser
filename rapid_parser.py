@@ -240,8 +240,8 @@ class RAPIDParser(PLYParser):
             p[0] = rapid_ast.DataDefATS( "LOCAL", p[2], self._coord(p.lineno(1)))
             
     def p_routine_definition_list_5(self, p):
-        """ data_definition         : constant_definition
-                                             | LOCAL constant_definition
+        """ data_definition         : constant_declaration
+                                             | LOCAL constant_declaration
         """
         if len(p)==2:
             p[0] = rapid_ast.DataDefATS( None, p[1], self._coord(p.lineno(1)))
@@ -639,14 +639,19 @@ class RAPIDParser(PLYParser):
     ###
         
     def p_persistent_declaration(self, p):
-        """ persistent_declaration         : 
+        """ persistent_declaration         : PERS data_type variable_definition SEMI
         """
-        pass
+        p[0] = rapid_ast.PersDeclarationAST(p[2], p[3], self._coord(p.lineno(1)))       
         
-    def p_constant_definition(self, p):
-        """ constant_definition         : 
+    ###
+    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
+    ###  Constant declarations.    par:2.24
+    ###
+        
+    def p_constant_declaration(self, p):
+        """ constant_declaration         : CONST data_type variable_definition SEMI
         """
-        pass
+        p[0] = rapid_ast.ConstDeclarationAST(p[2], p[3], self._coord(p.lineno(1)))       
         
     
     ###
@@ -852,6 +857,8 @@ VAR num p7 := func(par1 := 1);
 VAR num p8 := func(\par1);
 VAR num p9 := func(\par1 := 2);
 VAR num p10 := func(\par1 ? a);
+PERS pippo p11;
+CONST pippo p12;
 ENDMODULE
 """
     
