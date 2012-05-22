@@ -246,23 +246,159 @@ class RAPIDParser(PLYParser):
         
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
+    ###  Parameter declarations.    par:5.1
+    ###
+    
+    def p_parameter_list_1(self, p):
+        """ parameter_list         : 
+        """
+        p[0] = [  ]
+        
+    def p_parameter_list_2(self, p):
+        """ parameter_list         : first_parameter_declaration
+        """
+        p[0] = [ p[1] ]
+    
+    def p_parameter_list_3(self, p):
+        """ parameter_list         : first_parameter_declaration next_parameter_declaration_list
+        """
+        p[0] = [ p[1] ]
+
+    def p_next_parameter_declaration_list_1(self, p):
+        """ next_parameter_declaration_list         : 
+        """
+        p[0] = [  ]
+        
+    def p_next_parameter_declaration_list_2(self, p):
+        """ next_parameter_declaration_list         : next_parameter_declaration next_parameter_declaration_list
+        """
+        attriblist = p[2]
+        attriblist.insert(0, p[1])
+        p[0] = attriblist
+        
+    def p_next_parameter_declaration_1(self, p):
+        """ next_parameter_declaration         : COMMA parameter_declaration
+        """
+        p[0] = p[2]
+        
+    def p_next_parameter_declaration_2(self, p):
+        """ next_parameter_declaration         : COMMA optional_parameter_declaration
+        """
+        p[0] = p[2]
+        
+    def p_next_parameter_declaration_3(self, p):
+        """ next_parameter_declaration         : optional_parameter_declaration
+        """
+        p[0] = p[1]
+        
+    def p_next_parameter_declaration_4(self, p):
+        """ next_parameter_declaration         : COMMA PLACEHOLDER_PAR
+        """
+        p[0] = p[1]
+        
+    def p_first_parameter_declaration_1(self, p):
+        """ first_parameter_declaration         : parameter_declaration
+        """
+        p[0] = [  p[0] ]
+        
+    def p_first_parameter_declaration_2(self, p):
+        """ first_parameter_declaration         : optional_parameter_declaration
+        """
+        p[0] = p[1]
+        
+    def p_first_parameter_declaration_3(self, p):
+        """ first_parameter_declaration         : PLACEHOLDER_PAR
+        """
+        p[0] = [   ]
+    
+    def p_optional_parameter_declaration_1(self, p):
+        """ optional_parameter_declaration         : CONSLASH parameter_declaration parameter_declaration_alternative_list
+        """
+        p[0] = rapid_ast.OptionalParameterDefinitionAST(p[2], p[3], self._coord(p.lineno(1)))   
+        
+    def p_optional_parameter_declaration_2(self, p):
+        """ optional_parameter_declaration         : CONSLASH PLACEHOLDER_ALT parameter_declaration_alternative_list
+        """
+        p[0] = rapid_ast.OptionalParameterDefinitionAST(None, p[3], self._coord(p.lineno(1)))
+        
+    def p_parameter_declaration_alternative_list_1(self, p):
+        """ parameter_declaration_alternative_list         : 
+        """
+        p[0] = []
+        
+    def p_parameter_declaration_alternative_list_2(self, p):
+        """ parameter_declaration_alternative_list         : PIPE parameter_declaration parameter_declaration_alternative_list
+        """
+        attriblist = p[3]
+        attriblist.insert(0, p[2])
+        p[0] = attriblist
+        
+    def p_parameter_declaration_alternative_list_3(self, p):
+        """ parameter_declaration_alternative_list         : PIPE PLACEHOLDER_ALT parameter_declaration_alternative_list
+        """
+        attriblist = p[3]
+        attriblist.insert(0, None)          #todo
+        p[0] = attriblist
+        
+    def p_parameter_declaration_1(self, p):
+        """ parameter_declaration         : var_type data_type identifier 
+        """
+        p[0] = rapid_ast.ParameterDefinitionAST(p[1], p[2], p[3], 0, self._coord(p.lineno(1)))
+        
+    def p_parameter_declaration_2(self, p):
+        """ parameter_declaration         : var_type data_type identifier LBRACE parameter_size RBRACE
+        """
+        p[0] = rapid_ast.ParameterDefinitionAST(p[1], p[2], p[3], len(p[5]), self._coord(p.lineno(1)))
+        
+    def p_parameter_declaration_3(self, p):
+        """ parameter_declaration         : var_type data_type identifier LBRACE PLACEHOLDER_DIM RBRACE
+        """
+        p[0] = rapid_ast.ParameterDefinitionAST(p[1], p[2], p[3], None, self._coord(p.lineno(1)))
+        
+    def p_parameter_declaration_4(self, p):
+        """ parameter_declaration         : switch identifier 
+        """
+        p[0] = rapid_ast.SwitchParameterDefinitionAST(p[1], self._coord(p.lineno(1)))
+        
+    def p_parameter_size_1(self, p):
+        """ parameter_size         : TIMES
+        """
+        p[0] = [ '*' ]
+        
+    def p_parameter_size_2(self, p):
+        """ parameter_size         : TIMES COMMA parameter_size
+        """
+        attriblist = p[3]
+        attriblist.insert(0, '*')
+        p[0] = attriblist
+        
+    def p_var_type_1(self, p):
+        """ var_type         : VAR
+                                    | PERS
+                                    | INOUT
+        """
+        p[0] = p[1]
+        
+    def p_var_type_2(self, p):
+        """ var_type         : 
+        """
+        p[0] = "LOCAL"
+   
+        
+    ###
+    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
     ###  Procedure declarations.    par:5.3
     ###
         
     def p_procedure_declaration(self, p):
         """ procedure_declaration         : PROC procedure_name LPAREN parameter_list RPAREN data_definition_list statement_list routine_backward routine_error routine_undo ENDPROC
         """
-        p[0] = rapid_ast.ProcedureDeclarationAST(p[2], p[4], p[6], p[7], p[8], p[9], p[10], self._coord(p.lineno(1)))
+        p[0] = rapid_ast.ProcedureDeclarationAST(p[2], p[4], p[6], p[7], p[8], p[9], p[10], self._coord(p.lineno(1)))       
                 
     def p_procedure_name(self, p):
         """ procedure_name         : identifier
         """
         p[0] = p[1]
-        
-    def p_parameter_list(self, p):
-        """ parameter_list         : 
-        """
-        p[0] = []
         
     def p_routine_backward_1(self, p):
         """ routine_backward         : 
@@ -586,30 +722,91 @@ class RAPIDParser(PLYParser):
     ###  If Statement.    par:4.13
     ###
         
-    def p_if_statement(self, p): 
-        """ if_statement         : 
+    def p_if_statement_1(self, p): 
+        """ if_statement         :  IF conditional_expression THEN statement_list else_statement ENDIF
         """
-        pass
+        p[0] = rapid_ast.IfStatement(p[2], p[4], [], p[5], self._coord(p.lineno(1)) )
+        
+    def p_if_statement_2(self, p): 
+        """ if_statement         :  IF conditional_expression THEN statement_list elseif_statement_list else_statement ENDIF
+        """
+        p[0] = rapid_ast.IfStatement(p[2], p[4], p[5], p[6], self._coord(p.lineno(1)) )
+        
+    def p_conditional_expression(self, p): 
+        """ conditional_expression         :  expression
+        """
+        p[0] = p[1]
+        
+    def p_elseif_statement_list_1(self, p): 
+        """ elseif_statement_list         :  elseif_statement
+        """
+        p[0] = [ p[1] ]
+        
+    def p_elseif_statement_list_2(self, p): 
+        """ elseif_statement_list         :  elseif_statement elseif_statement_list
+        """
+        attriblist = p[2]
+        attriblist.insert(0, p[1])
+        p[0] = attriblist
+        
+    def p_elseif_statement_1(self, p): 
+        """ elseif_statement         :  ELSEIF conditional_expression THEN statement_list
+        """
+        p[0] = rapid_ast.ElseIfStatement(p[2], p[4], self._coord(p.lineno(1)) )
+        
+    def p_elseif_statement_2(self, p): 
+        """ elseif_statement         :  PLACEHOLDER_EIT
+        """
+        p[0] = rapid_ast.ElseIfStatement(None, None, self._coord(p.lineno(1)) )
+        
+    def p_else_statement_1(self, p): 
+        """ else_statement         :  
+        """
+        return []
+        
+    def p_else_statement_2(self, p): 
+        """ else_statement         :  ELSE statement_list
+        """
+        return p[2]
         
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
     ###  Compact if Statement.    par:4.14
     ###
         
-    def p_compact_if_statement(self, p): 
-        """ compact_if_statement         : 
+    def p_compact_if_statement_1(self, p): 
+        """ compact_if_statement         : IF conditional_expression single_statement
         """
-        pass
+        p[0] = rapid_ast.IfStatement(p[2], [ p[3] ], [], [], self._coord(p.lineno(1)) )
+        
+    def p_compact_if_statement_2(self, p): 
+        """ compact_if_statement         : IF conditional_expression PLACEHOLDER_SMT
+        """
+        single = rapid_ast.StatementAST(None, self._coord(p.lineno(1)))
+        p[0] = rapid_ast.IfStatement(p[2], [ single ], [], [], self._coord(p.lineno(1)) )
         
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
     ###  For Statement.    par:4.15
     ###
         
-    def p_for_statement(self, p): 
-        """ for_statement        : 
+    def p_for_statement_1(self, p): 
+        """ for_statement        : FOR loop_variable FROM expression TO expression STEP expression DO statement_list ENDFOR
         """
-        pass
+        p[0] = rapid_ast.ForStatement(p[2], p[4], p[6], p[8], p[10], self._coord(p.lineno(1)) )
+        
+    def p_for_statement_2(self, p): 
+        """ for_statement        : FOR loop_variable FROM expression TO expression DO statement_list ENDFOR
+        """
+        step = 1
+        literal_step = rapid_ast.LiteralATS( step ) 
+        expression_step = rapid_ast.ExpressionAST(literal_step)
+        p[0] = rapid_ast.ForStatement(p[2], p[4], p[6], expression_step, p[8], self._coord(p.lineno(1)) )
+        
+    def p_loop_variable(self, p): 
+        """ loop_variable        : identifier
+        """
+        p[0] = p[1]
         
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
@@ -617,9 +814,9 @@ class RAPIDParser(PLYParser):
     ###
         
     def p_while_statement(self, p): 
-        """ while_statement        : 
+        """ while_statement        : WHILE conditional_expression DO statement_list ENDWHILE
         """
-        pass
+        p[0] = rapid_ast.WhileStatement(p[2], p[4], self._coord(p.lineno(1)) )
         
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
@@ -627,9 +824,41 @@ class RAPIDParser(PLYParser):
     ###
         
     def p_test_statement(self, p): 
-        """ test_statement        : 
+        """ test_statement        :  TEST expression casestatement_list defaultstatement ENDTEST
         """
-        pass
+        p[0] = rapid_ast.TestStatement(p[2], p[3], p[4], self._coord(p.lineno(1)) )
+        
+    def p_casestatement_list_1(self, p): 
+        """ casestatement_list        :  
+        """
+        p[0] = [ ]
+        
+    def p_casestatement_list_2(self, p): 
+        """ casestatement_list        :  casestatement casestatement_list
+        """
+        attriblist = p[2]
+        attriblist.insert(0, p[1])
+        p[0] = attriblist 
+        
+    def p_casestatement_1(self, p): 
+        """ casestatement        :  CASE test_value COLON statement_list
+        """
+        p[0] = rapid_ast.CaseStatement( p[2], p[4], self._coord(p.lineno(1)) )
+        
+    def p_defaultstatement_1(self, p): 
+        """ defaultstatement : 
+        """
+        p[0] = [ ]
+        
+    def p_defaultstatement_2(self, p): 
+        """ defaultstatement : DEFAULT COLON statement_list
+        """
+        p[0] = p[3]
+        
+    def p_test_value(self, p): 
+        """ test_value : expression
+        """
+        p[0] = p[1]
         
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
@@ -1314,7 +1543,15 @@ VAR num local_p1 := 1;
 local_p1 := 3;
 ENDPROC
 PROC ppippo1()
+VAR num p:=1;
 ppippo;
+IF p=2 THEN
+p := 1;
+ELSEIF p=3 THEN
+p := 2;
+ELSE
+p := 0;
+ENDIF
 RETURN;
 ENDPROC
 ENDMODULE

@@ -142,6 +142,7 @@ class RAPIDLexer(object):
         'WHILE',
         'TASK', #NOT IN DOCUMENTATION
         'UNDO', #NOT IN DOCUMENTATION
+        'switch',#NOT IN DOCUMENTATION
     )
 
     keyword_map = {}
@@ -173,7 +174,7 @@ class RAPIDLexer(object):
         'LT', 'LE', 'GT', 'GE', 'EQ', 'NE',
         
         #function argument
-        'CONSLASH', 'CONDOP',
+        'PIPE', 'CONSLASH', 'CONDOP',
         
         # Assignment
         'EQUALS',
@@ -200,6 +201,7 @@ class RAPIDLexer(object):
         'PLACEHOLDER_EXP',
         'PLACEHOLDER_ARG',
         'PLACEHOLDER_ID',
+        'PLACEHOLDER_EIT',
   
     )
     
@@ -216,6 +218,7 @@ class RAPIDLexer(object):
     t_PLACEHOLDER_EXP=r'<EXP>' # expression
     t_PLACEHOLDER_ARG=r'<ARG>' # procedure call argument
     t_PLACEHOLDER_ID=r'<ID>'   # identifier
+    t_PLACEHOLDER_ID=r'<EIT>'   # Else if
 
     ##
     ## Regexes for use in tokens
@@ -287,6 +290,8 @@ class RAPIDLexer(object):
     # Assignment operators
     t_EQUALS            = r':='
     
+    # |
+    t_PIPE         = r'\|'
     # \
     t_CONSLASH         = r'\\'
     # ?
