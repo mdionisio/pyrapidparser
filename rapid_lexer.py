@@ -163,7 +163,6 @@ class RAPIDLexer(object):
         'INT_CONST_HEX', 
         'INT_CONST_BIN',         
         'FLOAT_CONST', 
-        'CHAR_CONST',               #probabile da eliminare
         
         # String literals
         'STRING_LITERAL',
@@ -228,14 +227,12 @@ class RAPIDLexer(object):
     # valid RAPID identifiers (K&R2: A.2.3)
     identifier = r'[a-zA-Z_][0-9a-zA-Z_]*'
 
-    # integer constants (K&R2: A.2.5.1)
-    integer_suffix_opt = r'(u?ll|U?LL|([uU][lL])|([lL][uU])|[uU]|[lL])?'
-    #int_constant = '(0'+integer_suffix_opt+')|([1-9][0-9]*'+integer_suffix_opt+')'
-    int_constant = '[0-9]+'+integer_suffix_opt
-    decimal_constant = '0[dD][0-9]+'+integer_suffix_opt
-    bin_constant = '0[bB][0-1]+'+integer_suffix_opt
-    hex_constant = '0[xX][0-9a-fA-F]+'+integer_suffix_opt
-
+    # integer constants 
+    int_constant = '[0-9]+'
+    decimal_constant = '0[dD][0-9]+'
+    bin_constant = '0[bB][0-1]+'
+    hex_constant = '0[xX][0-9a-fA-F]+'
+    
     # character constants (K&R2: A.2.5.2)
     # Note: a-zA-Z and '.-~^_!=&;,' are allowed as escape chars to support #line
     # directives with Windows paths as filenames (..\..\dir\file)
@@ -350,9 +347,6 @@ class RAPIDLexer(object):
     # Must come before bad_char_const, to prevent it from 
     # catching valid char constants as invalid
     # 
-    @TOKEN(char_const)
-    def t_CHAR_CONST(self, t):
-        return t
             
     @TOKEN(unmatched_quote)
     def t_UNMATCHED_QUOTE(self, t):

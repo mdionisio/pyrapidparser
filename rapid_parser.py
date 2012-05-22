@@ -1,9 +1,8 @@
 #------------------------------------------------------------------------------
-# pycparser: c_parser.py
+# pyrapidparser: rapid_parser.py
 #
-# CParser class: Parser and AST builder for the C language
+# CParser class: Parser and AST builder for the RAPID language
 #
-# Copyright (C) 2008-2012, Eli Bendersky
 # License: BSD
 #------------------------------------------------------------------------------
 import re
@@ -265,11 +264,12 @@ class RAPIDParser(PLYParser):
         attriblist = p[2]
         attriblist.insert(0, p[1])
         p[0] = attriblist
-
+    
+    
     def p_next_parameter_declaration_list_1(self, p):
-        """ next_parameter_declaration_list         : 
+        """ next_parameter_declaration_list         : next_parameter_declaration 
         """
-        p[0] = [  ]
+        p[0] = [ p[1] ]
         
     def p_next_parameter_declaration_list_2(self, p):
         """ next_parameter_declaration_list         : next_parameter_declaration next_parameter_declaration_list
@@ -463,7 +463,7 @@ class RAPIDParser(PLYParser):
         p[0] = rapid_ast.FunctionDeclarationAST(p[2], p[3], p[5], p[7], p[8], p[9], p[10], self._coord(p.lineno(1)))
         
     def p_function_name(self, p):
-        """ function_name         : identifier
+        """ function_name         : identifier  
         """
         p[0] = p[1]
         
@@ -1219,29 +1219,19 @@ class RAPIDParser(PLYParser):
     ### 
         
     def p_variable_1(self, p):
-        """ variable         :  entire_variable
-        """
-        p[0] = p[1]
-        
-    def p_variable_2(self, p):
-        """ variable         :  variable_element
-        """
-        p[0] = p[1]
-        
-    def p_variable_3(self, p):
-        """ variable         :  variable_component
-        """
-        p[0] = p[1]
-        
-    def p_entire_variable(self, p):
-        """ entire_variable         :  identifier
+        """ variable         :  identifier 
         """
         p[0] = rapid_ast.VariableAST(p[1], [], None, self._coord(p.lineno(1)) )
         
-    def p_variable_element(self, p):
-        """ variable_element         :  identifier LBRACE index_list RBRACE
+    def p_variable_2(self, p):
+        """ variable         :  identifier LBRACE index_list RBRACE
         """
         p[0] = rapid_ast.VariableAST(p[1], p[3], None, self._coord(p.lineno(1)) )
+        
+    def p_variable_3(self, p):
+        """ variable         :  variable PERIOD identifier
+        """
+        p[0] = rapid_ast.VariableAST(p[1], [], p[3], self._coord(p.lineno(1)) )
         
     def p_index_list_1(self, p):
         """ index_list         : expr
@@ -1255,10 +1245,6 @@ class RAPIDParser(PLYParser):
         attriblist.insert(0, p[1])
         p[0] = attriblist
         
-    def p_variable_component(self, p):
-        """ variable_component         :  variable PERIOD identifier
-        """
-        p[0] = rapid_ast.VariableAST(p[1], [], p[3], self._coord(p.lineno(1)) )
         
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revB_en_library.pdf
