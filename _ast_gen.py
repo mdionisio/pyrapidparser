@@ -71,15 +71,16 @@ class NodeCfg(object):
         self.seq_child = []
 
         for entry in contents:
-            clean_entry = entry.rstrip('*')
-            self.all_entries.append(clean_entry)
-            
-            if entry.endswith('**'):
-                self.seq_child.append(clean_entry)
-            elif entry.endswith('*'):
-                self.child.append(clean_entry)
-            else:
-                self.attr.append(entry)
+            if len(entry)>0:
+                clean_entry = entry.rstrip('*')
+                self.all_entries.append(clean_entry)
+                
+                if entry.endswith('**'):
+                    self.seq_child.append(clean_entry)
+                elif entry.endswith('*'):
+                    self.child.append(clean_entry)
+                else:
+                    self.attr.append(entry)
 
     def generate_source(self):
         src = self._gen_init()
@@ -90,7 +91,7 @@ class NodeCfg(object):
     def _gen_init(self):
         src = "class %s(Node):\n" % self.name
 
-        if self.all_entries:
+        if len(self.all_entries)>0:
             args = ', '.join(self.all_entries)
             arglist = '(self, %s, coord=None)' % args
         else:

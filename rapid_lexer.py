@@ -141,6 +141,7 @@ class RAPIDLexer(object):
         'TRYNEXT',
         'WHILE',
         'TASK', #NOT IN DOCUMENTATION
+        'UNDO', #NOT IN DOCUMENTATION
     )
 
     keyword_map = {}
@@ -155,9 +156,11 @@ class RAPIDLexer(object):
         'ID', 
         
         # constants 
+        'INT_CONST', 
         'INT_CONST_DEC', 
-        'INT_CONST_OCT',        #probabile da eliminare
-        'INT_CONST_HEX',        #probabile da eliminare
+        'INT_CONST_OCT',        
+        'INT_CONST_HEX', 
+        'INT_CONST_BIN',         
         'FLOAT_CONST', 
         'CHAR_CONST',               #probabile da eliminare
         
@@ -181,6 +184,7 @@ class RAPIDLexer(object):
         'LBRACE', 'RBRACE',         # { } 
         'COMMA', 'PERIOD',          # . ,
         'SEMI', 'COLON',            # ; :
+        'PERCENT',                  # %
         
         #PLACEHOLDER
         'PLACEHOLDER_TDN',
@@ -223,7 +227,10 @@ class RAPIDLexer(object):
 
     # integer constants (K&R2: A.2.5.1)
     integer_suffix_opt = r'(u?ll|U?LL|([uU][lL])|([lL][uU])|[uU]|[lL])?'
-    decimal_constant = '(0'+integer_suffix_opt+')|([1-9][0-9]*'+integer_suffix_opt+')'
+    #int_constant = '(0'+integer_suffix_opt+')|([1-9][0-9]*'+integer_suffix_opt+')'
+    int_constant = '[0-9]+'+integer_suffix_opt
+    decimal_constant = '0[dD][0-9]+'+integer_suffix_opt
+    bin_constant = '0[bB][0-1]+'+integer_suffix_opt
     hex_constant = '0[xX][0-9a-fA-F]+'+integer_suffix_opt
 
     # character constants (K&R2: A.2.5.2)
@@ -296,6 +303,7 @@ class RAPIDLexer(object):
     t_PERIOD            = r'\.'
     t_SEMI              = r';'
     t_COLON             = r':'
+    t_PERCENT             = r'%'
 
     t_STRING_LITERAL    = string_literal
     
@@ -317,6 +325,16 @@ class RAPIDLexer(object):
     @TOKEN(hex_constant)
     def t_INT_CONST_HEX(self, t):
         t.value = int(t.value, 16)
+        return t
+        
+    @TOKEN(bin_constant)
+    def t_BIN_CONST(self, t):
+        t.value = int(t.value, 2)
+        return t
+        
+    @TOKEN(int_constant)
+    def t_INT_CONST(self, t):
+        t.value = int(t.value, 10)
         return t
 
     @TOKEN(decimal_constant)

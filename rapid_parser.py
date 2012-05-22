@@ -99,7 +99,6 @@ class RAPIDParser(PLYParser):
         self.rapidlex.filename = filename
         self.rapidlex.reset_lineno()
         if not text or text.isspace():
-            #return rapid_ast.FileAST([])
             return None
         else:
             return self.rapidparser.parse(text, lexer=self.rapidlex, debug=debuglevel)
@@ -251,10 +250,10 @@ class RAPIDParser(PLYParser):
     ###
         
     def p_procedure_declaration(self, p):
-        """ procedure_declaration         : PROC procedure_name LPAREN parameter_list RPAREN routine_backward routine_error routine_undo ENDPROC
+        """ procedure_declaration         : PROC procedure_name LPAREN parameter_list RPAREN data_definition_list statement_list routine_backward routine_error routine_undo ENDPROC
         """
-        p[0] = rapid_ast.ProcedureDeclarationAST(p[2], p[4], p[6], p[7], p[8], self._coord(p.lineno(1)))
-        
+        p[0] = rapid_ast.ProcedureDeclarationAST(p[2], p[4], p[6], p[7], p[8], p[9], p[10], self._coord(p.lineno(1)))
+                
     def p_procedure_name(self, p):
         """ procedure_name         : identifier
         """
@@ -265,30 +264,382 @@ class RAPIDParser(PLYParser):
         """
         p[0] = []
         
-    def p_routine_backward(self, p):
+    def p_routine_backward_1(self, p):
         """ routine_backward         : 
         """
         p[0] = None
         
-    def p_routine_error(self, p):
+    def p_routine_backward_2(self, p):
+        """ routine_backward         : BACKWARD statement_list
+        """
+        p[0] = rapid_ast.RoutineBackwardAST(p[2], self._coord(p.lineno(1)))
+        
+        
+    def p_routine_error_1(self, p):
         """ routine_error         : 
         """
         p[0] = None
+    
+    def p_routine_error_2(self, p):
+        """ routine_error         : ERROR LPAREN error_number_list RPAREN statement_list
+        """
+        p[0] = rapid_ast.RoutineErrorAST(p[2], p[3], self._coord(p.lineno(1)))
         
-    def p_routine_undo(self, p):
+    def p_routine_error_3(self, p):
+        """ routine_error         : ERROR statement_list
+        """
+        p[0] = rapid_ast.RoutineErrorAST([], p[3], self._coord(p.lineno(1)))   
+        
+    def p_error_number_list_1(self, p):
+        """ error_number_list         : error_number
+        """
+        p[0] = [ p[1] ]
+        
+    def p_error_number_list_2(self, p):
+        """ error_number_list         : error_number COMMA error_number_list
+        """
+        attriblist = p[3]
+        attriblist.insert(0, p[1])
+        p[0] = attriblist
+        
+    def p_error_number(self, p):
+        """ error_number         : num_literal
+                                            | identifier
+        """
+        p[0] = p[1]
+        
+    def p_routine_undo_1(self, p):
         """ routine_undo         : 
         """
         p[0] = None
+        
+    def p_routine_undo_2(self, p):
+        """ routine_undo         : UNDO statement_list
+        """
+        p[0] = rapid_ast.RoutineUndoAST(p[2], self._coord(p.lineno(1)))
     
     def p_function_declaration(self, p):
-        """ function_declaration         : 
+        """ function_declaration         : FUNC data_type function_name LPAREN parameter_list RPAREN data_definition_list statement_list routine_error routine_undo ENDFUNC
         """  
-        pass
+        p[0] = rapid_ast.FunctionDeclarationAST(p[2], p[3], p[5], p[7], p[8], p[9], p[10], self._coord(p.lineno(1)))
+        
+    def p_function_name(self, p):
+        """ function_name         : identifier
+        """
+        p[0] = p[1]
         
     def p_trap_declaration(self, p):
-        """ trap_declaration         : 
-        """        
+        """ trap_declaration         : TRAP trap_name data_definition_list statement_list routine_error routine_undo ENDTRAP
+        """   
+        p[0] = rapid_ast.TrapDeclarationAST(p[2], p[3], p[4], p[5], p[6], self._coord(p.lineno(1)))
+        
+    def p_trap_name(self, p):
+        """ trap_name         : identifier
+        """
+        p[0] = p[1]
+        
+    ###
+    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
+    ###  Statement Lists.    par:4.2
+    ###
+        
+    def p_statement_list_1(self, p):
+        """ statement_list         : 
+        """
+        p[0] = []
+        
+    def p_statement_list_2(self, p):
+        """ statement_list         : statement statement_list
+        """
+        attriblist = p[2]
+        attriblist.insert(0, p[1])
+        p[0] = attriblist
+        
+    ###
+    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
+    ###  Statements.    par:4
+    ###
+        
+    def p_statement_1(self, p):
+        """ statement         : single_statement
+                                      | compound_statement
+                                      | label
+                                      | COMMENT
+        """
+        p[0] = rapid_ast.StatementAST(p[1], self._coord(p.lineno(1)))
+        
+    def p_statement_2(self, p): 
+        """ statement         : PLACEHOLDER_SMT
+        """
+        p[0] = rapid_ast.StatementAST(None, self._coord(p.lineno(1)))
+        
+    def p_single_statement(self, p): 
+        """ single_statement         :  assignment_statement
+                                                    | procedure_call
+                                                    | goto_statement
+                                                    | return_statement
+                                                    | raise_statement
+                                                    | exit_statement
+                                                    | retry_statement
+                                                    | trynext_statement
+                                                    | connect_statement
+        """
+        p[0] = p[1]
+        
+    def p_compound_statement(self, p): 
+        """ compound_statement         : if_statement
+                                                        | compact_if_statement
+                                                        | for_statement
+                                                        | while_statement
+                                                        | test_statement
+        """
+        p[0] = p[1]
+        
+    ###
+    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
+    ###  Assignment statement.    par:4.4
+    ###
+        
+    def p_assignment_statement(self, p): 
+        """ assignment_statement         : assignment_target EQUALS expression SEMI
+        """
+        p[0] = rapid_ast.AssignmentStatementAST(p[1], p[3], self._coord(p.lineno(1)))
+        
+    def p_assignment_target_1(self, p): 
+        """ assignment_target         : variable
+        """
+        p[0] = p[1]
+        
+    def p_assignment_target_2(self, p): 
+        """ assignment_target         : PLACEHOLDER_VAR
+        """
+        p[0] = rapid_ast.VariableAST(None, [], None, self._coord(p.lineno(1)) )
+        
+    ###
+    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
+    ###  Procedure call.    par:4.5
+    ###
+        
+    def p_procedure_call_1(self, p): 
+        """ procedure_call         : procedure SEMI
+        """
+        p[0] = rapid_ast.ProcedureCallAST(p[1], [], self._coord(p.lineno(1)) )
+        
+    def p_procedure_call_2(self, p): 
+        """ procedure_call         : procedure procedure_argument_list SEMI
+        """
+        p[0] = rapid_ast.ProcedureCallAST(p[1], p[2], self._coord(p.lineno(1)) )
+        
+    def p_procedure_1(self, p): 
+        """ procedure         : identifier
+        """
+        p[0] = p[1]
+        
+    def p_procedure_2(self, p): 
+        """ procedure         : PERCENT expression PERCENT
+        """
+        p[0] = p[2]
+        
+    def p_procedure_argument_list_1(self, p): 
+        """ procedure_argument_list         : procedure_argument
+        """
+        p[0] = [ p[1] ]
+        
+    def p_procedure_argument_list_2(self, p):
+        """ procedure_argument_list         :  procedure_argument COMMA procedure_argument_list
+        """
+        attriblist = p[3]
+        attriblist.insert(0, p[1])
+        p[0] = attriblist    
+            
+    def p_procedure_argument(self, p):
+        """ procedure_argument         :  required_procedure_argument
+                                                    | optional_procedure_argument
+                                                    | conditional_procedure_argument
+        """
+        p[0] = p[1]
+        
+    def p_required_procedure_argument_1(self, p):
+        """ required_procedure_argument         :  identifier EQUALS expr
+        """
+        p[0] = rapid_ast.ProcedureArgumentAST("Required", p[1], p[3], self._coord(p.lineno(1)))
+        
+    def p_required_procedure_argument_2(self, p):
+        """ required_procedure_argument         : expr
+        """
+        p[0] = rapid_ast.ProcedureArgumentAST("Required", None, p[1], self._coord(p.lineno(1)))
+        
+    def p_optional_procedure_argument_1(self, p):
+        """ optional_procedure_argument         :  CONSLASH identifier EQUALS expr
+        """
+        p[0] = rapid_ast.ProcedureArgumentAST("Optional", p[2], p[4], self._coord(p.lineno(1)))
+        
+    def p_optional_procedure_argument_2(self, p):
+        """ optional_procedure_argument         :  CONSLASH identifier
+        """
+        p[0] = rapid_ast.ProcedureArgumentAST("Optional", p[2], None, self._coord(p.lineno(1)))
+    
+    def p_conditional_procedure_argument(self, p):
+        """ conditional_procedure_argument         :  CONSLASH identifier CONDOP variable
+        """
+        p[0] = rapid_ast.ProcedureArgumentAST("Conditional", p[2], p[4], self._coord(p.lineno(1)))
+        
+        
+    ###
+    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
+    ###  Goto Statement.    par:4.6
+    ###
+        
+    def p_goto_statement(self, p): 
+        """ goto_statement         : GOTO identifier SEMI
+        """
+        p[0] = rapid_ast.GotoStatementAST(p[2], self._coord(p.lineno(1)))
+        
+        
+    ###
+    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
+    ###  Return Statement.    par:4.7
+    ###
+        
+    def p_return_statement_1(self, p): 
+        """ return_statement         : RETURN SEMI
+        """
+        p[0] = rapid_ast.ReturnStatementAST(None, self._coord(p.lineno(1)))
+        
+    def p_return_statement_2(self, p): 
+        """ return_statement         : RETURN expression SEMI
+        """
+        p[0] = rapid_ast.ReturnStatementAST(p[2], self._coord(p.lineno(1)))
+        
+    ###
+    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
+    ###  Raise Statement.    par:4.8
+    ###
+        
+    def p_raise_statement_1(self, p): 
+        """ raise_statement         : RAISE SEMI
+        """
+        p[0] = rapid_ast.RaiseStatementAST(None, self._coord(p.lineno(1)))
+        
+    def p_raise_statement_2(self, p): 
+        """ raise_statement         : RAISE error_number SEMI
+        """
+        p[0] = rapid_ast.RaiseStatementAST(p[2], self._coord(p.lineno(1)))
+        
+    ###
+    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
+    ###  Exit Statement.    par:4.9
+    ###
+    
+    def p_exit_statement(self, p): 
+        """ exit_statement         : EXIT SEMI
+        """
+        p[0] = rapid_ast.ExitStatementAST(self._coord(p.lineno(1)))
+        
+    ###
+    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
+    ###  Retry Statement.    par:4.10
+    ###
+        
+    def p_retry_statement(self, p): 
+        """ retry_statement         : RETRY SEMI
+        """
+        p[0] = rapid_ast.RetryStatementAST(self._coord(p.lineno(1)))
+        
+    ###
+    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
+    ###  TryNext Statement.    par:4.11
+    ###
+        
+    def p_trynext_statement(self, p): 
+        """ trynext_statement         : TRYNEXT SEMI
+        """
+        p[0] = rapid_ast.TrynextStatementAST(self._coord(p.lineno(1)))
+        
+    ###
+    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
+    ###  Connect Statement.    par:4.12
+    ###
+        
+    def p_connect_statement(self, p): 
+        """ connect_statement         : CONNECT connect_taget WITH trap SEMI
+        """
+        p[0] = rapid_ast.ConnectStatementAST(p[2], p[4], self._coord(p.lineno(1)))
+        
+    def p_connect_taget_1(self, p): 
+        """ connect_taget         : variable
+        """
+        p[0] = p[1]
+        
+    def p_connect_taget_2(self, p): 
+        """ connect_taget         : PLACEHOLDER_VAR
+        """
+        p[0] = rapid_ast.VariableAST(None, [], None, self._coord(p.lineno(1)) )
+        
+    def p_trap(self, p): 
+        """ trap         : identifier
+        """
+        p[0] = p[1]
+
+    ###
+    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
+    ###  If Statement.    par:4.13
+    ###
+        
+    def p_if_statement(self, p): 
+        """ if_statement         : 
+        """
         pass
+        
+    ###
+    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
+    ###  Compact if Statement.    par:4.14
+    ###
+        
+    def p_compact_if_statement(self, p): 
+        """ compact_if_statement         : 
+        """
+        pass
+        
+    ###
+    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
+    ###  For Statement.    par:4.15
+    ###
+        
+    def p_for_statement(self, p): 
+        """ for_statement        : 
+        """
+        pass
+        
+    ###
+    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
+    ###  While Statement.    par:4.16
+    ###
+        
+    def p_while_statement(self, p): 
+        """ while_statement        : 
+        """
+        pass
+        
+    ###
+    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
+    ###  Test Statement.    par:4.17
+    ###
+        
+    def p_test_statement(self, p): 
+        """ test_statement        : 
+        """
+        pass
+        
+    ###
+    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
+    ###  Label Statement.    par:4.3
+    ###
+        
+    def p_label(self, p): 
+        """ label         : identifier COLON
+        """
+        p[0] = rapid_ast.LabelAST(p[1], self._coord(p.lineno(1)))
 
             
     ###
@@ -607,27 +958,27 @@ class RAPIDParser(PLYParser):
     def p_required_function_argument_1(self, p):
         """ required_function_argument         :  identifier EQUALS expr
         """
-        p[0] = rapid_ast.FunctionArgument("Required", p[1], p[3], self._coord(p.lineno(1)))
+        p[0] = rapid_ast.FunctionArgumentAST("Required", p[1], p[3], self._coord(p.lineno(1)))
         
     def p_required_function_argument_2(self, p):
         """ required_function_argument         : expr
         """
-        p[0] = rapid_ast.FunctionArgument("Required", None, p[1], self._coord(p.lineno(1)))
+        p[0] = rapid_ast.FunctionArgumentAST("Required", None, p[1], self._coord(p.lineno(1)))
         
     def p_optional_function_argument_1(self, p):
         """ optional_function_argument         :  CONSLASH identifier EQUALS expr
         """
-        p[0] = rapid_ast.FunctionArgument("Optional", p[2], p[4], self._coord(p.lineno(1)))
+        p[0] = rapid_ast.FunctionArgumentAST("Optional", p[2], p[4], self._coord(p.lineno(1)))
         
     def p_optional_function_argument_2(self, p):
         """ optional_function_argument         :  CONSLASH identifier
         """
-        p[0] = rapid_ast.FunctionArgument("Optional", p[2], None, self._coord(p.lineno(1)))
+        p[0] = rapid_ast.FunctionArgumentAST("Optional", p[2], None, self._coord(p.lineno(1)))
     
     def p_conditional_function_argument(self, p):
         """ conditional_function_argument         :  CONSLASH identifier CONDOP variable
         """
-        p[0] = rapid_ast.FunctionArgument("Conditional", p[2], p[4], self._coord(p.lineno(1)))
+        p[0] = rapid_ast.FunctionArgumentAST("Conditional", p[2], p[4], self._coord(p.lineno(1)))
         
                 
     ###
@@ -703,8 +1054,12 @@ class RAPIDParser(PLYParser):
     ###  
         
     def p_num_literal(self, p):
-        """ num_literal         :  INT_CONST_DEC
-                                        |  FLOAT_CONST
+        """ num_literal         :  INT_CONST
+                                            | INT_CONST_DEC
+                                            | INT_CONST_BIN
+                                            | INT_CONST_OCT
+                                            | INT_CONST_HEX
+                                            | FLOAT_CONST
         """
         p[0] = p[1]
         
@@ -955,6 +1310,12 @@ VAR num p10 := func(\par1 ? a);
 PERS pippo p11;
 CONST pippo p12;
 PROC ppippo()
+VAR num local_p1 := 1;
+local_p1 := 3;
+ENDPROC
+PROC ppippo1()
+ppippo;
+RETURN;
 ENDPROC
 ENDMODULE
 """
