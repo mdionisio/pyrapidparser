@@ -207,7 +207,9 @@ class Node(object):
         buf.write('\n')
 
         for (child_name, child) in self.children():
-            if isinstance(child, str):
+            if child is None:
+                buf.write("None:\n")
+            elif isinstance(child, str):
                 buf.write("string: %s\n" % child)
             elif isinstance(child, int):
                 buf.write("int : %d\n" % child)

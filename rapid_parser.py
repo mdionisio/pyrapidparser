@@ -262,7 +262,9 @@ class RAPIDParser(PLYParser):
     def p_parameter_list_3(self, p):
         """ parameter_list         : first_parameter_declaration next_parameter_declaration_list
         """
-        p[0] = [ p[1] ]
+        attriblist = p[2]
+        attriblist.insert(0, p[1])
+        p[0] = attriblist
 
     def p_next_parameter_declaration_list_1(self, p):
         """ next_parameter_declaration_list         : 
@@ -299,7 +301,7 @@ class RAPIDParser(PLYParser):
     def p_first_parameter_declaration_1(self, p):
         """ first_parameter_declaration         : parameter_declaration
         """
-        p[0] = [  p[0] ]
+        p[0] = p[0]
         
     def p_first_parameter_declaration_2(self, p):
         """ first_parameter_declaration         : optional_parameter_declaration
@@ -309,7 +311,7 @@ class RAPIDParser(PLYParser):
     def p_first_parameter_declaration_3(self, p):
         """ first_parameter_declaration         : PLACEHOLDER_PAR
         """
-        p[0] = [   ]
+        p[0] = None  #todo
     
     def p_optional_parameter_declaration_1(self, p):
         """ optional_parameter_declaration         : CONSLASH parameter_declaration parameter_declaration_alternative_list
@@ -393,6 +395,7 @@ class RAPIDParser(PLYParser):
     def p_procedure_declaration(self, p):
         """ procedure_declaration         : PROC procedure_name LPAREN parameter_list RPAREN data_definition_list statement_list routine_backward routine_error routine_undo ENDPROC
         """
+        print p[4]
         p[0] = rapid_ast.ProcedureDeclarationAST(p[2], p[4], p[6], p[7], p[8], p[9], p[10], self._coord(p.lineno(1)))       
                 
     def p_procedure_name(self, p):
@@ -1542,12 +1545,12 @@ PROC ppippo()
 VAR num local_p1 := 1;
 local_p1 := 3;
 ENDPROC
-PROC ppippo1()
+PROC ppippo1(VAR num p1)
 VAR num p:=1;
-ppippo;
-IF p=2 THEN
+ppippo 2;
+IF p1=2 THEN
 p := 1;
-ELSEIF p=3 THEN
+ELSEIF p1=3 THEN
 p := 2;
 ELSE
 p := 0;
