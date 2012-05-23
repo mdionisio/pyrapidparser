@@ -156,6 +156,27 @@ r'''#-----------------------------------------------------------------
 _PROLOGUE_CODE = r'''
 import sys
 
+def UnknownShow(child, buf=sys.stdout, offset=0, attrnames=False, nodenames=False, _my_node_name=None):
+    lead = ' ' * offset
+    buf.write(' ' * (offset+2))
+    if nodenames and _my_node_name is not None:
+        buf.write(lead + ' <' + _my_node_name + '>: ')
+    else:
+        buf.write(lead + ': ')
+        
+    if child is None:
+        buf.write("None")
+    elif isinstance(child, str):
+        buf.write("string: %s" % child)
+    elif isinstance(child, int):
+        buf.write("int : %d" % child)
+    elif isinstance(child, float):
+        buf.write("float: %f" % child)
+    elif isinstance(child, bool):
+        buf.write("bool: %b" % child)
+        
+    buf.write('\n')
+
 
 class Node(object):
     """ Abstract base class for AST nodes.
@@ -203,20 +224,17 @@ class Node(object):
             buf.write(attrstr)
 
         if showcoord:
-            buf.write(' (at %s)' % self.coord)
+            if not(self.coord is None):
+                buf.write(' (at %s)' % self.coord)
         buf.write('\n')
 
         for (child_name, child) in self.children():
-            if child is None:
-                buf.write("None:\n")
-            elif isinstance(child, str):
-                buf.write("string: %s\n" % child)
-            elif isinstance(child, int):
-                buf.write("int : %d\n" % child)
-            elif isinstance(child, float):
-                buf.write("float: %f\n" % child)
-            elif isinstance(child, bool):
-                buf.write("bool: %b\n" % child)
+            if ( (child is None) or 
+                isinstance(child, str) or 
+                isinstance(child, int) or 
+                isinstance(child, float) or 
+                isinstance(child, bool) ) :
+                UnknownShow(child, buf=sys.stdout, offset=(offset+2), attrnames=attrnames, nodenames=nodenames, _my_node_name=child_name)
             else:
                 child.show(
                     buf,
