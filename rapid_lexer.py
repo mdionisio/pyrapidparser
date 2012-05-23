@@ -311,9 +311,9 @@ class RAPIDLexer(object):
     
     @TOKEN(comment)
     def t_COMMENT(self, t):
-        #t.value = t.value[1:].replace('\n','').replace('\D','')
-        #return t
-        return None
+        t.value = t.value[1:].replace('\n','').replace('\D','')
+        return t
+        #return None
     
     # The following floating and integer constants are defined as 
     # functions to impose a strict order (otherwise, decimal

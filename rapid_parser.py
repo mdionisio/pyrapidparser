@@ -880,26 +880,26 @@ class RAPIDParser(PLYParser):
         """
         p[0] = rapid_ast.CommentAST(p[1], coord=self._coord(p.lineno(1)))
                 
-    def p_data_declaration_1(self, p):
+    def p_data_declaration_2(self, p):
         """ data_declaration         : PLACEHOLDER_DDN
         """
         p[0] = rapid_ast.DataDefATS(None, None, coord=self._coord(p.lineno(1)))
         
-    def p_data_declaration_2(self, p):
+    def p_data_declaration_3(self, p):
         """ data_declaration         : variable_declaration
                                                 | persistent_declaration
                                                 | constant_declaration
         """
         p[0] = rapid_ast.DataDefATS( None, p[1], coord=None)
             
-    def p_data_declaration_3(self, p):
+    def p_data_declaration_4(self, p):
         """ data_declaration         : LOCAL variable_declaration
                                                 | LOCAL persistent_declaration
                                                 | LOCAL constant_declaration
         """
         p[0] = rapid_ast.DataDefATS( "LOCAL", p[2], coord=self._coord(p.lineno(1)))
                         
-    def p_data_declaration_4(self, p):
+    def p_data_declaration_5(self, p):
         """ data_declaration         : TASK persistent_declaration
                                              |  TASK variable_declaration
         """
@@ -1514,7 +1514,7 @@ VAR num p1 := 1;
 PROC ppippo()
 ! comment 3
 VAR num p1:=1;
-! comment 3
+! comment 4
 p1:=1;
 ! comment 5
 ENDPROC
