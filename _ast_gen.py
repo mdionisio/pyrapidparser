@@ -244,6 +244,67 @@ class Node(object):
                     showcoord=showcoord,
                     _my_node_name=child_name)
 
+class NodeCompare(object):
+    """ A base NodeCompare class for comparing compare_ast nodes. 
+        Subclass it and define your own visit_XXX methods, where
+        XXX is the class name you want to visit with these 
+        methods.
+        
+        For example:
+        
+        class ConstantCompare(NodeCompare):
+            def __init__(self):
+                pass
+            
+            def compare_Constant(self, node1, node2):
+                return (node1 == node2)
+
+        Creates a list of values of all the constant nodes 
+        encountered below the given node. To use it:
+        
+        cv = ConstantCompare()
+        cv.compare(node1, node2)
+        
+        Notes:
+        
+        *   generic_visit() will be called for AST nodes for which 
+            no visit_XXX method was defined. 
+        *   The children of nodes for which a visit_XXX was 
+            defined will not be visited - if you need this, call
+            generic_visit() on the node. 
+            You can use:
+                NodeVisitor.generic_visit(self, node)
+        *   Modeled after Python's own AST visiting facilities
+            (the ast module of Python 3.0)
+    """
+    def compare(self, node1, node2):
+        """ Visit a node. 
+        """
+        method = 'compare_' + node1.__class__.__name__
+        compare = getattr(self, method, self.generic_compare)
+        return compare(node1, node2)
+                
+    def generic_compare(self, node1, node2):
+        """ Called if no explicit visitor function exists for a 
+            node. Implements preorder visiting of the node.
+        """
+        child1 = node1.children()
+        child2 = node2.children()
+        if (type(node1)==type(node2)) and self.compare(node1, node2) and (len(child1) == len(child2)):
+            ret = True
+            for c1, c2 in zip(child1, child2):
+                c_name1, c_next1 = c1
+                c_name2, c_next2 = c1
+                if type(c_next1) == type(c_next2):
+                    if isinstance(c_next1, list):
+                        for c_next1_1, c_next2_2 in zip(c_next1, c_next2):
+                            ret &= self.compare(c_next1_1, c_next2_2)
+                    else:
+                        ret &= self.compare(c_next1, c_next2)
+                else:
+                    ret &= False
+            return ret
+        return False
 
 class NodeVisitor(object):
     """ A base NodeVisitor class for visiting c_ast nodes. 

@@ -1521,6 +1521,11 @@ ENDPROC
 ! comment 6
 ENDMODULE
 """
+
+    text = r"""
+MODULE syun1(SYSMODULE)
+ENDMODULE
+"""
     
     
     ## set debuglevel to 2 for debugging
@@ -1529,4 +1534,9 @@ ENDMODULE
     sys.stdout.write("end parse: "+ str(time.time() - t1)+"\n")
     
     t.show(attrnames=True, nodenames=True, showcoord=True)
+    
+    import brawse_rapid_ast
+    compare = brawse_rapid_ast.CompareRapid()
+    print compare.compare(t,t)
+    
 
