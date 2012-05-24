@@ -1,4 +1,6 @@
 import unittest
+import rapid_ast
+import brawse_rapid_ast
 
 
 class TestBaseFunctions(unittest.TestCase):
@@ -50,15 +52,37 @@ class TestParserFunctions(unittest.TestCase):
 """
         res = TestParserFunctions.parser.parse(text, 'file.rapid', debuglevel=0)           
         self.assertIsNone(res, "there is nothing")
+    
+    def test_rapid_module_1(self):
+        text = r"""
+MODULE syun1
+ENDMODULE
+"""
+        res = TestParserFunctions.parser.parse(text, 'file.rapid', debuglevel=0)  
+  
+        n1 = rapid_ast.ModuleAttributeAST([])
+        n2 = rapid_ast.IdentifierAST("syun1")
+        n3 = rapid_ast.ModuleAST(n1, n2, [], [], [])
         
-    def test_rapid_empty(self):
+        compare = brawse_rapid_ast.CompareRapid()
+
+        self.assertTrue(compare.compare(res,n3), "there is error prsing module")
+    
+    
+    def test_rapid_module_2(self):
         text = r"""
 MODULE syun1(SYSMODULE)
 ENDMODULE
 """
-        res = TestParserFunctions.parser.parse(text, 'file.rapid', debuglevel=0)           
-        res.show(attrnames=True, nodenames=True, showcoord=True)
-        self.assertTrue(True, "there is nothing")
+        res = TestParserFunctions.parser.parse(text, 'file.rapid', debuglevel=0)  
+  
+        n1 = rapid_ast.ModuleAttributeAST(["SYSMODULE"])
+        n2 = rapid_ast.IdentifierAST("syun1")
+        n3 = rapid_ast.ModuleAST(n1, n2, [], [], [])
+        
+        compare = brawse_rapid_ast.CompareRapid()
+
+        self.assertTrue(compare.compare(res,n3), "there is error prsing module")
             
 
     
