@@ -1,6 +1,6 @@
 import unittest
 import rapid_ast
-import brawse_rapid_ast
+import browse_rapid_ast
 
 
 class TestBaseFunctions(unittest.TestCase):
@@ -60,13 +60,13 @@ ENDMODULE
 """
         res = TestParserFunctions.parser.parse(text, 'file.rapid', debuglevel=0)  
   
-        n1 = rapid_ast.ModuleAttributeAST([])
+        n1 = []
         n2 = rapid_ast.IdentifierAST("syun1")
-        n3 = rapid_ast.ModuleAST(n1, n2, [], [], [])
+        n3 = rapid_ast.ModuleAST(n2, n1, [], [], [])
         
-        compare = brawse_rapid_ast.CompareRapid()
+        compare = browse_rapid_ast.CompareRapid()
 
-        self.assertTrue(compare.compare(res,n3), "there is error prsing module")
+        self.assertTrue(compare.full_compare(res,n3), "there is error parsing module")
     
     
     def test_rapid_module_2(self):
@@ -76,13 +76,102 @@ ENDMODULE
 """
         res = TestParserFunctions.parser.parse(text, 'file.rapid', debuglevel=0)  
   
-        n1 = rapid_ast.ModuleAttributeAST(["SYSMODULE"])
+        n1 = [ rapid_ast.ModuleAttributeAST("SYSMODULE") ]
         n2 = rapid_ast.IdentifierAST("syun1")
-        n3 = rapid_ast.ModuleAST(n1, n2, [], [], [])
+        n3 = rapid_ast.ModuleAST(n2, n1, [], [], [])
         
-        compare = brawse_rapid_ast.CompareRapid()
+        compare = browse_rapid_ast.CompareRapid()
 
-        self.assertTrue(compare.compare(res,n3), "there is error prsing module")
+        self.assertTrue(compare.full_compare(res,n3), "there is error parsing module")
+        
+    def test_rapid_module_3(self):
+        text = r"""
+MODULE <ID>
+ENDMODULE
+"""
+        res = TestParserFunctions.parser.parse(text, 'file.rapid', debuglevel=0)  
+  
+        n1 = [ ]
+        n2 = rapid_ast.IdentifierAST(None)
+        n3 = rapid_ast.ModuleAST(n2, n1, [], [], [])
+        
+        compare = browse_rapid_ast.CompareRapid()
+
+        self.assertTrue(compare.full_compare(res,n3), "there is error parsing module")
+        
+    def test_rapid_type_definitions_comment_1(self):
+        text = r"""
+MODULE syun1
+!pippo
+ENDMODULE
+"""
+        res = TestParserFunctions.parser.parse(text, 'file.rapid', debuglevel=0)  
+  
+        n1 = [ ]
+        n2 = rapid_ast.IdentifierAST("syun1")
+        n4 = [ rapid_ast.CommentAST("pippo") ]
+        n3 = rapid_ast.ModuleAST(n2, n1, n4, [], [])
+        
+        compare = browse_rapid_ast.CompareRapid()
+
+        self.assertTrue(compare.full_compare(res,n3), "there is error parsing comment in type definition")
+        
+    def test_rapid_type_definitions_1(self):
+        text = r"""
+MODULE syun1
+<TDN>
+ENDMODULE
+"""
+        res = TestParserFunctions.parser.parse(text, 'file.rapid', debuglevel=0)  
+  
+        n1 = []
+        n2 = rapid_ast.IdentifierAST("syun1")
+        n4 = [ rapid_ast.TypeDefAST(None, None) ]
+        n3 = rapid_ast.ModuleAST(n2, n1, n4, [], [])
+        
+        compare = browse_rapid_ast.CompareRapid()
+
+        self.assertTrue(compare.full_compare(res,n3), "there is error parsing <TDN>")
+        
+    def test_rapid_type_definitions_alias_1(self):
+        text = r"""
+MODULE syun1
+ALIAS num pippo;
+ENDMODULE
+"""
+        res = TestParserFunctions.parser.parse(text, 'file.rapid', debuglevel=0)  
+  
+        n1 = []
+        n2 = rapid_ast.IdentifierAST("syun1")
+        n6 = rapid_ast.IdentifierAST("num")
+        n7 = rapid_ast.IdentifierAST("pippo")
+        n5 = rapid_ast.AliasDefATS( n6, n7)
+        n4 = [ rapid_ast.TypeDefAST(None, n5) ]
+        n3 = rapid_ast.ModuleAST(n2, n1, n4, [], [])
+        
+        compare = browse_rapid_ast.CompareRapid()
+
+        self.assertTrue(compare.full_compare(res,n3), "there is error parsing ALIAS")
+        
+    def test_rapid_type_definitions_alias_2(self):
+        text = r"""
+MODULE syun1
+LOCAL ALIAS num pippo;
+ENDMODULE
+"""
+        res = TestParserFunctions.parser.parse(text, 'file.rapid', debuglevel=0)  
+  
+        n1 = []
+        n2 = rapid_ast.IdentifierAST("syun1")
+        n6 = rapid_ast.IdentifierAST("num")
+        n7 = rapid_ast.IdentifierAST("pippo")
+        n5 = rapid_ast.AliasDefATS( n6, n7)
+        n4 = [ rapid_ast.TypeDefAST("LOCAL", n5) ]
+        n3 = rapid_ast.ModuleAST(n2, n1, n4, [], [])
+        
+        compare = browse_rapid_ast.CompareRapid()
+
+        self.assertTrue(compare.full_compare(res,n3), "there is error parsing ALIAS")
             
 
     
