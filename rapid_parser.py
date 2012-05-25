@@ -588,12 +588,17 @@ class RAPIDParser(PLYParser):
         attriblist.insert(0, p[1])
         p[0] = attriblist    
             
-    def p_procedure_argument(self, p):
+    def p_procedure_argument_1(self, p):
         """ procedure_argument         :  required_procedure_argument
                                                     | optional_procedure_argument
                                                     | conditional_procedure_argument
         """
         p[0] = p[1]
+        
+    def p_procedure_argument_2(self, p):
+        """ procedure_argument         :  PLACEHOLDER_ARG
+        """
+        p[0] = rapid_ast.ProcedureArgumentAST(None, None, None, coord=self._coord(p.lineno(1)))
         
     def p_required_procedure_argument_1(self, p):
         """ required_procedure_argument         :  identifier EQUALS expr
@@ -844,6 +849,11 @@ class RAPIDParser(PLYParser):
         """ casestatement        :  CASE test_value COLON statement_list
         """
         p[0] = rapid_ast.CaseStatement( p[2], p[4], coord=self._coord(p.lineno(1)) )
+        
+    def p_casestatement_2(self, p): 
+        """ casestatement        :  PLACEHOLDER_CSE
+        """
+        p[0] = rapid_ast.CaseStatement( None, None, coord=self._coord(p.lineno(1)) )
         
     def p_defaultstatement_1(self, p): 
         """ defaultstatement : 
@@ -1360,16 +1370,10 @@ class RAPIDParser(PLYParser):
     ###
         
     def p_alias_definition(self, p):
-        """ alias_definition         : ALIAS type_name identifier SEMI
+        """ alias_definition         : ALIAS identifier identifier SEMI
         """
         p[0] = rapid_ast.AliasDefATS(p[2], p[3], coord=self._coord(p.lineno(1)))
         
-    # this is not documented
-    #
-    def p_type_name(self, p):
-        """ type_name         : identifier
-        """
-        p[0] = p[1]
 
     # END GRAMMAR
         
@@ -1535,8 +1539,5 @@ ENDMODULE
     
     t.show(attrnames=True, nodenames=True, showcoord=True)
     
-    import brawse_rapid_ast
-    compare = brawse_rapid_ast.CompareRapid()
-    print compare.compare(t,t)
     
 
