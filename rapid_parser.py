@@ -337,24 +337,24 @@ class RAPIDParser(PLYParser):
         p[0] = attriblist
         
     def p_parameter_declaration_1(self, p):
-        """ parameter_declaration         : var_type data_type identifier 
+        """ parameter_declaration         : var_type identifier identifier 
         """
         p[0] = rapid_ast.ParameterDefinitionAST(p[1], p[2], p[3], 0, coord=None)
         
     def p_parameter_declaration_2(self, p):
-        """ parameter_declaration         : var_type data_type identifier LBRACE parameter_size RBRACE
+        """ parameter_declaration         : var_type identifier identifier LBRACE parameter_size RBRACE
         """
         p[0] = rapid_ast.ParameterDefinitionAST(p[1], p[2], p[3], len(p[5]), coord=None)
         
     def p_parameter_declaration_3(self, p):
-        """ parameter_declaration         : var_type data_type identifier LBRACE PLACEHOLDER_DIM RBRACE
+        """ parameter_declaration         : var_type identifier identifier LBRACE PLACEHOLDER_DIM RBRACE
         """
         p[0] = rapid_ast.ParameterDefinitionAST(p[1], p[2], p[3], None, coord=None)
         
     def p_parameter_declaration_4(self, p):
         """ parameter_declaration         : switch identifier 
         """
-        p[0] = rapid_ast.SwitchParameterDefinitionAST(p[1], coord=self._coord(p.lineno(1)))
+        p[0] = rapid_ast.SwitchParameterDefinitionAST(p[2], coord=self._coord(p.lineno(1)))
         
     def p_parameter_size_1(self, p):
         """ parameter_size         : TIMES
@@ -387,15 +387,10 @@ class RAPIDParser(PLYParser):
     ###
         
     def p_procedure_declaration(self, p):
-        """ procedure_declaration         : PROC procedure_name LPAREN parameter_list RPAREN data_declaration_list statement_list routine_backward routine_error routine_undo ENDPROC
+        """ procedure_declaration         : PROC identifier LPAREN parameter_list RPAREN data_declaration_list statement_list routine_backward routine_error routine_undo ENDPROC
         """
         p[0] = rapid_ast.ProcedureDeclarationAST(p[2], p[4], p[6], p[7], p[8], p[9], p[10], coord=self._coord(p.lineno(1)))       
-                
-    def p_procedure_name(self, p):
-        """ procedure_name         : identifier
-        """
-        p[0] = p[1]
-        
+                        
     def p_routine_backward_1(self, p):
         """ routine_backward         : 
         """
@@ -451,24 +446,14 @@ class RAPIDParser(PLYParser):
         p[0] = rapid_ast.RoutineUndoAST(p[2], coord=self._coord(p.lineno(1)))
     
     def p_function_declaration(self, p):
-        """ function_declaration         : FUNC data_type function_name LPAREN parameter_list RPAREN data_declaration_list statement_list routine_error routine_undo ENDFUNC
+        """ function_declaration         : FUNC identifier identifier LPAREN parameter_list RPAREN data_declaration_list statement_list routine_error routine_undo ENDFUNC
         """  
         p[0] = rapid_ast.FunctionDeclarationAST(p[2], p[3], p[5], p[7], p[8], p[9], p[10], coord=self._coord(p.lineno(1)))
         
-    def p_function_name(self, p):
-        """ function_name         : identifier  
-        """
-        p[0] = p[1]
-        
     def p_trap_declaration(self, p):
-        """ trap_declaration         : TRAP trap_name data_declaration_list statement_list routine_error routine_undo ENDTRAP
+        """ trap_declaration         : TRAP identifier data_declaration_list statement_list routine_error routine_undo ENDTRAP
         """   
         p[0] = rapid_ast.TrapDeclarationAST(p[2], p[3], p[4], p[5], p[6], coord=self._coord(p.lineno(1)))
-        
-    def p_trap_name(self, p):
-        """ trap_name         : identifier
-        """
-        p[0] = p[1]
         
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
@@ -703,7 +688,7 @@ class RAPIDParser(PLYParser):
     ###
         
     def p_connect_statement(self, p): 
-        """ connect_statement         : CONNECT connect_taget WITH trap SEMI
+        """ connect_statement         : CONNECT connect_taget WITH identifier SEMI
         """
         p[0] = rapid_ast.ConnectStatementAST(p[2], p[4], coord=self._coord(p.lineno(1)))
         
@@ -716,11 +701,6 @@ class RAPIDParser(PLYParser):
         """ connect_taget         : PLACEHOLDER_VAR
         """
         p[0] = rapid_ast.VariableAST(None, [], None, coord=self._coord(p.lineno(1)) )
-        
-    def p_trap(self, p): 
-        """ trap         : identifier
-        """
-        p[0] = p[1]
 
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
@@ -796,22 +776,17 @@ class RAPIDParser(PLYParser):
     ###
         
     def p_for_statement_1(self, p): 
-        """ for_statement        : FOR loop_variable FROM expression TO expression STEP expression DO statement_list ENDFOR
+        """ for_statement        : FOR identifier FROM expression TO expression STEP expression DO statement_list ENDFOR
         """
         p[0] = rapid_ast.ForStatement(p[2], p[4], p[6], p[8], p[10], coord=self._coord(p.lineno(1)) )
         
     def p_for_statement_2(self, p): 
-        """ for_statement        : FOR loop_variable FROM expression TO expression DO statement_list ENDFOR
+        """ for_statement        : FOR identifier FROM expression TO expression DO statement_list ENDFOR
         """
         step = 1
         literal_step = rapid_ast.LiteralATS( step ) 
         expression_step = rapid_ast.ExpressionAST(literal_step)
         p[0] = rapid_ast.ForStatement(p[2], p[4], p[6], expression_step, p[8], coord=self._coord(p.lineno(1)) )
-        
-    def p_loop_variable(self, p): 
-        """ loop_variable        : identifier
-        """
-        p[0] = p[1]
         
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
@@ -920,7 +895,7 @@ class RAPIDParser(PLYParser):
     ###  Variable declarations.    par:2.22
     ###
     def p_variable_declaration(self, p):
-        """ variable_declaration         : VAR data_type variable_definition SEMI
+        """ variable_declaration         : VAR identifier variable_definition SEMI
         """
         p[0] = rapid_ast.VarDeclarationAST(p[2], p[3], coord=self._coord(p.lineno(1)))
         
@@ -1283,7 +1258,7 @@ class RAPIDParser(PLYParser):
     ###
         
     def p_persistent_declaration(self, p):
-        """ persistent_declaration         : PERS data_type variable_definition SEMI
+        """ persistent_declaration         : PERS identifier variable_definition SEMI
         """
         p[0] = rapid_ast.PersDeclarationAST(p[2], p[3], coord=self._coord(p.lineno(1)))       
         
@@ -1293,7 +1268,7 @@ class RAPIDParser(PLYParser):
     ###
         
     def p_constant_declaration(self, p):
-        """ constant_declaration         : CONST data_type variable_definition SEMI
+        """ constant_declaration         : CONST identifier variable_definition SEMI
         """
         p[0] = rapid_ast.ConstDeclarationAST(p[2], p[3], coord=self._coord(p.lineno(1)))       
         
@@ -1324,11 +1299,7 @@ class RAPIDParser(PLYParser):
                                              |  LOCAL alias_definition
         """
         p[0] = rapid_ast.TypeDefAST("LOCAL", p[2], coord=self._coord(p.lineno(1)))
-    
-    def p_data_type(self, p):
-        """ data_type         : identifier
-        """
-        p[0] = p[1]
+
     
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revB_en_library.pdf
@@ -1353,16 +1324,10 @@ class RAPIDParser(PLYParser):
         p[0] = attriblist
         
     def p_record_component_definition(self, p):
-        """ record_component_definition         : data_type record_component_name SEMI
+        """ record_component_definition         : identifier identifier SEMI
         """
         p[0] = rapid_ast.RecordComponentDefAST(p[1], p[2], coord=None)
         
-    # this is not documented
-    #
-    def p_record_component_name(self, p):
-        """ record_component_name         : identifier
-        """
-        p[0] = p[1]
         
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revB_en_library.pdf

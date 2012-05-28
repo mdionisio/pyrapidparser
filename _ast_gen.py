@@ -277,19 +277,32 @@ class NodeVisitor(object):
         *   Modeled after Python's own AST visiting facilities
             (the ast module of Python 3.0)
     """
-    def visit(self, node):
+    def pre_visit(self, node):
         """ Visit a node. 
         """
-        method = 'visit_' + node.__class__.__name__
-        visitor = getattr(self, method, self.generic_visit)
-        return visitor(node)
+        method = 'pre_visit_' + node.__class__.__name__
+        visitor = getattr(self, method, None)
+        if not (visitor is None):
+            visitor(node)
+            
+    def post_visit(self, node):
+        """ Visit a node. 
+        """
+        method = 'post_visit_' + node.__class__.__name__
+        visitor = getattr(self, method, None)
+        if not (visitor is None):
+            visitor(node)
                 
     def generic_visit(self, node):
         """ Called if no explicit visitor function exists for a 
             node. Implements preorder visiting of the node.
         """
-        for c_name, c in node.children():
-            self.visit(c)
+        self.pre_visit(node)
+        try:
+            for c_name, c in node.children():
+                self.visit(c)
+        finally:
+            self.post_visit(node)
             
 class NodeCompare(object):
     """ A base NodeCompare class for comparing compare_ast nodes. 
