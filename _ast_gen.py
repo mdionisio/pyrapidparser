@@ -341,9 +341,12 @@ class NodeCompare(object):
     def generic_compare(self, node1, node2):
         """ Not defince compare function 
         """
-        method = 'compare_' + node1.__class__.__name__
-        print "\nNot Defined Compare FUnction: %s\n" % (method,)
-        return True
+        ret = True
+        for i in node1.attr_names:
+            n1 = eval("node1.%s"%(i,))
+            n2 = eval("node1.%s"%(i,))
+            ret &= (n1 == n2)
+        return ret
     
     def compare(self, node1, node2):
         """ Visit a node. 
@@ -373,6 +376,7 @@ class NodeCompare(object):
                     ret &= self.full_compare(c_next1, c_next2)
             return ret
         return False
+        
 '''
 
 

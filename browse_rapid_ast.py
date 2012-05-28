@@ -161,31 +161,8 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         
         
 
-class CompareRapid( rapid_ast.NodeCompare ):
-    
-    def compare_IdentifierAST(self, node1, node2):
-        return ( node1.name == node2.name  )
-        
-    def compare_ModuleAttributeAST(self, node1, node2):
-        return ( node1.name == node2.name )
-        
-    def compare_ModuleAST(self, node1, node2):
-        return True
-    
-    def compare_CommentAST(self, node1, node2):
-        return ( node1.comment == node2.comment )        
-        
-    def compare_TypeDefAST(self, node1, node2):
-        return ( node1.type == node2.type )        
-    
-    def compare_AliasDefATS(self, node1, node2):
-        return True
-    
-    def compare_RecordDefAST(self, node1, node2):
-        return True
-        
-    def compare_RecordComponentDefAST(self, node1, node2):
-        return True    
+class CompareRapid( rapid_ast.NodeCompare ):   
+    pass
     
         
 
