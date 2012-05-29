@@ -102,7 +102,7 @@ ENDMODULE
     def test_rapid_type_definitions_comment_1(self):
         text = r"""
 MODULE syun1
-!pippo
+    !pippo
 ENDMODULE
 """
         res = TestParserFunctions.parser.parse(text, 'file.rapid', debuglevel=0)  
@@ -119,7 +119,7 @@ ENDMODULE
     def test_rapid_type_definitions_1(self):
         text = r"""
 MODULE syun1
-<TDN>
+    <TDN>
 ENDMODULE
 """
         res = TestParserFunctions.parser.parse(text, 'file.rapid', debuglevel=0)  
@@ -136,7 +136,7 @@ ENDMODULE
     def test_rapid_type_definitions_alias_1(self):
         text = r"""
 MODULE syun1
-ALIAS num pippo;
+    ALIAS num pippo;
 ENDMODULE
 """
         res = TestParserFunctions.parser.parse(text, 'file.rapid', debuglevel=0)  
@@ -156,7 +156,7 @@ ENDMODULE
     def test_rapid_type_definitions_alias_2(self):
         text = r"""
 MODULE syun1
-LOCAL ALIAS num pippo;
+    LOCAL ALIAS num pippo;
 ENDMODULE
 """
         res = TestParserFunctions.parser.parse(text, 'file.rapid', debuglevel=0)  
@@ -172,6 +172,33 @@ ENDMODULE
         compare = browse_rapid_ast.CompareRapid()
 
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing ALIAS")
+        
+    def test_rapid_type_definitions_record_1(self):
+        text = r"""
+MODULE syun1
+    LOCAL RECORD prova
+        num usecount;
+    ENDRECORD
+ENDMODULE
+"""
+        res = TestParserFunctions.parser.parse(text, 'file.rapid', debuglevel=0)  
+  
+        n1 = []
+        n2 = rapid_ast.IdentifierAST("syun1")
+        n6 = rapid_ast.IdentifierAST("prova")
+        n7 = rapid_ast.IdentifierAST("num")
+        n8 = rapid_ast.IdentifierAST("num")
+        n9 = [ rapid_ast.RecordComponentDefAST(n7, n8) ]
+        n5 = rapid_ast.RecordDefAST( n6, n9)
+        n4 = [ rapid_ast.TypeDefAST("LOCAL", n5) ]
+        n3 = rapid_ast.ModuleAST(n2, n1, n4, [], [])
+        
+        compare = browse_rapid_ast.CompareRapid()
+
+        self.assertTrue(compare.full_compare(res,n3), "there is error parsing RECORD")
+        
+
+
             
 
     

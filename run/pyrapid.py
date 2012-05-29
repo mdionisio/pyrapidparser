@@ -1,5 +1,7 @@
 
-class num :
+global_symbol = {}
+
+class rapid_num :
     def __init__(self, val=None):
         self.val = None
         if not (val is None):
@@ -17,4 +19,21 @@ class num :
         else:
             return self.val
         
+class rapid_string :
+    def __init__(self, val=None):
+        self.val = None
+        if not (val is None):
+            self.Set(val)
+        
+    def Set(self, val):
+        if isinstance(val, string):
+            self.val = val
+        else:
+            raise Exception("type unsupported")
+        
+    def Get(self):
+        if self.val is None:
+            raise Exception("variable never assigned")
+        else:
+            return self.val
         

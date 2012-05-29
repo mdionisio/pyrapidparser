@@ -1,7 +1,7 @@
 import rapid_ast
 import os
 import os.path
-import pyrapid
+import run.pyrapid as pyrapid
 import copy
 
 def ensure_dir(f):
@@ -12,11 +12,106 @@ def ensure_dir(f):
         os.makedirs(d)
 
 
+class EvaluateRapidExpression( rapid_ast.NodeVisitor ):
+    def __init__(self, symbols=None):
+        self.return_value = None
+        self.symbols = symbols
+        
+    def visit_ConstExpressionAST(self, node):
+        parse = EvaluateRapidExpression()
+        parse.visit( node.expression )
+        self.return_value = parse.GetReturn()
+        
+    def visit_AggregateAST(self, node):
+        self.return_value = []
+        for i in node.expr:
+            parse = EvaluateRapidExpression()
+            parse.visit( i )
+            self.return_value.append(parse.GetReturn())
+            
+    def visit_LiteralATS(self, node):
+        self.return_value = node.value
+        
+    def visit_Operator1AST(self, node):
+        parse = EvaluateRapidExpression()
+        parse.visit( node.par1 )
+        if node.operator == "NOT":
+            self.return_value = not parse.GetReturn()
+        else:
+            raise Exception("operator not supported '%s'"%(node.operator))
+            
+    def visit_Operator2AST(self, node):
+        parse1 = EvaluateRapidExpression()
+        parse1.visit( node.par1 )
+        parse2 = EvaluateRapidExpression()
+        parse2.visit( node.par2 )
+        if node.operator == "+":
+            self.return_value = parse1.GetReturn() + parse2.GetReturn()
+        elif node.operator == "-":
+            self.return_value = parse1.GetReturn() - parse2.GetReturn()
+        elif node.operator == "*":
+            self.return_value = parse1.GetReturn() * parse2.GetReturn()
+        elif node.operator == "/":
+            self.return_value = float(parse1.GetReturn()) / float(parse2.GetReturn())
+        elif node.operator == "DIV":
+            self.return_value = parse1.GetReturn() // parse2.GetReturn()
+        elif node.operator == "MOD":
+            self.return_value = parse1.GetReturn() % parse2.GetReturn()
+        elif node.operator == "OR":
+            self.return_value = parse1.GetReturn() or parse2.GetReturn()
+        elif node.operator == "XOR":
+            self.return_value = bool(parse1.GetReturn()) != bool(parse2.GetReturn())
+        elif node.operator == "AND":
+            self.return_value = parse1.GetReturn() and parse2.GetReturn()
+        elif node.operator == "<":
+            self.return_value = parse1.GetReturn() < parse2.GetReturn()
+        elif node.operator == ">":
+            self.return_value = parse1.GetReturn() > parse2.GetReturn()    
+        elif node.operator == "<=":
+            self.return_value = parse1.GetReturn() <= parse2.GetReturn()
+        elif node.operator == ">=":
+            self.return_value = parse1.GetReturn() >= parse2.GetReturn()    
+        elif node.operator == "=":
+            self.return_value = parse1.GetReturn() == parse2.GetReturn()
+        elif node.operator == "<>":
+            self.return_value = parse1.GetReturn() != parse2.GetReturn()    
+        else:
+            raise Exception("operator not supported '%s'"%(node.operator))
+
+        
+    def visit_ExpressionAST(self, node):
+        if node.expr is None:
+            raise Expression("node can not be a ConstantExpression")
+        elif isinstance(node.expr, rapid_ast.FunctionCallAST):
+            raise Expression("node can not be a ConstantExpression, todo for functionCall that works only on contant parameter and use only constand data")
+        elif isinstance(node.expr, rapid_ast.VariableAST):
+            raise Expression("node can not be a ConstantExpression, todo for VariableAST that is constant")
+        elif isinstance(node.expr, rapid_ast.AggregateAST):
+            pass
+        elif isinstance(node.expr, rapid_ast.Operator1AST):
+            pass
+        elif isinstance(node.expr, rapid_ast.Operator2AST):
+            pass
+        elif isinstance(node.expr, rapid_ast.ExpressionAST):
+            pass
+        elif isinstance(node.expr, rapid_ast.LiteralATS):
+            pass
+        else:
+            raise Exception("programming error")
+            
+        parse = EvaluateRapidExpression()
+        parse.visit( node.expr )
+        self.return_value = parse.GetReturn()
+
+        
+    def GetReturn(self):
+        return self.return_value
+
 
 class TraslateRapidToPython( rapid_ast.NodeVisitor ):
     
     def __init__(self):
-        self.default_symbol = { "num":("VARTYPE", pyrapid.num) }
+        self.default_symbol = { "num":("VARTYPE", pyrapid.rapid_num), "string":("VARTYPE", pyrapid.rapid_string) }
         self.global_symbol = copy.copy(self.default_symbol)
         self.scope_symbol = [  { } ]
         self.file_init_name = None
@@ -103,7 +198,7 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
             print "Module name not defined default will be used"
             self.module_name = "default"
         ensure_dir(self.directory)
-        self.file_init_name = os.path.join(self.directory, "__init__.py")
+        self.file_init_name = os.path.join(self.directory, "_module_init_.py")
         self.file_module_name = os.path.join(self.directory, "%s.py" % (self.module_name,))
         self.file_init = open(self.file_init_name, "w")
         self.file_module = open(self.file_module_name, "w")
@@ -112,7 +207,7 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
 #this file is an automatic traslation of rapid code
 """)
 
-        self.writemodule("from pyrapid import num")
+        self.writemodule("from pyrapid import *")
         
     def post_visit_ModuleAST(self, node):
         """ 
@@ -121,7 +216,13 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         """
         allsymbol = ", ".join( [ str(i) for i in self.global_symbol.iterkeys() if not self.default_symbol.has_key(i)] )
         
-        self.writeinit( "from test_module import " + allsymbol  )
+        self.writeinit( "import pyrapid" )
+        self.writeinit( "import %s"%(self.module_name,) )
+        self.writeinit( "pyrapid.global_symbol.update(%s.global_symbol)"%(self.module_name) )
+        self.writeinit( "from %s import %s"%(self.module_name, allsymbol)  )
+        for i in self.global_symbol.iterkeys() :
+            if not self.default_symbol.has_key(i):
+                self.writemodule("global_symbol[%s]=__name__"%(repr(i),))
         self.writemodule( "module_attribute = %s" % (repr(self.module_attribute),) )
         self.file_init.close()
         self.file_init = None
@@ -158,7 +259,11 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
             self.AddSym(aliasname, newsym )
             #add to the actual scope
             
-        self.writemodule("%s = %s" % (aliasname, typename))
+        self.writemodule("%s = %s" % (aliasname, newsym[1].__name__))
+        
+    #record
+    
+    #
         
         
 
@@ -185,3 +290,43 @@ if __name__ == '__main__':
     traslate = TraslateRapidToPython()
     
     traslate.visit(allmodule)
+    
+    evalexpr = rapid_ast.LiteralATS(1)
+    evalexpression = rapid_ast.ExpressionAST(evalexpr)
+    evaldata = rapid_ast.ConstExpressionAST(evalexpression)
+    
+    constanteval = EvaluateRapidExpression()
+    constanteval.visit(evaldata)
+    print "data1 %s"%(str(constanteval.GetReturn()),)
+    
+    evalexpr1 = rapid_ast.LiteralATS(1)
+    evalexpr2 = rapid_ast.LiteralATS(2)
+    evalaggr = rapid_ast.AggregateAST([evalexpr1, evalexpr2])
+    evalexpression = rapid_ast.ExpressionAST(evalaggr)
+    evaldata = rapid_ast.ConstExpressionAST(evalexpression)
+    
+    constanteval = EvaluateRapidExpression()
+    constanteval.visit(evaldata)
+    print "data2 %s"%(str(constanteval.GetReturn()),)
+    
+    evalexpr1 = rapid_ast.LiteralATS(True)
+    evalaggr = rapid_ast.Operator1AST("NOT", evalexpr1)
+    evalexpression = rapid_ast.ExpressionAST(evalaggr)
+    evaldata = rapid_ast.ConstExpressionAST(evalexpression)
+    
+    constanteval = EvaluateRapidExpression()
+    constanteval.visit(evaldata)
+    print "data3 %s"%(str(constanteval.GetReturn()),)
+    
+    evalexpr1 = rapid_ast.LiteralATS(1)
+    evalexpr2 = rapid_ast.LiteralATS(2)
+    evalaggr = rapid_ast.Operator2AST("+", evalexpr1, evalexpr2)
+    evalexpression = rapid_ast.ExpressionAST(evalaggr)
+    evaldata = rapid_ast.ConstExpressionAST(evalexpression)
+    
+    constanteval = EvaluateRapidExpression()
+    constanteval.visit(evaldata)
+    print "data4 %s"%(str(constanteval.GetReturn()),)
+    
+    
+    
