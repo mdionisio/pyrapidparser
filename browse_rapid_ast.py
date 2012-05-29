@@ -27,6 +27,7 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         self.module_attribute = []
         self.indent_module = 0
         self.indent_init = 0
+        self.directory = "run"
         
     def PushScope(self):
         self.scope_symbol.append({})
@@ -101,9 +102,9 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         if self.module_name is None:
             print "Module name not defined default will be used"
             self.module_name = "default"
-        ensure_dir(self.module_name)
-        self.file_init_name = os.path.join(self.module_name, "__init__.py")
-        self.file_module_name = os.path.join(self.module_name, "%s.py" % (self.module_name,))
+        ensure_dir(self.directory)
+        self.file_init_name = os.path.join(self.directory, "__init__.py")
+        self.file_module_name = os.path.join(self.directory, "%s.py" % (self.module_name,))
         self.file_init = open(self.file_init_name, "w")
         self.file_module = open(self.file_module_name, "w")
         
