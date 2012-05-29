@@ -292,6 +292,11 @@ class NodeVisitor(object):
         visitor = getattr(self, method, None)
         if not (visitor is None):
             visitor(node)
+            
+    def visit(self, node):
+        method = 'visit_' + node.__class__.__name__
+        visitor = getattr(self, method, self.generic_visit)
+        return visitor(node)
                 
     def generic_visit(self, node):
         """ Called if no explicit visitor function exists for a 
