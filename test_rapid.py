@@ -259,6 +259,71 @@ ENDMODULE
 
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing RECORD")
         
+    def test_rapid_declaration_1(self):
+        text = r"""
+MODULE syun1
+    VAR num a := 1;
+ENDMODULE
+"""
+        res = TestParserFunctions.parser.parse(text, 'file.rapid', debuglevel=0)  
+  
+        n1 = []
+        n2 = rapid_ast.IdentifierAST("syun1")
+        n6 = rapid_ast.IdentifierAST("num")
+        n8 = rapid_ast.IdentifierAST("a")
+        n11 = rapid_ast.LiteralATS(1)
+        n10 = rapid_ast.ExpressionAST(n11)
+        n9 = rapid_ast.ConstExpressionAST(n10)
+        n7 = rapid_ast.VarDefinitionAST(n8, n9, [])
+        n5 = rapid_ast.VarDeclarationAST(n6, n7)
+        n4 = [ rapid_ast.DataDefATS(None, n5) ]
+        n3 = rapid_ast.ModuleAST(n2, n1, [], n4, [])
+        
+        compare = browse_rapid_ast.CompareRapid()
+        
+        with open(whoami()+".1"+".rapid","wt") as f:
+            rewrite = browse_rapid_ast.WriteRapid(f)
+            rewrite.visit(res)
+            
+        with open(whoami()+".2"+".rapid","wt") as f:
+            f.write(text)
+
+        self.assertTrue(compare.full_compare(res,n3), "there is error parsing declaration with literal")
+        
+    def test_rapid_declaration_2(self):
+        text = r"""
+MODULE syun1
+    CONST num a := 1 + 3;
+ENDMODULE
+"""
+        res = TestParserFunctions.parser.parse(text, 'file.rapid', debuglevel=0)  
+  
+        n1 = []
+        n2 = rapid_ast.IdentifierAST("syun1")
+        n6 = rapid_ast.IdentifierAST("num")
+        n8 = rapid_ast.IdentifierAST("a")
+        n13 = rapid_ast.LiteralATS(1)
+        n12 = rapid_ast.LiteralATS(3)
+        n11 = rapid_ast.Operator2AST('+', n12, n13)
+        n10 = rapid_ast.ExpressionAST(n11)
+        n9 = rapid_ast.ConstExpressionAST(n10)
+        n7 = rapid_ast.VarDefinitionAST(n8, n9, [])
+        n5 = rapid_ast.ConstDeclarationAST(n6, n7)
+        n4 = [ rapid_ast.DataDefATS(None, n5) ]
+        n3 = rapid_ast.ModuleAST(n2, n1, [], n4, [])
+        
+        compare = browse_rapid_ast.CompareRapid()
+        
+        with open(whoami()+".1"+".rapid","wt") as f:
+            rewrite = browse_rapid_ast.WriteRapid(f)
+            rewrite.visit(res)
+            
+        with open(whoami()+".2"+".rapid","wt") as f:
+            f.write(text)
+
+        
+        self.assertTrue(compare.full_compare(res,n3), "there is error parsing declaration with +")
+        
 
 
             

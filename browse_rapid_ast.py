@@ -27,6 +27,69 @@ class WriteRapid( rapid_ast.NodeVisitor ):
         self.writeindent()
         self.write(data)
         self.write()
+        
+    def visit_FunctionCallAST(self, node):
+        self.visit(node.function)
+        self.write("(")
+        if len(node.arguments)>0:
+            for i in node.arguments[:-1]:
+                self.visit(i)
+            self.visit(node.arguments[-1])
+        self.write(")")
+        
+    def visit_VariableAST(self, node):
+        if (node.var is None) and (len(node.index)==0) and (node.component is None):
+            self.write("<VAR>")
+        elif  (len(node.index)==0) and (node.component is None):
+            self.visit(node.var)
+        elif  (node.component is None):
+            self.visit(node.var)
+            self.write("{")
+            for i in node.index:
+                self.write(i)
+                self.write(", ")
+            self.write(node.index[-1])
+            self.write("}")
+        else:
+            self.visit(node.var)
+            self.write(".")
+            self.visit(node.component)
+            
+        
+    def visit_AggregateAST(self, node):
+        self.write("[")
+        if len(node.expr)>0:
+            for i in node.expr[:-1]:
+                self.write(i)
+                self.write(", ")
+            self.write(node.expr[-1])
+        self.write("]")
+        
+    def visit_Operator1AST(self, node):
+        if not(node.operator is None):
+            self.write(node.operator)
+            self.write(" ")
+        self.visit(node.par1)
+        
+    def visit_Operator2AST(self, node):
+        self.visit(node.par1)
+        self.write(" ")
+        self.write(node.operator)
+        self.write(" ")
+        self.visit(node.par2)
+        
+    def visit_LiteralATS(self, node):
+        self.write("%s"%(node.value,))
+        
+    def visit_ExpressionAST(self, node):        
+        if not(node.expr is None):
+            self.visit(node.expr)
+        
+    def visit_IdentifierAST(self, node):        
+        if node.name is None:
+            self.write("<ID>")
+        else:
+            self.write(node.name)
     
     def visit_CommentAST(self, node):        
         self.writeln("!"+node.comment)
@@ -34,10 +97,9 @@ class WriteRapid( rapid_ast.NodeVisitor ):
     def visit_ModuleAST(self, node):
         #module_name*, module_attribute**, type_definitions**, data_definitions**, routine_definitions**
         self.writeindent()
-        if node.module_name.name is None:
-            self.write("MODULE <ID> ")
-        else:
-            self.write("MODULE %s "%(node.module_name.name))
+        self.write("MODULE ")
+        self.visit(node.module_name)
+        self.write(" ")
         if len(node.module_attribute)>0:
             self.write("(")
             for i in node.module_attribute[:-1]:
@@ -56,6 +118,45 @@ class WriteRapid( rapid_ast.NodeVisitor ):
         self.indent -= 1
         self.writeln("ENDMODULE")
         
+    def visit_VarDefinitionAST(self, node):     
+        self.visit(node.name)
+        if len(node.size)>0:
+            self.write("[")
+            for i in node.size[:-1]:
+                self.visit(i)
+                self.write(", ")
+            self.visit(node.size[-1])
+            self.write("]")
+        if not (node.value is None):
+            self.write(" := ")
+            self.visit(node.value)
+        
+    def visit_VarDeclarationAST(self, node):     
+        self.write("VAR ")
+        self.visit(node.type)
+        self.write(" ")
+        self.visit(node.variable_instance)
+        
+    def visit_PersDeclarationAST(self, node):     
+        self.write("PERS ")
+        self.visit(node.type)
+        self.write(" ")
+        self.visit(node.variable_instance)
+        
+    def visit_ConstDeclarationAST(self, node):     
+        self.write("CONST ")
+        self.visit(node.type)
+        self.write(" ")
+        self.visit(node.variable_instance)
+    
+    def visit_DataDefATS(self, node):     
+        self.writeindent()
+        if not(node.type is None):
+            self.write(node.type + " ")
+        
+        self.visit(node.definition)
+        self.write() 
+        
     def visit_TypeDefAST(self, node):     
         self.writeindent()
         if not(node.type is None):
@@ -69,14 +170,14 @@ class WriteRapid( rapid_ast.NodeVisitor ):
         
     def visit_AliasDefATS(self, node):     
         self.write("ALIAS ") 
-        self.write(node.type_name.name) 
+        self.visit(node.type_name)
         self.write(" ") 
-        self.write(node.alias_name.name) 
+        self.visit(node.alias_name)
         self.write(";") 
         
     def visit_RecordDefAST(self, node):     
         self.write("RECORD ") 
-        self.write(node.record_name.name) 
+        self.visit(node.record_name)
         self.write() 
         self.indent += 1
         for i in node.components:
@@ -86,7 +187,12 @@ class WriteRapid( rapid_ast.NodeVisitor ):
         self.write("ENDRECORD") 
         
     def visit_RecordComponentDefAST(self, node):     
-        self.writeln("RECORD %s %s;"%(node.data_type.name,node.record_component_name.name)) 
+        self.writeindent()
+        self.write("RECORD ") 
+        self.visit(node.data_type)
+        self.write(" ") 
+        self.visit(node.record_component_name)
+        self.write() 
         
         
 

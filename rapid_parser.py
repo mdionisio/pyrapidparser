@@ -1029,9 +1029,9 @@ class RAPIDParser(PLYParser):
         """ simple_expr_list         :  addop term simple_expr_list
         """
         if p[3] is None:
-            p[0] = [ ( p[1], p[2] ) ]
+            p[0] = ( p[1], p[2] )
         else:
-            p[0] = [ ( p[1], rapid_ast.Operator2AST(p[3][0], p[2], p[3][1], coord=None ) ) ]
+            p[0] = ( p[1], rapid_ast.Operator2AST(p[3][0], p[2], p[3][1], coord=None ) )
         
     def p_term(self, p):
         """ term         : primary primary_list
@@ -1494,6 +1494,12 @@ ENDMODULE
     text = r"""
 MODULE syun1(SYSMODULE)
 VAR pose p := [1,2,3,4,5];
+ENDMODULE
+"""
+
+    text = r"""
+MODULE syun1
+    CONST num a := 1 + 3;
 ENDMODULE
 """
     
