@@ -3,6 +3,12 @@ import rapid_ast
 import browse_rapid_ast
 
 
+# functions
+def whoami():
+    import inspect
+    return inspect.stack()[1][3]
+
+
 class TestBaseFunctions(unittest.TestCase):
     
     def setUp(self):
@@ -65,6 +71,13 @@ ENDMODULE
         n3 = rapid_ast.ModuleAST(n2, n1, [], [], [])
         
         compare = browse_rapid_ast.CompareRapid()
+        
+        with open(whoami()+".1"+".rapid","wt") as f:
+            rewrite = browse_rapid_ast.WriteRapid(f)
+            rewrite.visit(res)
+            
+        with open(whoami()+".2"+".rapid","wt") as f:
+            f.write(text)
 
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing module")
     
@@ -81,6 +94,13 @@ ENDMODULE
         n3 = rapid_ast.ModuleAST(n2, n1, [], [], [])
         
         compare = browse_rapid_ast.CompareRapid()
+        
+        with open(whoami()+".1"+".rapid","wt") as f:
+            rewrite = browse_rapid_ast.WriteRapid(f)
+            rewrite.visit(res)
+            
+        with open(whoami()+".2"+".rapid","wt") as f:
+            f.write(text)
 
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing module")
         
@@ -96,6 +116,13 @@ ENDMODULE
         n3 = rapid_ast.ModuleAST(n2, n1, [], [], [])
         
         compare = browse_rapid_ast.CompareRapid()
+        
+        with open(whoami()+".1"+".rapid","wt") as f:
+            rewrite = browse_rapid_ast.WriteRapid(f)
+            rewrite.visit(res)
+            
+        with open(whoami()+".2"+".rapid","wt") as f:
+            f.write(text)
 
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing module")
         
@@ -113,6 +140,13 @@ ENDMODULE
         n3 = rapid_ast.ModuleAST(n2, n1, n4, [], [])
         
         compare = browse_rapid_ast.CompareRapid()
+        
+        with open(whoami()+".1"+".rapid","wt") as f:
+            rewrite = browse_rapid_ast.WriteRapid(f)
+            rewrite.visit(res)
+            
+        with open(whoami()+".2"+".rapid","wt") as f:
+            f.write(text)
 
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing comment in type definition")
         
@@ -130,6 +164,13 @@ ENDMODULE
         n3 = rapid_ast.ModuleAST(n2, n1, n4, [], [])
         
         compare = browse_rapid_ast.CompareRapid()
+        
+        with open(whoami()+".1"+".rapid","wt") as f:
+            rewrite = browse_rapid_ast.WriteRapid(f)
+            rewrite.visit(res)
+            
+        with open(whoami()+".2"+".rapid","wt") as f:
+            f.write(text)
 
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing <TDN>")
         
@@ -150,6 +191,13 @@ ENDMODULE
         n3 = rapid_ast.ModuleAST(n2, n1, n4, [], [])
         
         compare = browse_rapid_ast.CompareRapid()
+        
+        with open(whoami()+".1"+".rapid","wt") as f:
+            rewrite = browse_rapid_ast.WriteRapid(f)
+            rewrite.visit(res)
+            
+        with open(whoami()+".2"+".rapid","wt") as f:
+            f.write(text)
 
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing ALIAS")
         
@@ -170,6 +218,13 @@ ENDMODULE
         n3 = rapid_ast.ModuleAST(n2, n1, n4, [], [])
         
         compare = browse_rapid_ast.CompareRapid()
+        
+        with open(whoami()+".1"+".rapid","wt") as f:
+            rewrite = browse_rapid_ast.WriteRapid(f)
+            rewrite.visit(res)
+            
+        with open(whoami()+".2"+".rapid","wt") as f:
+            f.write(text)
 
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing ALIAS")
         
@@ -194,6 +249,13 @@ ENDMODULE
         n3 = rapid_ast.ModuleAST(n2, n1, n4, [], [])
         
         compare = browse_rapid_ast.CompareRapid()
+        
+        with open(whoami()+".1"+".rapid","wt") as f:
+            rewrite = browse_rapid_ast.WriteRapid(f)
+            rewrite.visit(res)
+            
+        with open(whoami()+".2"+".rapid","wt") as f:
+            f.write(text)
 
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing RECORD")
         

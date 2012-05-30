@@ -11,6 +11,81 @@ def ensure_dir(f):
     if not os.path.exists(d):
         os.makedirs(d)
 
+class WriteRapid( rapid_ast.NodeVisitor ):
+    def __init__(self, filew):
+        self.file = filew
+        self.indent=0
+        
+    def writeindent(self):
+        self.file.write(" "*self.indent)
+        
+    def write(self, data="\n"):
+        self.file.write(data)
+        
+    def writeln(self, data):
+        self.file.write(" "*self.indent+ data+"\n")
+    
+    def visit_CommentAST(self, node):        
+        self.writeln("!"+node.comment)
+        
+    def visit_ModuleAST(self, node):
+        #module_name*, module_attribute**, type_definitions**, data_definitions**, routine_definitions**
+        self.writeindent()
+        if node.module_name.name is None:
+            self.write("MODULE <ID> ")
+        else:
+            self.write("MODULE %s "%(node.module_name.name))
+        if len(node.module_attribute)>0:
+            self.write("(")
+            for i in node.module_attribute[:-1]:
+                self.write(i.name)
+                self.write(", ")
+            self.write(node.module_attribute[-1].name)
+            self.write(")")
+        self.write()    
+        self.indent += 1
+        for i in node.type_definitions:
+            self.visit(i)
+        for i in node.data_definitions:
+            self.visit(i)
+        for i in node.routine_definitions:
+            self.visit(i)
+        self.indent -= 1
+        self.writeln("ENDMODULE")
+        
+    def visit_TypeDefAST(self, node):     
+        self.writeindent()
+        if not(node.type is None):
+            self.write(node.type + " ")
+        
+        if node.definition is None:
+            self.write("<TDN>")
+        else:
+            self.visit(node.definition)
+        self.write() 
+        
+    def visit_AliasDefATS(self, node):     
+        self.write("ALIAS ") 
+        self.write(node.type_name.name) 
+        self.write(" ") 
+        self.write(node.alias_name.name) 
+        self.write(";") 
+        
+    def visit_RecordDefAST(self, node):     
+        self.write("RECORD ") 
+        self.write(node.record_name.name) 
+        self.write() 
+        self.indent += 1
+        for i in node.components:
+            self.visit(i)
+        self.indent -= 1
+        self.writeindent()
+        self.write("ENDRECORD") 
+        
+    def visit_RecordComponentDefAST(self, node):     
+        self.writeln("RECORD %s %s;"%(node.data_type.name,node.record_component_name.name)) 
+        
+        
 
 class EvaluateRapidExpression( rapid_ast.NodeVisitor ):
     def __init__(self, symbols=None):
@@ -286,6 +361,10 @@ if __name__ == '__main__':
     datadeclaration = []
     code = []
     allmodule = rapid_ast.ModuleAST(n2, n1, datatype, datadeclaration, code)
+    
+    with open("text.rapid","wt") as f:
+        rewrite = WriteRapid(f)
+        rewrite.visit(allmodule)
     
     traslate = TraslateRapidToPython()
     
