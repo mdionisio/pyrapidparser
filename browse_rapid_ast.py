@@ -264,6 +264,16 @@ class WriteRapid( rapid_ast.NodeVisitor ):
     def visit_TrapDeclarationAST(self, node):
         pass
         
+    def visit_AssignmentStatementAST(self, node):
+        #dest*, source*
+        self.writeindent()
+        self.visit(node.dest)
+        self.write(" := ")
+        self.visit(node.source)
+        self.write(";")
+        self.write()
+        
+        
 
 class EvaluateRapidExpression( rapid_ast.NodeVisitor ):
     def __init__(self, symbols=None):

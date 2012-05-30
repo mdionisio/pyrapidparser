@@ -1522,6 +1522,14 @@ MODULE syun1
     ENDPROC
 ENDMODULE
 """
+
+    text = r"""
+MODULE syun1
+    PROC pippo ()
+        a := 1;
+    ENDPROC
+ENDMODULE
+"""
     
     ## set debuglevel to 2 for debugging
     t = parser.parse(text, 'x.rapid', debuglevel=0)
