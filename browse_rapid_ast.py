@@ -12,18 +12,21 @@ def ensure_dir(f):
         os.makedirs(d)
 
 class WriteRapid( rapid_ast.NodeVisitor ):
+    __indent__ = '\t'
     def __init__(self, filew):
         self.file = filew
         self.indent=0
         
     def writeindent(self):
-        self.file.write(" "*self.indent)
+        self.file.write(WriteRapid.__indent__*self.indent)
         
     def write(self, data="\n"):
         self.file.write(data)
         
     def writeln(self, data):
-        self.file.write(" "*self.indent+ data+"\n")
+        self.writeindent()
+        self.write(data)
+        self.write()
     
     def visit_CommentAST(self, node):        
         self.writeln("!"+node.comment)
