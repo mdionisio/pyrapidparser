@@ -458,7 +458,7 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         #module_name*, module_attribute**, type_definitions**, data_definitions**, routine_definitions**
         self.module_name = node.module_name.name
         if self.module_name is None:
-            print "Module name not defined default will be used"
+            print("Module name not defined default will be used")
             self.module_name = "default"
         ensure_dir(self.directory)
         self.file_init_name = os.path.join(self.directory, "_module_init_.py")
@@ -564,7 +564,7 @@ if __name__ == '__main__':
     
     constanteval = EvaluateRapidExpression()
     constanteval.visit(evaldata)
-    print "data1 %s"%(str(constanteval.GetReturn()),)
+    print("data1 %s"%(str(constanteval.GetReturn()),) )
     
     evalexpr1 = rapid_ast.LiteralATS(1)
     evalexpr2 = rapid_ast.LiteralATS(2)
@@ -574,7 +574,7 @@ if __name__ == '__main__':
     
     constanteval = EvaluateRapidExpression()
     constanteval.visit(evaldata)
-    print "data2 %s"%(str(constanteval.GetReturn()),)
+    print("data2 %s"%(str(constanteval.GetReturn()),))
     
     evalexpr1 = rapid_ast.LiteralATS(True)
     evalaggr = rapid_ast.Operator1AST("NOT", evalexpr1)
@@ -583,7 +583,7 @@ if __name__ == '__main__':
     
     constanteval = EvaluateRapidExpression()
     constanteval.visit(evaldata)
-    print "data3 %s"%(str(constanteval.GetReturn()),)
+    print("data3 %s"%(str(constanteval.GetReturn()),))
     
     evalexpr1 = rapid_ast.LiteralATS(1)
     evalexpr2 = rapid_ast.LiteralATS(2)
@@ -593,7 +593,7 @@ if __name__ == '__main__':
     
     constanteval = EvaluateRapidExpression()
     constanteval.visit(evaldata)
-    print "data4 %s"%(str(constanteval.GetReturn()),)
+    print("data4 %s"%(str(constanteval.GetReturn()),))
     
     
     
