@@ -60,9 +60,9 @@ class WriteRapid( rapid_ast.NodeVisitor ):
         self.write("[")
         if len(node.expr)>0:
             for i in node.expr[:-1]:
-                self.write(i)
+                self.visit(i)
                 self.write(", ")
-            self.write(node.expr[-1])
+            self.visit(node.expr[-1])
         self.write("]")
         
     def visit_Operator1AST(self, node):
@@ -153,8 +153,10 @@ class WriteRapid( rapid_ast.NodeVisitor ):
         self.writeindent()
         if not(node.type is None):
             self.write(node.type + " ")
-        
-        self.visit(node.definition)
+        if node.definition is None:
+            self.write("<DDN>") 
+        else:
+            self.visit(node.definition)
         self.write() 
         
     def visit_TypeDefAST(self, node):     
@@ -194,6 +196,73 @@ class WriteRapid( rapid_ast.NodeVisitor ):
         self.visit(node.record_component_name)
         self.write() 
         
+    def visit_RoutineDeclarationATS(self, node):
+        self.writeindent()
+        if not(node.type is None):
+            self.write(node.type + " ")
+        if node.definition is None:
+            self.write("<RDN>") 
+        else:
+            self.visit(node.definition)
+        self.write() 
+        
+    def visit_ParameterDefinitionAST(self, node):
+        #parameter_type, type*, name*, size
+        if node.size is None:
+            pass
+        elif node.size == 0:
+            self.write(node.parameter_type)
+            self.write(" ")
+            self.visit(node.type)
+            self.write(" ")
+            self.visit(node.name)
+        else:
+            pass
+        
+    def visit_ProcedureDeclarationAST(self, node):
+        self.write("PROC ")
+        self.visit(node.procedure_name)
+        self.write(" (")
+        if len(node.parameter_list)>0:
+            for i in node.parameter_list[:-1]:
+                if i is None:
+                    self.write("<PAR>")
+                else:
+                    self.visit(i)
+                self.write(", ")
+            if node.parameter_list[-1] is None:
+                self.write("<PAR>")
+            else:
+                self.visit(node.parameter_list[-1])
+        self.write(")")
+        self.write()
+        
+        self.indent += 1
+        
+        for i in node.data_definitions:
+            self.visit(i)
+            
+        for i in node.statement_list:
+            self.visit(i)
+            
+        if not(node.routine_backward is None):
+            self.visit(node.routine_backward)
+            
+        if not(node.routine_error is None):
+            self.visit(node.routine_error)
+        
+        if not(node.routine_undo is None):
+            self.visit(node.routine_undo)
+            
+        self.indent -= 1
+        self.writeindent()
+        self.write("ENDPROC") 
+        
+    def visit_FunctionDeclarationAST(self, node):
+        pass
+        
+    def visit_TrapDeclarationAST(self, node):
+        pass
         
 
 class EvaluateRapidExpression( rapid_ast.NodeVisitor ):

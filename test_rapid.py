@@ -324,6 +324,101 @@ ENDMODULE
         
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing declaration with +")
         
+    def test_rapid_declaration_3(self):
+        text = r"""
+MODULE syun1
+    PERS num a{3} := [ 1, 2, 3 ];
+ENDMODULE
+"""
+        res = TestParserFunctions.parser.parse(text, 'file.rapid', debuglevel=0)  
+  
+        n1 = []
+        n2 = rapid_ast.IdentifierAST("syun1")
+        n6 = rapid_ast.IdentifierAST("num")
+        n8 = rapid_ast.IdentifierAST("a")
+        n12 = [ rapid_ast.LiteralATS(1), rapid_ast.LiteralATS(2), rapid_ast.LiteralATS(3) ]
+        n11 = rapid_ast.AggregateAST(n12)
+        n10 = rapid_ast.ExpressionAST(n11)
+        n9 = rapid_ast.ConstExpressionAST(n10)
+        n22 = rapid_ast.LiteralATS(3)
+        n21 = rapid_ast.ExpressionAST(n22)
+        n20 = [ rapid_ast.ConstExpressionAST(n21) ]
+        n7 = rapid_ast.VarDefinitionAST(n8, n9, n20)
+        n5 = rapid_ast.PersDeclarationAST(n6, n7)
+        n4 = [ rapid_ast.DataDefATS(None, n5) ]
+        n3 = rapid_ast.ModuleAST(n2, n1, [], n4, [])
+        
+        compare = browse_rapid_ast.CompareRapid()
+        
+        with open(whoami()+".1"+".rapid","wt") as f:
+            rewrite = browse_rapid_ast.WriteRapid(f)
+            rewrite.visit(res)
+            
+        with open(whoami()+".2"+".rapid","wt") as f:
+            f.write(text)
+
+        
+        self.assertTrue(compare.full_compare(res,n3), "there is error parsing declaration with vector")
+        
+    def test_rapid_proc_declaration_1(self):
+        text = r"""
+MODULE syun1
+    PROC pippo ()
+    ENDPROC
+ENDMODULE
+"""
+        res = TestParserFunctions.parser.parse(text, 'file.rapid', debuglevel=0)  
+  
+        n1 = []
+        n2 = rapid_ast.IdentifierAST("syun1")
+        n6 = rapid_ast.IdentifierAST("pippo")
+        n5 = rapid_ast.ProcedureDeclarationAST(n6, [], [], [], None, None, None)
+        n4 = [ rapid_ast.RoutineDeclarationATS(None, n5) ]
+        n3 = rapid_ast.ModuleAST(n2, n1, [], [], n4)
+        
+        compare = browse_rapid_ast.CompareRapid()
+        
+        with open(whoami()+".1"+".rapid","wt") as f:
+            rewrite = browse_rapid_ast.WriteRapid(f)
+            rewrite.visit(res)
+            
+        with open(whoami()+".2"+".rapid","wt") as f:
+            f.write(text)
+
+        
+        self.assertTrue(compare.full_compare(res,n3), "there is error parsing declaration with vector")
+        
+    def test_rapid_proc_declaration_2(self):
+        text = r"""
+MODULE syun1
+    PROC pippo (VAR num a1)
+    ENDPROC
+ENDMODULE
+"""
+        res = TestParserFunctions.parser.parse(text, 'file.rapid', debuglevel=0)  
+  
+        n1 = []
+        n2 = rapid_ast.IdentifierAST("syun1")
+        n8 = rapid_ast.IdentifierAST("num")
+        n9 = rapid_ast.IdentifierAST("a1")
+        n7 = [ rapid_ast.ParameterDefinitionAST("VAR", n8, n9, 0) ]
+        n6 = rapid_ast.IdentifierAST("pippo")
+        n5 = rapid_ast.ProcedureDeclarationAST(n6, n7, [], [], None, None, None)
+        n4 = [ rapid_ast.RoutineDeclarationATS(None, n5) ]
+        n3 = rapid_ast.ModuleAST(n2, n1, [], [], n4)
+        
+        compare = browse_rapid_ast.CompareRapid()
+        
+        with open(whoami()+".1"+".rapid","wt") as f:
+            rewrite = browse_rapid_ast.WriteRapid(f)
+            rewrite.visit(res)
+            
+        with open(whoami()+".2"+".rapid","wt") as f:
+            f.write(text)
+
+        
+        self.assertTrue(compare.full_compare(res,n3), "there is error parsing declaration with vector")
+        
 
 
             

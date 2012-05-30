@@ -295,7 +295,7 @@ class RAPIDParser(PLYParser):
     def p_first_parameter_declaration_1(self, p):
         """ first_parameter_declaration         : parameter_declaration
         """
-        p[0] = p[0]
+        p[0] = p[1]
         
     def p_first_parameter_declaration_2(self, p):
         """ first_parameter_declaration         : optional_parameter_declaration
@@ -1502,7 +1502,26 @@ MODULE syun1
     CONST num a := 1 + 3;
 ENDMODULE
 """
+
+    text = r"""
+MODULE syun1
+    PERS num a{3} := [ 1, 2, 3 ];
+ENDMODULE
+"""
+
+    text = r"""
+MODULE syun1
+    PROC pippo ()
+    ENDPROC
+ENDMODULE
+"""
     
+    text = r"""
+MODULE syun1
+    PROC pippo (VAR num a1)
+    ENDPROC
+ENDMODULE
+"""
     
     ## set debuglevel to 2 for debugging
     t = parser.parse(text, 'x.rapid', debuglevel=0)
