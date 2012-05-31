@@ -7,6 +7,15 @@ import browse_rapid_ast
 def whoami():
     import inspect
     return inspect.stack()[1][3]
+    
+    
+def writerapidfile(testname, ast, text):
+    with open(testname+".ast."+".rapid","wt") as f:
+        rewrite = browse_rapid_ast.WriteRapid(f)
+        rewrite.visit(ast)
+        
+    with open(testname+".source."+".rapid","wt") as f:
+        f.write(text)
 
 
 class TestBaseFunctions(unittest.TestCase):
@@ -72,12 +81,7 @@ ENDMODULE
         
         compare = browse_rapid_ast.CompareRapid()
         
-        with open(whoami()+".1"+".rapid","wt") as f:
-            rewrite = browse_rapid_ast.WriteRapid(f)
-            rewrite.visit(res)
-            
-        with open(whoami()+".2"+".rapid","wt") as f:
-            f.write(text)
+        writerapidfile(whoami(), res, text)
 
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing module")
     
@@ -95,12 +99,7 @@ ENDMODULE
         
         compare = browse_rapid_ast.CompareRapid()
         
-        with open(whoami()+".1"+".rapid","wt") as f:
-            rewrite = browse_rapid_ast.WriteRapid(f)
-            rewrite.visit(res)
-            
-        with open(whoami()+".2"+".rapid","wt") as f:
-            f.write(text)
+        writerapidfile(whoami(), res, text)
 
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing module")
         
@@ -117,12 +116,7 @@ ENDMODULE
         
         compare = browse_rapid_ast.CompareRapid()
         
-        with open(whoami()+".1"+".rapid","wt") as f:
-            rewrite = browse_rapid_ast.WriteRapid(f)
-            rewrite.visit(res)
-            
-        with open(whoami()+".2"+".rapid","wt") as f:
-            f.write(text)
+        writerapidfile(whoami(), res, text)
 
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing module")
         
@@ -141,12 +135,7 @@ ENDMODULE
         
         compare = browse_rapid_ast.CompareRapid()
         
-        with open(whoami()+".1"+".rapid","wt") as f:
-            rewrite = browse_rapid_ast.WriteRapid(f)
-            rewrite.visit(res)
-            
-        with open(whoami()+".2"+".rapid","wt") as f:
-            f.write(text)
+        writerapidfile(whoami(), res, text)
 
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing comment in type definition")
         
@@ -165,12 +154,7 @@ ENDMODULE
         
         compare = browse_rapid_ast.CompareRapid()
         
-        with open(whoami()+".1"+".rapid","wt") as f:
-            rewrite = browse_rapid_ast.WriteRapid(f)
-            rewrite.visit(res)
-            
-        with open(whoami()+".2"+".rapid","wt") as f:
-            f.write(text)
+        writerapidfile(whoami(), res, text)
 
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing <TDN>")
         
@@ -192,12 +176,7 @@ ENDMODULE
         
         compare = browse_rapid_ast.CompareRapid()
         
-        with open(whoami()+".1"+".rapid","wt") as f:
-            rewrite = browse_rapid_ast.WriteRapid(f)
-            rewrite.visit(res)
-            
-        with open(whoami()+".2"+".rapid","wt") as f:
-            f.write(text)
+        writerapidfile(whoami(), res, text)
 
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing ALIAS")
         
@@ -219,12 +198,7 @@ ENDMODULE
         
         compare = browse_rapid_ast.CompareRapid()
         
-        with open(whoami()+".1"+".rapid","wt") as f:
-            rewrite = browse_rapid_ast.WriteRapid(f)
-            rewrite.visit(res)
-            
-        with open(whoami()+".2"+".rapid","wt") as f:
-            f.write(text)
+        writerapidfile(whoami(), res, text)
 
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing ALIAS")
         
@@ -250,12 +224,7 @@ ENDMODULE
         
         compare = browse_rapid_ast.CompareRapid()
         
-        with open(whoami()+".1"+".rapid","wt") as f:
-            rewrite = browse_rapid_ast.WriteRapid(f)
-            rewrite.visit(res)
-            
-        with open(whoami()+".2"+".rapid","wt") as f:
-            f.write(text)
+        writerapidfile(whoami(), res, text)
 
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing RECORD")
         
@@ -281,12 +250,7 @@ ENDMODULE
         
         compare = browse_rapid_ast.CompareRapid()
         
-        with open(whoami()+".1"+".rapid","wt") as f:
-            rewrite = browse_rapid_ast.WriteRapid(f)
-            rewrite.visit(res)
-            
-        with open(whoami()+".2"+".rapid","wt") as f:
-            f.write(text)
+        writerapidfile(whoami(), res, text)
 
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing declaration with literal")
         
@@ -314,12 +278,7 @@ ENDMODULE
         
         compare = browse_rapid_ast.CompareRapid()
         
-        with open(whoami()+".1"+".rapid","wt") as f:
-            rewrite = browse_rapid_ast.WriteRapid(f)
-            rewrite.visit(res)
-            
-        with open(whoami()+".2"+".rapid","wt") as f:
-            f.write(text)
+        writerapidfile(whoami(), res, text)
 
         
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing declaration with +")
@@ -350,12 +309,7 @@ ENDMODULE
         
         compare = browse_rapid_ast.CompareRapid()
         
-        with open(whoami()+".1"+".rapid","wt") as f:
-            rewrite = browse_rapid_ast.WriteRapid(f)
-            rewrite.visit(res)
-            
-        with open(whoami()+".2"+".rapid","wt") as f:
-            f.write(text)
+        writerapidfile(whoami(), res, text)
 
         
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing declaration with vector")
@@ -378,12 +332,7 @@ ENDMODULE
         
         compare = browse_rapid_ast.CompareRapid()
         
-        with open(whoami()+".1"+".rapid","wt") as f:
-            rewrite = browse_rapid_ast.WriteRapid(f)
-            rewrite.visit(res)
-            
-        with open(whoami()+".2"+".rapid","wt") as f:
-            f.write(text)
+        writerapidfile(whoami(), res, text)
 
         
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing proc declaration")
@@ -409,12 +358,7 @@ ENDMODULE
         
         compare = browse_rapid_ast.CompareRapid()
         
-        with open(whoami()+".1"+".rapid","wt") as f:
-            rewrite = browse_rapid_ast.WriteRapid(f)
-            rewrite.visit(res)
-            
-        with open(whoami()+".2"+".rapid","wt") as f:
-            f.write(text)
+        writerapidfile(whoami(), res, text)
 
         
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing proc declaration with parameter")
@@ -444,14 +388,33 @@ ENDMODULE
         
         compare = browse_rapid_ast.CompareRapid()
         
-        with open(whoami()+".1"+".rapid","wt") as f:
-            rewrite = browse_rapid_ast.WriteRapid(f)
-            rewrite.visit(res)
-            
-        with open(whoami()+".2"+".rapid","wt") as f:
-            f.write(text)
+        writerapidfile(whoami(), res, text)
         
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing proc declaration with stantment")
+        
+    def test_rapid_func_declaration_1(self):
+        text = r"""
+MODULE syun1
+    FUNC num pippo ()
+    ENDFUNC
+ENDMODULE
+"""
+        res = TestParserFunctions.parser.parse(text, 'file.rapid', debuglevel=0)  
+  
+        n1 = []
+        n2 = rapid_ast.IdentifierAST("syun1")
+        n6 = rapid_ast.IdentifierAST("pippo")
+        n7 = rapid_ast.IdentifierAST("num")
+        n5 = rapid_ast.FunctionDeclarationAST(n7, n6, [], [], [], None, None, None)
+        n4 = [ rapid_ast.RoutineDeclarationATS(None, n5) ]
+        n3 = rapid_ast.ModuleAST(n2, n1, [], [], n4)
+        
+        compare = browse_rapid_ast.CompareRapid()
+        
+        writerapidfile(whoami(), res, text)
+
+        
+        self.assertTrue(compare.full_compare(res,n3), "there is error parsing func declaration")
         
 
 

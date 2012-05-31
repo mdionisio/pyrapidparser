@@ -259,10 +259,67 @@ class WriteRapid( rapid_ast.NodeVisitor ):
         self.write("ENDPROC") 
         
     def visit_FunctionDeclarationAST(self, node):
-        pass
+        #data_type*, function_name*, parameter_list**, data_definitions**, statement_list**, routine_error*, routine_undo*
+        self.write("FUNC ")
+        self.visit(node.data_type)
+        self.write(" ")
+        self.visit(node.function_name)
+        self.write(" (")
+        if len(node.parameter_list)>0:
+            for i in node.parameter_list[:-1]:
+                if i is None:
+                    self.write("<PAR>")
+                else:
+                    self.visit(i)
+                self.write(", ")
+            if node.parameter_list[-1] is None:
+                self.write("<PAR>")
+            else:
+                self.visit(node.parameter_list[-1])
+        self.write(")")
+        self.write()
+        
+        self.indent += 1
+        
+        for i in node.data_definitions:
+            self.visit(i)
+            
+        for i in node.statement_list:
+            self.visit(i)
+            
+        if not(node.routine_error is None):
+            self.visit(node.routine_error)
+        
+        if not(node.routine_undo is None):
+            self.visit(node.routine_undo)
+            
+        self.indent -= 1
+        self.writeindent()
+        self.write("ENDFUNC") 
         
     def visit_TrapDeclarationAST(self, node):
-        pass
+        #procedure_name*, data_definitions**, statement_list**, routine_error*, routine_undo* 
+        self.write("TRAP ")
+        self.visit(node.procedure_name)
+        self.write()
+        
+        self.indent += 1
+        
+        for i in node.data_definitions:
+            self.visit(i)
+            
+        for i in node.statement_list:
+            self.visit(i)
+            
+        if not(node.routine_error is None):
+            self.visit(node.routine_error)
+        
+        if not(node.routine_undo is None):
+            self.visit(node.routine_undo)
+            
+        self.indent -= 1
+        self.writeindent()
+        self.write("ENDTRAP") 
         
     def visit_AssignmentStatementAST(self, node):
         #dest*, source*
