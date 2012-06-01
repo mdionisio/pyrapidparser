@@ -828,7 +828,7 @@ class RAPIDParser(PLYParser):
     def p_casestatement_2(self, p): 
         """ casestatement        :  PLACEHOLDER_CSE
         """
-        p[0] = rapid_ast.CaseStatement( None, None, coord=self._coord(p.lineno(1)) )
+        p[0] = rapid_ast.CaseStatement( None, [], coord=self._coord(p.lineno(1)) )
         
     def p_defaultstatement_1(self, p): 
         """ defaultstatement : 

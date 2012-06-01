@@ -330,6 +330,164 @@ class WriteRapid( rapid_ast.NodeVisitor ):
         self.write(";")
         self.write()
         
+    def visit_GotoStatementAST(self, node):
+        #dest*
+        self.writeindent()
+        self.write("GOTO ")
+        self.visit(node.dest)
+        self.write(";")
+        self.write()
+        
+    def visit_ReturnStatementAST(self, node):
+        #result*
+        self.writeindent()
+        self.write("RETURN ")
+        if not(node.result is None):
+            self.visit(node.result)
+        self.write(";")
+        self.write()
+        
+    def visit_RaiseStatementAST(self, node):
+        #error_number*
+        self.writeindent()
+        self.write("RAISE ")
+        self.visit(node.dest)
+        self.write(";")
+        self.write()
+        
+    def visit_ExitStatementAST(self, node):
+        self.writeindent()
+        self.write("EXIT ;")
+        self.write()
+    
+    def visit_RetryStatementAST(self, node):
+        self.writeindent()
+        self.write("RETRY ;")
+        self.write()
+        
+    def visit_TrynextStatementAST(self, node):
+        self.writeindent()
+        self.write("TRYNEXT ;")
+        self.write()
+        
+    def visit_ConnectStatementAST(self, node):
+        #connect_taget*, trap*
+        self.writeindent()
+        self.write("CONNECT ")
+        self.visit(node.connect_taget)
+        self.write(" WITH ")
+        self.visit(node.trap)
+        self.write(";")
+        self.write()
+        
+    def visit_IfStatement(self, node):
+        #condition*, statement_list**, elseif_list**, else_statement_list**
+        self.writeindent()
+        self.write("IF ")
+        self.visit(node.conditional_expression)
+        self.write(" THEN")
+        self.write()
+        self.indent += 1
+        for i in node.statement_list:
+            self.visit(i)
+        self.indent -= 1
+        if len(else_statement)>0:
+            for i in node.elseif_statement_list:
+                self.visit(i)
+        if len(else_statement)>0:
+            self.writeindent()
+            self.write("ELSE")
+            self.indent += 1
+            for i in node.else_statement:
+                self.visit(i)
+            self.indent += 1
+        self.writeindent()
+        self.write("ENDIF")
+        self.write()
+        
+    def visit_ElseIfStatement(self, node):
+        #condition*, statement_list**
+        self.writeindent()
+        self.write("ELSEIF ")
+        self.visit(node.condition)
+        self.write(" THEN")
+        self.write()
+        self.indent += 1
+        for i in node.statement_list:
+            self.visit(i)
+        self.indent -= 1
+        
+    def visit_ForStatement(self, node):
+        #loop_variable*, ifrom*, ito*, istep*, statement_list**
+        self.writeindent()
+        self.write("FOR ")
+        self.visit(node.loop_variable)
+        self.write(" FROM ")
+        self.visit(node.ifrom)
+        self.write(" TO ")
+        self.visit(node.ito)
+        self.write(" STEP ")
+        self.visit(node.istep)
+        self.write(" DO")
+        self.write()
+        self.indent += 1
+        for i in node.statement_list:
+            self.visit(i)
+        self.indent -= 1
+        self.writeindent()
+        self.write("ENDFOR")
+        self.write()
+        
+    def visit_WhileStatement(self, node):
+        #condition*, statement_list**
+        self.writeindent()
+        self.write("WHILE ")
+        self.visit(node.condition)
+        self.write(" DO")
+        self.write()
+        self.indent += 1
+        for i in node.statement_list:
+            self.visit(i)
+        self.indent -= 1
+        self.writeindent()
+        self.write("ENDWHILE")
+        self.write()     
+    
+    def visit_TestStatement(self, node):
+        #expression*, cases**, default**
+        self.writeindent()
+        self.write("TEST ")
+        self.visit(node.expression)
+        self.write()
+        for i in node.casestatement_list:
+            self.visit(i)
+        if len(node.defaultstatement)>0:
+            self.writeindent()
+            self.write("DEFAULT:")
+            self.write()
+            self.indent += 1
+            for i in node.defaultstatement:
+                self.visit(i)
+            self.indent -= 1
+        self.writeindent()
+        self.write("ENDTEST")
+        self.write()     
+        
+    def visit_CaseStatement(self, node):
+        #test_value*, statement_list**
+        self.writeindent()
+        if node.test_value is None:
+            self.write("<CSE>")
+            self.write()
+        else:
+            self.write("CASE ")
+            self.visit(node.test_value)
+            self.write(" : ")
+            self.write()
+            self.indent += 1
+            for i in node.statement_list:
+                self.visit(i)
+            self.indent -= 1   
         
 
 class EvaluateRapidExpression( rapid_ast.NodeVisitor ):
