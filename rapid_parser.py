@@ -21,7 +21,8 @@ class RAPIDParser(PLYParser):
             lextab='pyRAPIDparser.lextab',
             yacc_optimize=True,
             yacctab='pyRAPIDparser.yacctab',
-            yacc_debug=False):
+            yacc_debug=False,
+            start_from='module_declaration'):
         """ Create a new RAPIDParser.
         
             Some arguments for controlling the debug/optimization
@@ -72,7 +73,7 @@ class RAPIDParser(PLYParser):
         
         self.rapidparser = ply.yacc.yacc(
             module=self, 
-            start='module_declaration',
+            start=start_from,
             debug=yacc_debug,
             optimize=yacc_optimize,
             tabmodule=yacctab)
@@ -132,6 +133,19 @@ class RAPIDParser(PLYParser):
 
     
     
+    def p_module_declaration_list_1(self, p):
+        """ module_declaration_list    : 
+        """
+        p[0] = [ ]
+        
+    def p_module_declaration_list_2(self, p):
+        """ module_declaration_list    :  module_declaration_list module_declaration
+        """
+        attriblist = p[1]
+        attriblist.append(p[2])
+        p[0] = attriblist
+    
+    
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revB_en_library.pdf
     ###  Task Modules.    par:9.1
@@ -143,9 +157,6 @@ class RAPIDParser(PLYParser):
         """
         p[0] = rapid_ast.ModuleAST(p[2], [], p[3], p[4],p[5], coord=self._coord(p.lineno(1)))
         
-    ##
-    ## Grammar productions
-    ##
     def p_module_declaration_2(self, p):
         """ module_declaration    : MODULE identifier LPAREN module_attributelist RPAREN type_definition_list data_declaration_list routine_definition_list  ENDMODULE
         """

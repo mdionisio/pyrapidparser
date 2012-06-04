@@ -2,6 +2,15 @@ import unittest
 import rapid_ast
 import browse_rapid_ast
 
+import os
+import os.path
+
+def ensure_dir(f):
+    d = os.path.dirname(f)
+    if len(d)==0:
+        d = f
+    if not os.path.exists(d):
+        os.makedirs(d)
 
 # functions
 def whoami():
@@ -10,11 +19,13 @@ def whoami():
     
     
 def writerapidfile(testname, ast, text):
-    with open(testname+".ast."+".rapid","wt") as f:
+    dirname = "test"
+    ensure_dir(dirname)
+    with open(os.path.join(dirname, testname+".ast.mod"),"wt") as f:
         rewrite = browse_rapid_ast.WriteRapid(f)
         rewrite.visit(ast)
         
-    with open(testname+".source."+".rapid","wt") as f:
+    with open(os.path.join(dirname, testname+".source.mod"),"wt") as f:
         f.write(text)
 
 
