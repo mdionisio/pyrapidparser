@@ -491,9 +491,11 @@ class WriteRapid( rapid_ast.NodeVisitor ):
         
 
 class EvaluateRapidExpression( rapid_ast.NodeVisitor ):
-    def __init__(self, symbols=None):
+    def __init__(self, gsymbols={}, msymbol={}, lsymbol={}):
         self.return_value = None
-        self.symbols = symbols
+        self.symbols = copy.deepcopy(gsymbols)
+        self.symbols.update( copy.deepcopy(msymbol) )
+        self.symbols.update( copy.deepcopy(lsymbol) )
         
     def visit_ConstExpressionAST(self, node):
         parse = EvaluateRapidExpression()
@@ -589,9 +591,6 @@ class EvaluateRapidExpression( rapid_ast.NodeVisitor ):
 class TraslateRapidToPython( rapid_ast.NodeVisitor ):
     
     def __init__(self):
-        self.default_symbol = { "num":("VARTYPE", pyrapid.rapid_num), "string":("VARTYPE", pyrapid.rapid_string) }
-        self.global_symbol = copy.copy(self.default_symbol)
-        self.scope_symbol = [  { } ]
         self.file_init_name = None
         self.file_module_name = None
         self.file_init = None
@@ -601,41 +600,7 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         self.indent_module = 0
         self.indent_init = 0
         self.directory = "run"
-        
-    def PushScope(self):
-        self.scope_symbol.append({})
-        
-    def PopScope(self):
-        return self.scope_symbol
-        
-    def GetSymbol(self, symbolname):
-        for i in range(len(self.scope_symbol)-1,-1,-1):
-            if self.scope_symbol[i].has_key(symbolname):
-                return self.scope_symbol[i][symbolname]
-        return self.GetGlobalSym(symbolname)
-        
-    def AddSym(self, symbolname, data):
-        if self.scope_symbol[-1].has_key(symbolname):
-            raise Exception("symbol %s already defined"%(symbolname,))
-        else:
-            self.scope_symbol[-1][symbolname] = data
-        
-    def AddGlobalSym(self, symbolname, data):
-        if self.global_symbol.has_key(symbolname):
-            raise Exception("symbol %s already defined"%(symbolname,))
-        else:
-            self.global_symbol[symbolname] = data
-            
-    def IsGlobalSymDefined(self, symbolname):
-        if self.global_symbol.has_key(symbolname):
-            return True
-        return False
-        
-    def GetGlobalSym(self, symbolname):
-        if self.global_symbol.has_key(symbolname):
-            return self.global_symbol[symbolname]
-        return None
-        
+                
     def writemodule(self, a):
         if not (self.file_module is None):
             self.file_module.write ((" " * self.indent_module) + a + "\n")
@@ -692,16 +657,8 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
               1. write on the __init__.py the global symbol
               2. close the opend file
         """
-        allsymbol = ", ".join( [ str(i) for i in self.global_symbol.iterkeys() if not self.default_symbol.has_key(i)] )
         
         self.writeinit( "import pyrapid" )
-        self.writeinit( "import %s"%(self.module_name,) )
-        self.writeinit( "pyrapid.global_symbol.update(%s.global_symbol)"%(self.module_name) )
-        self.writeinit( "from %s import %s"%(self.module_name, allsymbol)  )
-        for i in self.global_symbol.iterkeys() :
-            if not self.default_symbol.has_key(i):
-                self.writemodule("global_symbol[%s]=__name__"%(repr(i),))
-        self.writemodule( "module_attribute = %s" % (repr(self.module_attribute),) )
         self.file_init.close()
         self.file_init = None
         self.file_module.close()
@@ -724,20 +681,17 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         if aliasname is None:
             raise Exception("conversion not possible because type_name is not defined")
         
-        refsym = self.GetSymbol(typename)
+        refsym = pyrapid.Symbols().GetSymbol(typename, self.module_name)
         if refsym is None:
             raise Exception("reference to unknown type")
-        if refsym[0]!="VARTYPE":
+        if refsym.type != pyrapid.Symbol.SYM_TYPE_DATATYPE:
             raise Exception("ALIAS to symbol that is not a typedef")
-        newsym = refsym
+        newsym = refsym.data
         
         if self.tmp_TypeDefAST_data is None:
-            self.AddGlobalSym(aliasname, newsym)
+            pyrapid.Symbols().AddGlobalSym(aliasname, pyrapid.Symbol.CreateDataType(newsym))
         else:
-            self.AddSym(aliasname, newsym )
-            #add to the actual scope
-            
-        self.writemodule("%s = %s" % (aliasname, newsym[1].__name__))
+            pyrapid.Symbols().AddModuleSym(self.module_name, aliasname, pyrapid.Symbol.CreateDataType(newsym))
         
     #record
     
