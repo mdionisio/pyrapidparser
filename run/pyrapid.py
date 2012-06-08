@@ -39,14 +39,14 @@ class Symbol:
             return SymVar(vartype, varval)
         
     @staticmethod
-    def CreateConst(vartype, varval):
+    def CreateConst(vartype, varval=None):
         if varval is None:
             return SymConst(type(vartype), vartype)
         else:
             return SymConst(vartype, varval)
         
     @staticmethod
-    def CreatePers(vartype, varval):
+    def CreatePers(vartype, varval=None):
         if varval is None:
             return SymPers(type(vartype), vartype)
         else:
@@ -161,7 +161,6 @@ class Symbols(Singleton.Singleton):
         else:
             raise Exception("symbol %s already defined"%(symbolname,))
         
-        
     def AddLocalSym(self, module, function, symbolname, data):
         if not self.local_symbol.has_key(module):
             self.local_symbol[module] = {}
@@ -200,7 +199,7 @@ class rapid_struct :
         if self.val is None:
             raise Exception("variable never assigned")
         else:
-            return self.val
+            return self
             
     def Set(self, val):
         if isinstance(val, list) and len(val)==len(self.names):
@@ -220,7 +219,19 @@ class rapid_array :
             self.elem_type = elem_type
             self.size = size
             
-            self.val = [ elem_type() for i in range(reduce(operator.mul,self.size)) ]
+            val =  rapid_array.unrollarray(val)
+            
+            self.val = [ elem_type(val[i]) for i in range(reduce(operator.mul,self.size)) ]
+            
+    @staticmethod
+    def unrollarray(indata):
+        out = []
+        for i in indata:
+            if isinstance(i, list):
+                out += unrollarray(i)
+            else:
+                out.append(i)
+        return out
             
     def toLinear(self, val):
         if isinstance(val, int):
@@ -274,7 +285,7 @@ class rapid_num :
         elif isinstance(val, rapid_num):
             self.val = val.val
         else:
-            raise Exception("type unsupported")
+            raise Exception("type unsupported val=%s has to be a number"%(str(val)))
         
     def Get(self):
         if self.val is None:

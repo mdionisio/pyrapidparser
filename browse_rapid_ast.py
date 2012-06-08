@@ -509,18 +509,41 @@ class EvaluateRapidExpression( rapid_ast.NodeVisitor ):
             self.return_value.append(parse.GetReturn())
             
     def visit_VariableAST(self, node):
-        varname = node.var.name
         varindexlist = node.index
         varcomponent = node.component
         if varcomponent is None:
             if len(varindexlist)==0:
-                self.return_value = pyrapid.Symbols().GetSymbol(varname, self.module_name, self.function_name).data.Get()
+                if isinstance(node.var, rapid_ast.VariableAST):
+                    parse = EvaluateRapidExpression(self.modulename, self.functionname)
+                    parse.visit( node.var )
+                    getvar = parse.GetReturn()
+                else:
+                    varname = node.var.name
+                    getvar = pyrapid.Symbols().GetSymbol(varname, self.modulename, self.functionname)
+                if getvar.type != pyrapid.Symbol.SYM_TYPE_CONST_VAR:
+                    raise Exception("Symbol %s has to be a constant variable %d"%(vartype, getvar.type))
+                self.return_value = getvar.data.Get()
             else:
-                raise Exception("EvaluateRapidExpression with array variable not yet supported")
+                index = []
+                for i in varindexlist:
+                    parse = EvaluateRapidExpression(self.modulename, self.functionname)
+                    parse.visit( i )
+                    index.append(parse.GetReturn())
+                if isinstance(node.var, rapid_ast.VariableAST):
+                    parse = EvaluateRapidExpression(self.modulename, self.functionname)
+                    parse.visit( node.var )
+                    getvar = parse.GetReturn()
+                else:
+                    varname = node.var.name
+                    getvar = pyrapid.Symbols().GetSymbol(varname, self.modulename, self.functionname)
+                if getvar.type != pyrapid.Symbol.SYM_TYPE_CONST_VAR:
+                    raise Exception("Symbol %s has to be a constant variable %d"%(vartype, getvar.type))
+                self.return_value = getvar.data.GetElem(index).Get()
         else:
-            raise Exception("EvaluateRapidExpression with variable with component not yet supported")
-        
-        
+            self.visit(node.var)
+            varcomponent = varcomponent.name
+            self.return_value = self.return_value.GetElem(varcomponent).Get()
+            #raise Exception("EvaluateRapidExpression with variable with component not yet supported")
         
     def visit_LiteralATS(self, node):
         self.return_value = node.value
@@ -625,7 +648,6 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
     def close(self):
         self.file_init.close()
         self.file_module.close()
-        
                 
     def writemodule(self, a):
         if not (self.file_module is None):
@@ -675,9 +697,6 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         pyrapid.Symbols().PushScope(self.module_name, self.function_name)
         self.writemodule( "pyrapid.Symbols().PushScope(%s, %s)"%(repr(self.module_name), repr(self.function_name), ))
         self.writemodule( "##################################################################")
-        
-        
-
         
         
     def post_visit_ModuleAST(self, node):
@@ -742,8 +761,8 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         for i in components:
             data_type = i.data_type.name
             record_component_name = i.record_component_name.name
-            attributetype.append("pyrapid.rapid_%s"%(data_type,))
-            attributename.append("pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s)"%(data_type, repr(self.module_name), repr(self.function_name) ))
+            attributename.append(repr(record_component_name))
+            attributetype.append("pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s,functionname=%s).data"%(repr(data_type),repr(self.module_name), repr(self.function_name)))
             
         attributetype = ",".join(attributetype)
         attributename = ",".join(attributename)
@@ -751,16 +770,16 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         record = """
 class rapid_%s (pyrapid.rapid_struct):
     def __init__(self, val=None):
-        rapid_struct.__init__(self, [ %s ], [ %s ])
+        pyrapid.rapid_struct.__init__(self, [ %s ], [ %s ])
         if not(self.val  is None):
             self.Set( val )
             
     def Set(self, val):
-        if isinstance(val, rapid_%s):
+        if isinstance(val, type(self)):
             self.val = val.val
         else:
-            rapid_struct.Set(self, val)
-""" % (record_name, attributename, attributetype, record_name)
+            pyrapid.rapid_struct.Set(self, val)
+""" % (record_name, attributename, attributetype)
 
         define_class = compile(record,"in_memory_compile","single")
         eval(define_class)
@@ -784,55 +803,128 @@ class rapid_%s (pyrapid.rapid_struct):
         del self.tmp_DataDefATS_data
         self.writemodule("# end declaration")
         
-    def visit_VarDeclarationAST(self, node):
+        
+    def VarConstPersDeclaration(self, node, createvar, createvars):
         scope = self.tmp_DataDefATS_data
         vartype = node.type.name
         varinstance_name = node.variable_instance.name.name
         varinstance_value = node.variable_instance.value
         varinstance_size = node.variable_instance.size
-        
+            
         if not(varinstance_value is None):
             compute = EvaluateRapidExpression(self.module_name, self.function_name)
             compute.visit(varinstance_value)
             varinstance_value = compute.return_value
-                        
+                
         if len(varinstance_size)==0:
-            if self.tmp_DataDefATS_data is None:
-                if self.function_name is None:
-                    #module declaration it is GLOBAL
-                    pyrapid.Symbols().AddGlobalSym( varinstance_name, pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(vartype, self.module_name, self.function_name).data(varinstance_value) ) )
-                    self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(%s)))"%(repr(varinstance_name), repr(vartype), repr(self.module_name), repr(self.function_name), repr(varinstance_value)))
-                else:
-                    #function declaration it is in the Scope of the function
-                    print "warning: variable %s is local to the function %s"%(varinstance_name, self.function_name)
-                    pyrapid.Symbols().AddScopeSym( varinstance_name, pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(vartype, self.module_name, self.function_name).data() ) )
-                    self.writemodule( "pyrapid.Symbols().AddScopeSym(%s, pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data()))"%(repr(varinstance_name), repr(vartype), repr(self.module_name), repr(self.function_name), ))
-            else:
-                if self.function_name is None:
-                    #module declaration it is LOCAL in the module
-                    pyrapid.Symbols().AddModuleSym( self.module_name, varinstance_name, pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(vartype, self.module_name, self.function_name).data() ) )
-                    self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data()))"%(repr(self.module_name), repr(varinstance_name), repr(vartype), repr(self.module_name), repr(self.function_name), ))
-                else:
-                    #function declaration it is in the Scope of the function
-                    pyrapid.Symbols().AddScopeSym( varinstance_name, pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(vartype, self.module_name, self.function_name).data() ) )
-                    self.writemodule( "pyrapid.Symbols().AddScopeSym(%s, pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data()))"%(repr(varinstance_name), repr(vartype), repr(self.module_name), repr(self.function_name), ))
+            getvar = createvar(pyrapid.Symbols().GetSymbol(vartype, self.module_name, self.function_name).data(varinstance_value))
+            sgetvar = "%s(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(%s))" % ( createvars, repr(vartype), repr(self.module_name), repr(self.function_name), repr(varinstance_value) )
         else:
-            raise Exception("array declaration not yet supported")
+            size = []
+            for i in varinstance_size:
+                compute = EvaluateRapidExpression(self.module_name, self.function_name)
+                compute.visit(i)
+                size.append(compute.return_value)
+            getvar = createvar(   pyrapid.rapid_array(size, pyrapid.Symbols().GetSymbol(vartype, self.module_name, self.function_name).data, varinstance_value ) )
+            sgetvar = "%s( pyrapid.rapid_array(%s, pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data, %s) )" % ( createvars, str(size), repr(vartype), repr(self.module_name), repr(self.function_name), repr(varinstance_value) )
+            
+        return (varinstance_name, getvar, sgetvar)
             
         
-        #
-        #Symbols().AddModuleSym(module, varinstance_name, Symbol.CreateVar(rapid_errnum, rapid_errnum()))
-        #Symbols().AddLocalSym(function, module, varinstance_name, Symbol.CreateVar(rapid_errnum, rapid_errnum()))
-        #Symbols().AddScopeSym(varinstance_name, Symbol.CreateVar(rapid_errnum, rapid_errnum()))
+    def visit_VarDeclarationAST(self, node):
+        varinstance_name, getvar, sgetvar = self.VarConstPersDeclaration(node, pyrapid.Symbol.CreateVar, "pyrapid.Symbol.CreateVar")
+        
+        if self.tmp_DataDefATS_data is None:
+            if self.function_name is None:
+                #module declaration it is GLOBAL
+                pyrapid.Symbols().AddGlobalSym( varinstance_name, getvar ) 
+                self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, %s)"%(repr(varinstance_name), sgetvar) )
+            else:
+                #function declaration it is in the Scope of the function
+                print "warning: variable %s is local to the function %s"%(varinstance_name, self.function_name)
+                pyrapid.Symbols().AddScopeSym( varinstance_name, getvar )
+                self.writemodule( "pyrapid.Symbols().AddScopeSym(%s, %s)"%(repr(varinstance_name), sgetvar) )
+        else:
+            if self.function_name is None:
+                #module declaration it is LOCAL in the module
+                pyrapid.Symbols().AddModuleSym( self.module_name, varinstance_name, getvar )
+                self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, %s)"%(repr(self.module_name), repr(varinstance_name), sgetvar) )
+            else:
+                #function declaration it is in the Scope of the function
+                pyrapid.Symbols().AddScopeSym( varinstance_name, getvar )
+                self.writemodule( "pyrapid.Symbols().AddScopeSym(%s, %s)"%(repr(varinstance_name), sgetvar) )
+        
+    def visit_ConstDeclarationAST(self, node):
+        varinstance_name, getvar, sgetvar = self.VarConstPersDeclaration(node, pyrapid.Symbol.CreateConst, "pyrapid.Symbol.CreateConst")
+        
+        if self.tmp_DataDefATS_data is None:
+            if self.function_name is None:
+                #module declaration it is GLOBAL
+                pyrapid.Symbols().AddGlobalSym( varinstance_name, getvar ) 
+                self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, %s)"%(repr(varinstance_name), sgetvar) )
+            else:
+                #function declaration it is in the Scope of the function
+                print "warning: variable %s is local to the function %s"%(varinstance_name, self.function_name)
+                pyrapid.Symbols().AddScopeSym( varinstance_name, getvar )
+                self.writemodule( "pyrapid.Symbols().AddScopeSym(%s, %s)"%(repr(varinstance_name), sgetvar) )
+        else:
+            if self.function_name is None:
+                #module declaration it is LOCAL in the module
+                pyrapid.Symbols().AddModuleSym( self.module_name, varinstance_name, getvar )
+                self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, %s)"%(repr(self.module_name), repr(varinstance_name), sgetvar) )
+            else:
+                #function declaration it is in the Scope of the function
+                pyrapid.Symbols().AddScopeSym( varinstance_name, getvar )
+                self.writemodule( "pyrapid.Symbols().AddScopeSym(%s, %s)"%(repr(varinstance_name), sgetvar) )
+    
+    def visit_PersDeclarationAST(self, node):
+        varinstance_name, getvar, sgetvar = self.VarConstPersDeclaration(node, pyrapid.Symbol.CreatePers, "pyrapid.Symbol.CreatePers")
+        
+        if self.tmp_DataDefATS_data is None:
+            if self.function_name is None:
+                #module declaration it is GLOBAL
+                pyrapid.Symbols().AddGlobalSym( varinstance_name, getvar ) 
+                self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, %s)"%(repr(varinstance_name), sgetvar) )
+            else:
+                #function declaration it is in the Scope of the function
+                pyrapid.Symbols().AddScopeSym( varinstance_name, getvar )
+                self.writemodule( "pyrapid.Symbols().AddScopeSym(%s, %s)"%(repr(varinstance_name), sgetvar) )
+        else:
+            if self.function_name is None:
+                #module declaration it is LOCAL in the module
+                pyrapid.Symbols().AddModuleSym( self.module_name, varinstance_name, getvar )
+                self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, %s)"%(repr(self.module_name), repr(varinstance_name), sgetvar) )
+            else:
+                #function declaration it is in the Scope of the function
+                pyrapid.Symbols().AddLocalSym(self.module_name, self.function_name, varinstance_name, getvar )
+                self.writemodule( "pyrapid.Symbols().AddLocalSym($s, %s, %s, %s)"%(repr(self.module_name), repr(self.function_name), repr(varinstance_name), sgetvar) )
+        
+    def pre_visit_RoutineDeclarationATS(self, node):
+        self.writemodule("############################# start routine declaration")
+        self.tmp_outineDeclarationATS_data = node.type
+        
+    def post_visit_RoutineDeclarationATS(self, node):
+        del self.tmp_outineDeclarationATS_data
+        self.writemodule("# end routine declaration")
+        
+    def visti_ProcedureDeclarationAST(self, node):
+        #procedure_name*, parameter_list**, data_definitions**, statement_list**, routine_backward*, routine_error*, routine_undo*
+        self.visit(node.procedure_name)
+        for i in node.parameter_list:
+            self.visit(i)
+        for i in node.data_definitions:
+            self.visit(i)
+        for i in node.statement_list:
+            self.visit(i)
+        self.visit(node.routine_backward)
+        self.visit(node.routine_error)
+        self.visit(node.routine_undo)
         
     #
-        
         
 
 class CompareRapid( rapid_ast.NodeCompare ):   
     pass
-    
-        
 
 
 if __name__ == '__main__':
@@ -845,7 +937,14 @@ MODULE syun1
     LOCAL RECORD prova
         num usecount;
     ENDRECORD
+    CONST prova p1 := [ 100 ];
+    CONST num n1 := p1.usecount;
+    CONST num c1:=10;
+    CONST num c2:=c1+1;
     VAR num a1:=1;
+    CONST num a3{3} := [ 10, 30, 50 ];
+    LOCAL VAR num a4:=12;
+    VAR num a5 := a3{2};
     VAR string s1:="pippo";
 ENDMODULE
     """

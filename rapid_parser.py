@@ -246,7 +246,7 @@ class RAPIDParser(PLYParser):
                                                     | LOCAL function_declaration
                                                     | LOCAL trap_declaration
         """
-        p[0] =  rapid_ast.RoutineDeclarationATS(None, p[1], coord=self._coord(p.lineno(1)))
+        p[0] =  rapid_ast.RoutineDeclarationATS("LOCAL", p[1], coord=self._coord(p.lineno(1)))
         
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
@@ -1539,6 +1539,12 @@ MODULE syun1
     PROC pippo ()
         a := 1;
     ENDPROC
+ENDMODULE
+"""
+    
+    text = r"""
+MODULE syun1
+    VAR num b := a.c;
 ENDMODULE
 """
     
