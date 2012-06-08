@@ -32,42 +32,47 @@ class Symbol:
         return SymProcedure(parameters, call)
         
     @staticmethod
-    def CreateVar(vartype, varval):
-        return SymVar(vartype, varval)
+    def CreateVar(vartype, varval=None):
+        if varval is None:
+            return SymVar(type(vartype), vartype)
+        else:
+            return SymVar(vartype, varval)
         
     @staticmethod
     def CreateConst(vartype, varval):
-        return SymConst(vartype, varval)
+        if varval is None:
+            return SymConst(type(vartype), vartype)
+        else:
+            return SymConst(vartype, varval)
         
     @staticmethod
     def CreatePers(vartype, varval):
-        return SymPers(vartype, varval)
+        if varval is None:
+            return SymPers(type(vartype), vartype)
+        else:
+            return SymPers(vartype, varval)
         
 class SymVar(Symbol):
     def __init__(self, vartype, varval):
-        Symbol.__init__(Symbol, Symbol.SYM_TYPE_VAR)
+        Symbol.__init__(self, Symbol.SYM_TYPE_VAR, varval)
         self.vartype = vartype
-        self.varval = varval
         
 class SymConst(Symbol):
     def __init__(self, vartype, varval):
-        Symbol.__init__(self, Symbol, Symbol.SYM_TYPE_CONST_VAR)
+        Symbol.__init__(self, Symbol.SYM_TYPE_CONST_VAR, varval)
         self.vartype = vartype
-        self.varval = varval
         
 class SymPers(Symbol):
     def __init__(self, vartype, varval):
-        Symbol.__init__(self, Symbol, Symbol.SYM_TYPE_PERS_VAR)
+        Symbol.__init__(self, Symbol.SYM_TYPE_PERS_VAR, varval)
         self.vartype = vartype
-        self.varval = varval
         
 class SymFunction(Symbol):
     def __init__(self, parameters, returntype, call):
-        Symbol.__init__(self, Symbol, Symbol.SYM_TYPE_PROCEDURE)
+        Symbol.__init__(self, Symbol.SYM_TYPE_PROCEDURE, call)
         self.parameters = {}
         self.localsymbol = {}
         self.returntype = returntype
-        self.call = call
     
     def AddLocalSymbol(self, symbolname, data):
         if self.localsymbol.has_key(symbolname):
@@ -77,10 +82,9 @@ class SymFunction(Symbol):
         
 class SymProcedure(Symbol):
     def __init__(self, parameters, call):
-        Symbol.__init__(self, Symbol, Symbol.SYM_TYPE_PROCEDURE)
+        Symbol.__init__(self, Symbol.SYM_TYPE_PROCEDURE, call)
         self.parameters = {}
         self.localsymbol = {}
-        self.call = call
     
     def AddLocalSymbol(self, symbolname, data):
         if self.localsymbol.has_key(symbolname):
@@ -93,27 +97,34 @@ class Symbols(Singleton.Singleton):
         self.global_symbol = {}
         self.module_symbol = {}
         self.local_symbol = {}
+        self.scope_symbol = []
         
-    def GetSymbol(self, symbolname, module=None, function=None):
+    def GetSymbol(self, symbolname, modulename=None, functionname=None):
         try:
-            if (function is None) and (module is None):
+            try:
+                return self.scope_symbol[-1][2][symbolname]
+            except IndexError:
+                print ("error: there is no scope defined")
+            except KeyError:
+                pass
+            if (functionname is None) and (modulename is None):
                 #global
                 return self.global_symbol[symbolname]
-            elif (module is None):
+            elif (modulename is None):
                 #module
                 try:
-                    return self.module_symbol[module][symbolname]
+                    return self.module_symbol[modulename][symbolname]
                 except KeyError:
                     pass
                 return self.global_symbol[symbolname]
             else:
                 #local
                 try:
-                    return self.local_symbol[module][function][symbolname]
+                    return self.local_symbol[modulename][functionname][symbolname]
                 except KeyError:
                     pass
                 try:
-                    return self.module_symbol[module][symbolname]
+                    return self.module_symbol[modulename][symbolname]
                 except KeyError:
                     pass
                 return self.global_symbol[symbolname]
@@ -134,6 +145,22 @@ class Symbols(Singleton.Singleton):
             raise Exception("symbol %s already defined in module %s"%(symbolname,module))
         else:
             msymbol[symbolname] = data
+            
+    def PushScope(self, modulename, functionname=None):
+        self.scope_symbol.append( ( modulename, functionname, {} ) )
+        
+    def PopScope(self):
+        self.scope_symbol.pop()
+        
+    def AddScopeSym(self, symbolname, data):
+        modulename = self.scope_symbol[-1][0]
+        functionname = self.scope_symbol[-1][1]
+        symbols = self.scope_symbol[-1][2]
+        if self.GetSymbol(symbolname, modulename, functionname) is None:
+            symbols[symbolname] = data
+        else:
+            raise Exception("symbol %s already defined"%(symbolname,))
+        
         
     def AddLocalSym(self, module, function, symbolname, data):
         if not self.local_symbol.has_key(module):
@@ -330,7 +357,7 @@ class rapid_string :
             self.Set(val)
         
     def Set(self, val):
-        if isinstance(val, string):
+        if isinstance(val, str):
             self.val = val
         elif isinstance(val, rapid_string):
             self.val = val.val

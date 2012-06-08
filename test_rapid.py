@@ -238,6 +238,7 @@ ENDMODULE
         writerapidfile(whoami(), res, text)
 
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing RECORD")
+
         
     def test_rapid_declaration_1(self):
         text = r"""

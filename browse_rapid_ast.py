@@ -491,29 +491,42 @@ class WriteRapid( rapid_ast.NodeVisitor ):
         
 
 class EvaluateRapidExpression( rapid_ast.NodeVisitor ):
-    def __init__(self, gsymbols={}, msymbol={}, lsymbol={}):
+    def __init__(self, modulename, functionname=None):
         self.return_value = None
-        self.symbols = copy.deepcopy(gsymbols)
-        self.symbols.update( copy.deepcopy(msymbol) )
-        self.symbols.update( copy.deepcopy(lsymbol) )
+        self.modulename = modulename
+        self.functionname = functionname
         
     def visit_ConstExpressionAST(self, node):
-        parse = EvaluateRapidExpression()
+        parse = EvaluateRapidExpression(self.modulename, self.functionname)
         parse.visit( node.expression )
         self.return_value = parse.GetReturn()
         
     def visit_AggregateAST(self, node):
         self.return_value = []
         for i in node.expr:
-            parse = EvaluateRapidExpression()
+            parse = EvaluateRapidExpression(self.modulename, self.functionname)
             parse.visit( i )
             self.return_value.append(parse.GetReturn())
             
+    def visit_VariableAST(self, node):
+        varname = node.var.name
+        varindexlist = node.index
+        varcomponent = node.component
+        if varcomponent is None:
+            if len(varindexlist)==0:
+                self.return_value = pyrapid.Symbols().GetSymbol(varname, self.module_name, self.function_name).data.Get()
+            else:
+                raise Exception("EvaluateRapidExpression with array variable not yet supported")
+        else:
+            raise Exception("EvaluateRapidExpression with variable with component not yet supported")
+        
+        
+        
     def visit_LiteralATS(self, node):
         self.return_value = node.value
         
     def visit_Operator1AST(self, node):
-        parse = EvaluateRapidExpression()
+        parse = EvaluateRapidExpression(self.modulename, self.functionname)
         parse.visit( node.par1 )
         if node.operator == "NOT":
             self.return_value = not parse.GetReturn()
@@ -521,9 +534,9 @@ class EvaluateRapidExpression( rapid_ast.NodeVisitor ):
             raise Exception("operator not supported '%s'"%(node.operator))
             
     def visit_Operator2AST(self, node):
-        parse1 = EvaluateRapidExpression()
+        parse1 = EvaluateRapidExpression(self.modulename, self.functionname)
         parse1.visit( node.par1 )
-        parse2 = EvaluateRapidExpression()
+        parse2 = EvaluateRapidExpression(self.modulename, self.functionname)
         parse2.visit( node.par2 )
         if node.operator == "+":
             self.return_value = parse1.GetReturn() + parse2.GetReturn()
@@ -565,7 +578,7 @@ class EvaluateRapidExpression( rapid_ast.NodeVisitor ):
         elif isinstance(node.expr, rapid_ast.FunctionCallAST):
             raise Expression("node can not be a ConstantExpression, todo for functionCall that works only on contant parameter and use only constand data")
         elif isinstance(node.expr, rapid_ast.VariableAST):
-            raise Expression("node can not be a ConstantExpression, todo for VariableAST that is constant")
+            pass
         elif isinstance(node.expr, rapid_ast.AggregateAST):
             pass
         elif isinstance(node.expr, rapid_ast.Operator1AST):
@@ -579,7 +592,7 @@ class EvaluateRapidExpression( rapid_ast.NodeVisitor ):
         else:
             raise Exception("programming error")
             
-        parse = EvaluateRapidExpression()
+        parse = EvaluateRapidExpression(self.modulename, self.functionname)
         parse.visit( node.expr )
         self.return_value = parse.GetReturn()
 
@@ -597,9 +610,22 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         self.file_module = None
         self.module_name = None
         self.module_attribute = []
+        self.function_name = None
         self.indent_module = 0
         self.indent_init = 0
         self.directory = "run"
+        ensure_dir(self.directory)
+        self.file_init_name = os.path.join(self.directory, "_rapid_program_init_.py")
+        self.file_module_name = os.path.join(self.directory, "rapid_program.py")
+        self.file_init = open(self.file_init_name, "w")
+        self.file_module = open(self.file_module_name, "w")
+        self.writemodule( "#this file is an automatic traslation of rapid code")
+        self.writemodule("import pyrapid")
+        
+    def close(self):
+        self.file_init.close()
+        self.file_module.close()
+        
                 
     def writemodule(self, a):
         if not (self.file_module is None):
@@ -634,23 +660,25 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
             2. create a file __init.__py inside the 1. folder
             3. create a file modulename.py  inside the 1. folder
         """
+        self.indent_module = 0
+        self.indent_init = 0
+        self.function_name = None
+        self.module_attribute = []
         
         #module_name*, module_attribute**, type_definitions**, data_definitions**, routine_definitions**
         self.module_name = node.module_name.name
         if self.module_name is None:
             print("Module name not defined default will be used")
             self.module_name = "default"
-        ensure_dir(self.directory)
-        self.file_init_name = os.path.join(self.directory, "_module_init_.py")
-        self.file_module_name = os.path.join(self.directory, "%s.py" % (self.module_name,))
-        self.file_init = open(self.file_init_name, "w")
-        self.file_module = open(self.file_module_name, "w")
         
-        self.writemodule( """
-#this file is an automatic traslation of rapid code
-""")
+        self.writemodule( "################### Start module %s ####################" % (self.module_name,))
+        pyrapid.Symbols().PushScope(self.module_name, self.function_name)
+        self.writemodule( "pyrapid.Symbols().PushScope(%s, %s)"%(repr(self.module_name), repr(self.function_name), ))
+        self.writemodule( "##################################################################")
+        
+        
 
-        self.writemodule("from pyrapid import *")
+        
         
     def post_visit_ModuleAST(self, node):
         """ 
@@ -658,20 +686,29 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
               2. close the opend file
         """
         
-        self.writeinit( "import pyrapid" )
-        self.file_init.close()
-        self.file_init = None
-        self.file_module.close()
-        self.file_module = None
+        self.writemodule( "##################################################################")
+        pyrapid.Symbols().PopScope()
+        self.writemodule( "pyrapid.Symbols().PopScope()")
+        self.writemodule( "################### End module %s ####################" % (self.module_name,))
+        
+        self.indent_module = 0
+        self.indent_init = 0
+        
+        self.module_name = None
+        self.module_attribute = []
+        self.function_name = None
+        
         
     def visit_CommentAST(self, node):
         self.writemodule( "# " + node.comment )
         
     def pre_visit_TypeDefAST(self, node):
+        self.writemodule("############################# start type definition")
         self.tmp_TypeDefAST_data = node.type
         
     def post_visit_TypeDefAST(self, node):
         del self.tmp_TypeDefAST_data
+        self.writemodule("# end type definition")
         
     def visit_AliasDefATS(self, node):
         typename = node.type_name.name
@@ -681,7 +718,7 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         if aliasname is None:
             raise Exception("conversion not possible because type_name is not defined")
         
-        refsym = pyrapid.Symbols().GetSymbol(typename, self.module_name)
+        refsym = pyrapid.Symbols().GetSymbol(typename, self.module_name, self.function_name)
         if refsym is None:
             raise Exception("reference to unknown type")
         if refsym.type != pyrapid.Symbol.SYM_TYPE_DATATYPE:
@@ -690,11 +727,104 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         
         if self.tmp_TypeDefAST_data is None:
             pyrapid.Symbols().AddGlobalSym(aliasname, pyrapid.Symbol.CreateDataType(newsym))
+            self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateDataType(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data))"%(repr(aliasname), repr(typename), repr(self.module_name), repr(self.function_name), ))
         else:
             pyrapid.Symbols().AddModuleSym(self.module_name, aliasname, pyrapid.Symbol.CreateDataType(newsym))
+            self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, pyrapid.Symbol.CreateDataType(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data))"%(repr(self.module_name), repr(aliasname), repr(typename), repr(self.module_name), repr(self.function_name), ))
+
+    def visit_RecordDefAST(self, node):
+        record_name = node.record_name.name
+        components = node.components
+
+        attributetype= []
+        attributename= []
         
-    #record
-    
+        for i in components:
+            data_type = i.data_type.name
+            record_component_name = i.record_component_name.name
+            attributetype.append("pyrapid.rapid_%s"%(data_type,))
+            attributename.append("pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s)"%(data_type, repr(self.module_name), repr(self.function_name) ))
+            
+        attributetype = ",".join(attributetype)
+        attributename = ",".join(attributename)
+            
+        record = """
+class rapid_%s (pyrapid.rapid_struct):
+    def __init__(self, val=None):
+        rapid_struct.__init__(self, [ %s ], [ %s ])
+        if not(self.val  is None):
+            self.Set( val )
+            
+    def Set(self, val):
+        if isinstance(val, rapid_%s):
+            self.val = val.val
+        else:
+            rapid_struct.Set(self, val)
+""" % (record_name, attributename, attributetype, record_name)
+
+        define_class = compile(record,"in_memory_compile","single")
+        eval(define_class)
+
+        self.writemodule(record)
+
+        if self.tmp_TypeDefAST_data is None:
+            pyrapid.Symbols().AddGlobalSym(record_name, pyrapid.Symbol.CreateDataType(eval("rapid_%s" % (record_name,))))
+            self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateDataType(rapid_%s))"%(repr(record_name), record_name,))
+        else:
+            pyrapid.Symbols().AddModuleSym(self.module_name, record_name, pyrapid.Symbol.CreateDataType(eval("rapid_%s" % (record_name,))))
+            self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, pyrapid.Symbol.CreateDataType(rapid_%s))"%(repr(self.module_name), repr(record_name), record_name, ))
+            
+        self.writemodule("del rapid_%s"%(record_name,))
+
+    def pre_visit_DataDefATS(self, node):
+        self.writemodule("############################# start declaration")
+        self.tmp_DataDefATS_data = node.type
+        
+    def post_visit_DataDefATS(self, node):
+        del self.tmp_DataDefATS_data
+        self.writemodule("# end declaration")
+        
+    def visit_VarDeclarationAST(self, node):
+        scope = self.tmp_DataDefATS_data
+        vartype = node.type.name
+        varinstance_name = node.variable_instance.name.name
+        varinstance_value = node.variable_instance.value
+        varinstance_size = node.variable_instance.size
+        
+        if not(varinstance_value is None):
+            compute = EvaluateRapidExpression(self.module_name, self.function_name)
+            compute.visit(varinstance_value)
+            varinstance_value = compute.return_value
+                        
+        if len(varinstance_size)==0:
+            if self.tmp_DataDefATS_data is None:
+                if self.function_name is None:
+                    #module declaration it is GLOBAL
+                    pyrapid.Symbols().AddGlobalSym( varinstance_name, pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(vartype, self.module_name, self.function_name).data(varinstance_value) ) )
+                    self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(%s)))"%(repr(varinstance_name), repr(vartype), repr(self.module_name), repr(self.function_name), repr(varinstance_value)))
+                else:
+                    #function declaration it is in the Scope of the function
+                    print "warning: variable %s is local to the function %s"%(varinstance_name, self.function_name)
+                    pyrapid.Symbols().AddScopeSym( varinstance_name, pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(vartype, self.module_name, self.function_name).data() ) )
+                    self.writemodule( "pyrapid.Symbols().AddScopeSym(%s, pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data()))"%(repr(varinstance_name), repr(vartype), repr(self.module_name), repr(self.function_name), ))
+            else:
+                if self.function_name is None:
+                    #module declaration it is LOCAL in the module
+                    pyrapid.Symbols().AddModuleSym( self.module_name, varinstance_name, pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(vartype, self.module_name, self.function_name).data() ) )
+                    self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data()))"%(repr(self.module_name), repr(varinstance_name), repr(vartype), repr(self.module_name), repr(self.function_name), ))
+                else:
+                    #function declaration it is in the Scope of the function
+                    pyrapid.Symbols().AddScopeSym( varinstance_name, pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(vartype, self.module_name, self.function_name).data() ) )
+                    self.writemodule( "pyrapid.Symbols().AddScopeSym(%s, pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data()))"%(repr(varinstance_name), repr(vartype), repr(self.module_name), repr(self.function_name), ))
+        else:
+            raise Exception("array declaration not yet supported")
+            
+        
+        #
+        #Symbols().AddModuleSym(module, varinstance_name, Symbol.CreateVar(rapid_errnum, rapid_errnum()))
+        #Symbols().AddLocalSym(function, module, varinstance_name, Symbol.CreateVar(rapid_errnum, rapid_errnum()))
+        #Symbols().AddScopeSym(varinstance_name, Symbol.CreateVar(rapid_errnum, rapid_errnum()))
+        
     #
         
         
@@ -706,63 +836,27 @@ class CompareRapid( rapid_ast.NodeCompare ):
 
 
 if __name__ == '__main__':
-    
-    n1 = []                                                                    # module property
-    n2 = rapid_ast.IdentifierAST("test_module")         # module name
-    n6 = rapid_ast.IdentifierAST("num")                     # type of variable 
-    n7 = rapid_ast.IdentifierAST("pippo")                 # alias name
-    n5 = rapid_ast.AliasDefATS( n6, n7)                     # definition of alias
-    n8 = rapid_ast.IdentifierAST("pippo1")                 # alias name
-    n9 = rapid_ast.AliasDefATS( n6, n8)                     # definition of alias
-    datatype = [ rapid_ast.CommentAST("pippo"), rapid_ast.TypeDefAST("LOCAL", n5), rapid_ast.TypeDefAST(None, n9) ]         # list of action
-    datadeclaration = []
-    code = []
-    allmodule = rapid_ast.ModuleAST(n2, n1, datatype, datadeclaration, code)
-    
-    with open("text.rapid","wt") as f:
-        rewrite = WriteRapid(f)
-        rewrite.visit(allmodule)
+    import rapid_parser
+    text = """
+MODULE syun1
+! pippo
+    LOCAL ALIAS num pippo;
+    ALIAS num pippo1;
+    LOCAL RECORD prova
+        num usecount;
+    ENDRECORD
+    VAR num a1:=1;
+    VAR string s1:="pippo";
+ENDMODULE
+    """
+    parser = rapid_parser.RAPIDParser(lex_optimize=True, yacc_debug=False, yacc_optimize=False)
+    allmodule = parser.parse(text, 'x.rapid', debuglevel=0)
     
     traslate = TraslateRapidToPython()
     
     traslate.visit(allmodule)
+    traslate.close()
     
-    evalexpr = rapid_ast.LiteralATS(1)
-    evalexpression = rapid_ast.ExpressionAST(evalexpr)
-    evaldata = rapid_ast.ConstExpressionAST(evalexpression)
-    
-    constanteval = EvaluateRapidExpression()
-    constanteval.visit(evaldata)
-    print("data1 %s"%(str(constanteval.GetReturn()),) )
-    
-    evalexpr1 = rapid_ast.LiteralATS(1)
-    evalexpr2 = rapid_ast.LiteralATS(2)
-    evalaggr = rapid_ast.AggregateAST([evalexpr1, evalexpr2])
-    evalexpression = rapid_ast.ExpressionAST(evalaggr)
-    evaldata = rapid_ast.ConstExpressionAST(evalexpression)
-    
-    constanteval = EvaluateRapidExpression()
-    constanteval.visit(evaldata)
-    print("data2 %s"%(str(constanteval.GetReturn()),))
-    
-    evalexpr1 = rapid_ast.LiteralATS(True)
-    evalaggr = rapid_ast.Operator1AST("NOT", evalexpr1)
-    evalexpression = rapid_ast.ExpressionAST(evalaggr)
-    evaldata = rapid_ast.ConstExpressionAST(evalexpression)
-    
-    constanteval = EvaluateRapidExpression()
-    constanteval.visit(evaldata)
-    print("data3 %s"%(str(constanteval.GetReturn()),))
-    
-    evalexpr1 = rapid_ast.LiteralATS(1)
-    evalexpr2 = rapid_ast.LiteralATS(2)
-    evalaggr = rapid_ast.Operator2AST("+", evalexpr1, evalexpr2)
-    evalexpression = rapid_ast.ExpressionAST(evalaggr)
-    evaldata = rapid_ast.ConstExpressionAST(evalexpression)
-    
-    constanteval = EvaluateRapidExpression()
-    constanteval.visit(evaldata)
-    print("data4 %s"%(str(constanteval.GetReturn()),))
     
     
     

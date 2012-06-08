@@ -305,7 +305,10 @@ class RAPIDLexer(object):
     t_COLON             = r':'
     t_PERCENT             = r'%'
 
-    t_STRING_LITERAL    = string_literal
+    @TOKEN(string_literal)
+    def t_STRING_LITERAL(self, t):
+        t.value = t.value[1:-1]
+        return t
     
     @TOKEN(comment)
     def t_COMMENT(self, t):
