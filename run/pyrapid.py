@@ -5,12 +5,12 @@ import operator
 import Singleton
 
 class Symbol:
-    SYM_TYPE_VAR              = 1
-    SYM_TYPE_CONST_VAR  = 2
+    SYM_TYPE_VAR         = 1
+    SYM_TYPE_CONST_VAR   = 2
     SYM_TYPE_PERS_VAR    = 3
     SYM_TYPE_FUNCTION    = 4
-    SYM_TYPE_PROCEDURE = 5
-    SYM_TYPE_DATATYPE     = 6
+    SYM_TYPE_PROCEDURE   = 5
+    SYM_TYPE_DATATYPE    = 6
 
     def __init__(self, type, data):
         self.type = type
@@ -146,8 +146,8 @@ class Symbols(Singleton.Singleton):
         else:
             msymbol[symbolname] = data
             
-    def PushScope(self, modulename, functionname=None):
-        self.scope_symbol.append( ( modulename, functionname, {} ) )
+    def PushScope(self, modulename, functionname=None, invalue={}):
+        self.scope_symbol.append( ( modulename, functionname, invalue ) )
         
     def PopScope(self):
         self.scope_symbol.pop()

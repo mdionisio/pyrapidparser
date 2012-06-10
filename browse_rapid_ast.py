@@ -694,7 +694,7 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
             self.module_name = "default"
         
         self.writemodule( "################### Start module %s ####################" % (self.module_name,))
-        pyrapid.Symbols().PushScope(self.module_name, self.function_name)
+        pyrapid.Symbols().PushScope(modulename=self.module_name, functionname=self.function_name, invalue={})
         self.writemodule( "pyrapid.Symbols().PushScope(%s, %s)"%(repr(self.module_name), repr(self.function_name), ))
         self.writemodule( "##################################################################")
         
@@ -907,11 +907,35 @@ class rapid_%s (pyrapid.rapid_struct):
         del self.tmp_outineDeclarationATS_data
         self.writemodule("# end routine declaration")
         
+    def visit_ParameterDefinitionAST(self, node):
+        #parameter_type stringa
+        #type IdentifierAST
+        #name IdentifierAST
+        #size int or None
+        pass
+    
+    def visit_OptionalParameterDefinitionAST(self, node):
+        #parameter None or ParameterDefinitionAST or SwitchParameterDefinitionAST
+        #switchs list of None or ParameterDefinitionAST or SwitchParameterDefinitionAST
+        pass
+    
+    def visit_SwitchParameterDefinitionAST(self, node):
+        #name IdentifierAST
+        pass
+        
     def visti_ProcedureDeclarationAST(self, node):
         #procedure_name*, parameter_list**, data_definitions**, statement_list**, routine_backward*, routine_error*, routine_undo*
-        self.visit(node.procedure_name)
+        self.function_name =  node.procedure_name.name
+        
+        self.paramslist = []
         for i in node.parameter_list:
+            #ParameterDefinitionAST or OptionalParameterDefinitionAST or SwitchParameterDefinitionAST or None
             self.visit(i)
+        
+        params = {}
+            
+        pyrapid.Symbols().PushScope(modulename=self.module_name, functionname=self.function_name, invalue=params)
+        
         for i in node.data_definitions:
             self.visit(i)
         for i in node.statement_list:
@@ -919,6 +943,9 @@ class rapid_%s (pyrapid.rapid_struct):
         self.visit(node.routine_backward)
         self.visit(node.routine_error)
         self.visit(node.routine_undo)
+        
+        pyrapid.Symbols().PopScope()
+        del self.params
         
     #
         
