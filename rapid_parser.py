@@ -1544,7 +1544,8 @@ ENDMODULE
     
     text = r"""
 MODULE syun1
-    VAR num b := a.c;
+PROC pippo (VAR num a1{*})
+ENDPROC
 ENDMODULE
 """
     

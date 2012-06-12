@@ -912,39 +912,132 @@ class rapid_%s (pyrapid.rapid_struct):
         #type IdentifierAST
         #name IdentifierAST
         #size int or None
-        pass
+        paramtype = node.parameter_type
+        pname = node.name.name
+        ptype = node.type.name
+        psize = node.size
+        
+        self.lastparamadded = pname
+        
+        if self.params.has_key(pname):
+            raise Exception("parameter %s already defined"%(pname,))
+        else:
+            self.params[pname] = ("required", paramtype, ptype, psize, [])
     
     def visit_OptionalParameterDefinitionAST(self, node):
         #parameter None or ParameterDefinitionAST or SwitchParameterDefinitionAST
         #switchs list of None or ParameterDefinitionAST or SwitchParameterDefinitionAST
-        pass
+
+        self.visit(node.parameter)
+        if self.params.has_key(pname):
+            raise Exception("parameter %s already defined"%(pname,))
+        
+        list_switch = set()
+        list_switch.update([self.lastparamadded])
+            
+        for i in node.switchs:
+            self.visit(i)
+            list_switch.update([self.lastparamadded])
+            
+        from copy import copy
+        for i in list_switch:
+            old0, old1, old2, old3, old4 = self.params[i]
+            old4 = copy(list_switch)
+            old4.remove(i)
+            self.params[self.lastparamadded] = ( "optional", old1, old2, old3, list(old4) ) 
+        
     
     def visit_SwitchParameterDefinitionAST(self, node):
         #name IdentifierAST
-        pass
+        pname = node.name.name
         
-    def visti_ProcedureDeclarationAST(self, node):
+        self.lastparamadded = pname
+        
+        if self.params.has_key(pname):
+            raise Exception("parameter %s already defined"%(pname,))
+        else:
+            self.params[pname] = ("switch", None, None, None, [])
+        
+    def visit_ProcedureDeclarationAST(self, node):
         #procedure_name*, parameter_list**, data_definitions**, statement_list**, routine_backward*, routine_error*, routine_undo*
         self.function_name =  node.procedure_name.name
+        from collections import OrderedDict
+        self.params = OrderedDict()
+        self.lastparamadded = None
         
         self.paramslist = []
         for i in node.parameter_list:
             #ParameterDefinitionAST or OptionalParameterDefinitionAST or SwitchParameterDefinitionAST or None
             self.visit(i)
         
-        params = {}
+        params = repr(self.params)
             
-        pyrapid.Symbols().PushScope(modulename=self.module_name, functionname=self.function_name, invalue=params)
+        proc = "def rapid_proc_%s (local_args_scope):" % (self.function_name)
+
+        def _rapid_proc_(local_args_scope):
+            pass
+
+        self.writemodule(proc)
+        
+        if self.tmp_outineDeclarationATS_data is None:
+            pyrapid.Symbols().AddGlobalSym(self.function_name, pyrapid.Symbol.CreateProcedure(self.params, _rapid_proc_))
+        else:
+            pyrapid.Symbols().AddModuleSym(self.module_name, self.function_name, pyrapid.Symbol.CreateProcedure(self.params, _rapid_proc_))
+            
+        self.pushModuleScope()
+        
+        pyrapid.Symbols().PushScope(modulename=self.module_name, functionname=self.function_name, invalue={})
+        
+        for ik,iv in self.params.iteritems():
+            vartype, paramtype, ptype, psize, pdep = iv
+            if psize==0:
+                getvar = pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data())
+            else:
+                getvar = pyrapid.Symbol.CreateVar(pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data) )
+            pyrapid.Symbols().AddScopeSym(ik, getvar)
+        
+        self.writemodule( "pyrapid.Symbols().PushScope(modulename=%s, functionname=%s, invalue=local_args)"%(repr(self.module_name), repr(self.function_name)))
+        
+        self.writemodule("# data definitions")
         
         for i in node.data_definitions:
             self.visit(i)
+        
+        self.writemodule("# stantments")
+        
         for i in node.statement_list:
             self.visit(i)
-        self.visit(node.routine_backward)
-        self.visit(node.routine_error)
-        self.visit(node.routine_undo)
         
+        self.writemodule("# backward stantment")
+        
+        if not ( node.routine_backward is None ):
+            self.visit(node.routine_backward)
+        
+        self.writemodule("# error stantment")
+        
+        if not ( node.routine_error is None ):    
+            self.visit(node.routine_error)
+        
+        self.writemodule("# error undo")
+        
+        if not ( node.routine_undo is None ):
+            self.visit(node.routine_undo)
+            
+        self.writemodule("# end stantment")
+        
+        self.writemodule("self.popModuleScope()")
+        self.popModuleScope()
         pyrapid.Symbols().PopScope()
+        
+        self.writemodule("from collections import OrderedDict")
+        
+        if self.tmp_outineDeclarationATS_data is None:
+            self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateProcedure(%s, rapid_proc_%s))"%(repr(self.function_name), params, self.function_name,))
+        else:
+            self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, pyrapid.Symbol.CreateProcedure(%s, rapid_proc_%s))"%(repr(self.module_name), params, repr(self.function_name), self.function_name, ))
+            
+        self.writemodule("del rapid_proc_%s" % (self.function_name,))
+        
         del self.params
         
     #
@@ -973,6 +1066,9 @@ MODULE syun1
     LOCAL VAR num a4:=12;
     VAR num a5 := a3{2};
     VAR string s1:="pippo";
+    PROC PIPPO(VAR num p1, VAR num p2{*})
+    VAR num p10 := 1;
+    ENDPROC
 ENDMODULE
     """
     parser = rapid_parser.RAPIDParser(lex_optimize=True, yacc_debug=False, yacc_optimize=False)

@@ -227,7 +227,7 @@ ENDMODULE
         n2 = rapid_ast.IdentifierAST("syun1")
         n6 = rapid_ast.IdentifierAST("prova")
         n7 = rapid_ast.IdentifierAST("num")
-        n8 = rapid_ast.IdentifierAST("num")
+        n8 = rapid_ast.IdentifierAST("usecount")
         n9 = [ rapid_ast.RecordComponentDefAST(n7, n8) ]
         n5 = rapid_ast.RecordDefAST( n6, n9)
         n4 = [ rapid_ast.TypeDefAST("LOCAL", n5) ]
@@ -278,8 +278,8 @@ ENDMODULE
         n2 = rapid_ast.IdentifierAST("syun1")
         n6 = rapid_ast.IdentifierAST("num")
         n8 = rapid_ast.IdentifierAST("a")
-        n13 = rapid_ast.LiteralATS(1)
-        n12 = rapid_ast.LiteralATS(3)
+        n13 = rapid_ast.LiteralATS(3)
+        n12 = rapid_ast.LiteralATS(1)
         n11 = rapid_ast.Operator2AST('+', n12, n13)
         n10 = rapid_ast.ExpressionAST(n11)
         n9 = rapid_ast.ConstExpressionAST(n10)
@@ -291,7 +291,6 @@ ENDMODULE
         compare = browse_rapid_ast.CompareRapid()
         
         writerapidfile(whoami(), res, text)
-
         
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing declaration with +")
         
@@ -403,6 +402,32 @@ ENDMODULE
         writerapidfile(whoami(), res, text)
         
         self.assertTrue(compare.full_compare(res,n3), "there is error parsing proc declaration with stantment")
+        
+    def test_rapid_proc_declaration_4(self):
+        text = r"""
+MODULE syun1
+PROC pippo (VAR num a1{*})
+ENDPROC
+ENDMODULE
+"""
+        res = TestParserFunctions.parser.parse(text, 'file.rapid', debuglevel=0)  
+  
+        n1 = []
+        n2 = rapid_ast.IdentifierAST("syun1")
+        n8 = rapid_ast.IdentifierAST("num")
+        n9 = rapid_ast.IdentifierAST("a1")
+        n7 = [ rapid_ast.ParameterDefinitionAST("VAR", n8, n9, 1) ]
+        n6 = rapid_ast.IdentifierAST("pippo")
+        n5 = rapid_ast.ProcedureDeclarationAST(n6, n7, [], [], None, None, None)
+        n4 = [ rapid_ast.RoutineDeclarationATS(None, n5) ]
+        n3 = rapid_ast.ModuleAST(n2, n1, [], [], n4)
+        
+        compare = browse_rapid_ast.CompareRapid()
+        
+        writerapidfile(whoami(), res, text)
+
+        
+        self.assertTrue(compare.full_compare(res,n3), "there is error parsing proc declaration with parameter array")
         
     def test_rapid_func_declaration_1(self):
         text = r"""

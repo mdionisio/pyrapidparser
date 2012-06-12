@@ -349,7 +349,7 @@ class NodeCompare(object):
         ret = True
         for i in node1.attr_names:
             n1 = eval("node1.%s"%(i,))
-            n2 = eval("node1.%s"%(i,))
+            n2 = eval("node2.%s"%(i,))
             ret &= (n1 == n2)
         return ret
     

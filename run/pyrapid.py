@@ -1,4 +1,3 @@
-
 from copy import deepcopy
 import operator
 
@@ -130,6 +129,12 @@ class Symbols(Singleton.Singleton):
                 return self.global_symbol[symbolname]
         except KeyError:
             return None
+            
+    def IsInScope(self, symbolname):
+        try:
+            return self.scope_symbol[-1][2].has_key(symbolname)
+        except:
+            return False
         
     def AddGlobalSym(self, symbolname, data):
         if self.global_symbol.has_key(symbolname):
@@ -156,10 +161,13 @@ class Symbols(Singleton.Singleton):
         modulename = self.scope_symbol[-1][0]
         functionname = self.scope_symbol[-1][1]
         symbols = self.scope_symbol[-1][2]
-        if self.GetSymbol(symbolname, modulename, functionname) is None:
-            symbols[symbolname] = data
+        if symbols.has_key(symbolname):
+            raise Exception("symbol %s already defined in the scope"%(symbolname,))
+        elif self.local_symbol.has_key(modulename) and self.local_symbol[modulename].has_key(functionname) and self.local_symbol[modulename][functionname].has_key(symbolname):
+            raise Exception("symbol %s already defined in the local scope"%(symbolname,))
         else:
-            raise Exception("symbol %s already defined"%(symbolname,))
+            symbols[symbolname] = data
+            
         
     def AddLocalSym(self, module, function, symbolname, data):
         if not self.local_symbol.has_key(module):
@@ -214,14 +222,24 @@ class rapid_array :
             if not (val is None):
                 self.Set(val)
             else:
-                raise Exception("array not full initialized")
+                self.size = None
+                self.elem_type = elem_type
         else:
             self.elem_type = elem_type
-            self.size = size
+            self.size = None
+            self.SetSize(size, val)
             
-            val =  rapid_array.unrollarray(val)
             
-            self.val = [ elem_type(val[i]) for i in range(reduce(operator.mul,self.size)) ]
+    def SetSize(self, size, val=None):
+        if self.size is None:
+            self.size = size  
+            if val is None:
+                self.val = [ self.elem_type() for i in range(reduce(operator.mul,self.size)) ]
+            else:
+                val =  rapid_array.unrollarray(val)
+                self.val = [ self.elem_type(val[i]) for i in range(reduce(operator.mul,self.size)) ]
+        else:
+            raise Exception("size already defined")
             
     @staticmethod
     def unrollarray(indata):
