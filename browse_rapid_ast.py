@@ -644,10 +644,19 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         self.file_module = open(self.file_module_name, "w")
         self.writemodule( "#this file is an automatic traslation of rapid code")
         self.writemodule("import pyrapid")
+        self.writemodule("from collections import OrderedDict")
         
     def close(self):
         self.file_init.close()
         self.file_module.close()
+        
+    def simple_writeindent(self):
+        if not (self.file_module is None):
+            self.file_module.write (" " * self.indent_module)
+        
+    def simple_writemodule(self, a="\n"):
+        if not (self.file_module is None):
+            self.file_module.write (a)
                 
     def writemodule(self, a):
         if not (self.file_module is None):
@@ -719,7 +728,7 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         
         
     def visit_CommentAST(self, node):
-        self.writemodule( "# " + node.comment )
+        self.writemodule( "# ## COMMENT:" + node.comment +" ##")
         
     def pre_visit_TypeDefAST(self, node):
         self.writemodule("############################# start type definition")
@@ -771,7 +780,7 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
 class rapid_%s (pyrapid.rapid_struct):
     def __init__(self, val=None):
         pyrapid.rapid_struct.__init__(self, [ %s ], [ %s ])
-        if not(self.val  is None):
+        if not(val  is None):
             self.Set( val )
             
     def Set(self, val):
@@ -957,6 +966,87 @@ class rapid_%s (pyrapid.rapid_struct):
             raise Exception("parameter %s already defined"%(pname,))
         else:
             self.params[pname] = ("switch", None, None, None, [])
+            
+    def visit_ExpressionAST(self, node):
+        #expr is None or AggregateAST or Operator1AST or Operator2AST or FunctionCallAST or VariableAST or ExpressionAST or LiteralATS
+        if node.expr is None:
+            return
+        else:
+            self.visit(node.expr)
+            
+    def visit_AggregateAST(self, node):
+        self.simple_writemodule("[")
+        if len(node.expr)>0:
+            for i in node.expr[:-1]:
+                self.visit(i)
+                self.simple_writemodule(", ")
+            self.visit(node.expr[-1])
+        self.simple_writemodule("]")
+        
+    def visit_Operator1AST(self, node):
+        if not(node.operator is None):
+            self.simple_writemodule("( not ")
+            self.visit(node.par1)
+            self.simple_writemodule(" )")
+        else:
+            self.visit(node.par1)
+        
+    def visit_Operator2AST(self, node):
+        self.write("( ")
+        self.visit(node.par1)
+        self.write(" ")
+        self.write(node.operator)
+        self.write(" ")
+        self.visit(node.par2)
+        self.write(" )")
+            
+    def visit_LiteralATS(self, node):
+        #value is int or float or string
+        if isinstance(node.value, str):
+            self.simple_writemodule(repr(node.value))
+        else:
+            self.simple_writemodule(str(node.value))
+            
+    def visit_VariableAST(self, node):
+        varindexlist = node.index
+        varcomponent = node.component
+        if varcomponent is None:
+            if len(varindexlist)==0:
+                if isinstance(node.var, rapid_ast.VariableAST):
+                    parse.visit( node.var )
+                else:
+                    self.simple_writemodule( "pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data" % ( repr(node.var.name), repr(self.module_name), repr(self.function_name) ) )
+            else:
+                
+                if isinstance(node.var, rapid_ast.VariableAST):
+                    parse.visit( node.var )
+                else:
+                    self.simple_writemodule( "pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data" % ( repr(node.var.name), repr(self.module_name), repr(self.function_name) ) )
+                
+                self.simple_writemodule( ".GetElem( "  )
+                
+                for i in varindexlist[:-1]:
+                    self.visit( i )
+                    self.simple_writemodule( ", ")
+                self.visit( varindexlist[-1] )
+                    
+                self.simple_writemodule( " )" )
+        else:
+            if isinstance(node.var, rapid_ast.VariableAST):
+                self.visit(node.var)
+                self.simple_writemodule( ".GetElem(%s)" % ( repr(varcomponent.name), ) )
+            else:
+                raise Exception("if there is a component we need a variable as data before .")
+            
+    def visit_AssignmentStatementAST(self, node):
+        #dest* is VariableAST
+        #, source*
+        self.simple_writeindent()
+        self.visit(node.dest)
+        self.simple_writemodule( ".Set( " )
+        self.visit(node.source)
+        self.simple_writemodule(" ) ")
+        self.simple_writemodule()
         
     def visit_ProcedureDeclarationAST(self, node):
         #procedure_name*, parameter_list**, data_definitions**, statement_list**, routine_backward*, routine_error*, routine_undo*
@@ -996,7 +1086,7 @@ class rapid_%s (pyrapid.rapid_struct):
                 getvar = pyrapid.Symbol.CreateVar(pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data) )
             pyrapid.Symbols().AddScopeSym(ik, getvar)
         
-        self.writemodule( "pyrapid.Symbols().PushScope(modulename=%s, functionname=%s, invalue=local_args)"%(repr(self.module_name), repr(self.function_name)))
+        self.writemodule( "pyrapid.Symbols().PushScope(modulename=%s, functionname=%s, invalue=local_args_scope)"%(repr(self.module_name), repr(self.function_name)))
         
         self.writemodule("# data definitions")
         
@@ -1025,11 +1115,11 @@ class rapid_%s (pyrapid.rapid_struct):
             
         self.writemodule("# end stantment")
         
-        self.writemodule("self.popModuleScope()")
+        self.writemodule("pyrapid.Symbols().PopScope()")
         self.popModuleScope()
         pyrapid.Symbols().PopScope()
         
-        self.writemodule("from collections import OrderedDict")
+        
         
         if self.tmp_outineDeclarationATS_data is None:
             self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateProcedure(%s, rapid_proc_%s))"%(repr(self.function_name), params, self.function_name,))
@@ -1067,7 +1157,15 @@ MODULE syun1
     VAR num a5 := a3{2};
     VAR string s1:="pippo";
     PROC PIPPO(VAR num p1, VAR num p2{*})
-    VAR num p10 := 1;
+        VAR num p10 := 1;
+        VAR num p11{3} := [ 10, 30, 50 ];
+        VAR prova p12 := [ 100 ];
+        VAR prova p13{3};
+        a5 := 1;
+        p11{2} := 100;
+        p12.usecount :=1;
+        !p13{1}.usecount :=1;
+        !p13{2}.usecount :=1;
     ENDPROC
 ENDMODULE
     """
