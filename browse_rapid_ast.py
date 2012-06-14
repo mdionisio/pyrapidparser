@@ -1048,6 +1048,30 @@ class rapid_%s (pyrapid.rapid_struct):
         self.simple_writemodule(" ) ")
         self.simple_writemodule()
         
+    def visit_GotoStatementAST(self, node):
+        raise Exception("GOTO not yet supported")
+        
+    def visit_ReturnStatementAST(self, node):
+        self.simple_writeindent()
+        if node.result is None:
+            self.simple_writemodule( "return " )
+        else:
+            self.simple_writemodule( "return ( " )
+            self.visit(node.source)
+            self.simple_writemodule(" )")
+        self.simple_writemodule()
+        
+    def visit_ExitStatementAST(self, node):
+        self.writemodule("import sys")
+        self.writemodule("sys.exit(1)")
+        
+    def visit_RetryStatementAST(self, node):
+        raise Exception("Retry not yet supported")
+        
+    def visit_ConnectStatementAST(self, node):
+        raise Exception("Connect not yet supported")
+        
+        
     def visit_ProcedureDeclarationAST(self, node):
         #procedure_name*, parameter_list**, data_definitions**, statement_list**, routine_backward*, routine_error*, routine_undo*
         self.function_name =  node.procedure_name.name
