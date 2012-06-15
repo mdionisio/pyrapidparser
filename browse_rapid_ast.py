@@ -1068,8 +1068,32 @@ class rapid_%s (pyrapid.rapid_struct):
     def visit_RetryStatementAST(self, node):
         raise Exception("Retry not yet supported")
         
+    def visit_TrynextStatementAST(self, node):
+        raise Exception("Try next not yet supported")
+        
     def visit_ConnectStatementAST(self, node):
         raise Exception("Connect not yet supported")
+        
+    def visit_IfStatement(self, node):
+        #condition*, statement_list**, elseif_list**, else_statement_list**
+        self.simple_writeindent()
+        self.simple_writemodule( "if (" )
+        self.visit(node.condition)
+        self.simple_writemodule( ") :" )
+        self.simple_writemodule()
+        self.pushModuleScope()
+        self.writemodule("pass")
+        
+        for i in node.statement_list:
+            self.visit(i)
+        
+        for i in node.elseif_list:
+            self.visit(i)
+        
+        if not(node.else_statement_list is None):
+            for i in node.else_statement_list:
+                self.visit(i)
+        self.popModuleScope()
         
         
     def visit_ProcedureDeclarationAST(self, node):
@@ -1143,8 +1167,6 @@ class rapid_%s (pyrapid.rapid_struct):
         self.popModuleScope()
         pyrapid.Symbols().PopScope()
         
-        
-        
         if self.tmp_outineDeclarationATS_data is None:
             self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateProcedure(%s, rapid_proc_%s))"%(repr(self.function_name), params, self.function_name,))
         else:
@@ -1185,11 +1207,15 @@ MODULE syun1
         VAR num p11{3} := [ 10, 30, 50 ];
         VAR prova p12 := [ 100 ];
         VAR prova p13{3};
+        VAR bool b := TRUE;
         a5 := 1;
         p11{2} := 100;
         p12.usecount :=1;
         !p13{1}.usecount :=1;
         !p13{2}.usecount :=1;
+        IF b THEN
+            a5 := 2;
+        ENDIF
     ENDPROC
 ENDMODULE
     """
