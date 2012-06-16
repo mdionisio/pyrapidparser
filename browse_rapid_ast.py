@@ -1251,7 +1251,7 @@ MODULE syun1
         p11{2} := a5;
         p12.usecount := p11{2};
         p13{1}.usecount :=p12.usecount;
-        p13{2}.usecount :=p13{2}.usecount;
+        p13{2}.usecount :=p13{1}.usecount;
         IF b THEN
             a5 := 2;
         ELSEIF B = FALSE THEN
