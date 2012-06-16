@@ -758,12 +758,12 @@ class RAPIDParser(PLYParser):
     def p_else_statement_1(self, p): 
         """ else_statement         :  
         """
-        return []
+        p[0] = []
         
     def p_else_statement_2(self, p): 
         """ else_statement         :  ELSE statement_list
         """
-        return p[2]
+        p[0] = p[2]
         
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
@@ -1061,9 +1061,9 @@ class RAPIDParser(PLYParser):
         """ primary_list         : mulop primary primary_list
         """
         if p[3] is None:
-            p[0] = [ ( p[1], p[2] ) ]
+            p[0] = ( p[1], p[2] )
         else:
-            p[0] = [ ( p[1], rapid_ast.Operator2AST(p[3][0], p[2], p[3][1], coord=None) ) ]         
+            p[0] = ( p[1], rapid_ast.Operator2AST(p[3][0], p[2], p[3][1], coord=None) )         
         
     def p_primary_1(self, p):
         """ primary         : literal
@@ -1546,6 +1546,20 @@ ENDMODULE
 MODULE syun1
 PROC pippo (VAR num a1{*})
 ENDPROC
+ENDMODULE
+"""
+    text = r"""
+MODULE syun1
+    PROC pippo ()
+        a := 1+2*3;
+    ENDPROC
+ENDMODULE
+"""
+    text = r"""
+MODULE syun1
+    PROC pippo ()
+        a := (1+2)*3;
+    ENDPROC
 ENDMODULE
 """
     

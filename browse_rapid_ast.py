@@ -992,13 +992,16 @@ class rapid_%s (pyrapid.rapid_struct):
             self.visit(node.par1)
         
     def visit_Operator2AST(self, node):
-        self.write("( ")
+        self.simple_writemodule("( ")
         self.visit(node.par1)
-        self.write(" ")
-        self.write(node.operator)
-        self.write(" ")
+        self.simple_writemodule(" ")
+        if node.operator == "=":
+            self.simple_writemodule("==")
+        else:
+            self.simple_writemodule(node.operator)
+        self.simple_writemodule(" ")
         self.visit(node.par2)
-        self.write(" )")
+        self.simple_writemodule(" )")
             
     def visit_LiteralATS(self, node):
         #value is int or float or string
@@ -1010,6 +1013,13 @@ class rapid_%s (pyrapid.rapid_struct):
     def visit_VariableAST(self, node):
         varindexlist = node.index
         varcomponent = node.component
+        bget = True
+        try:
+            bget = self.bGetVariableAST
+            del self.bGetVariableAST
+        except:
+            pass
+        self.bGetVariableAST = False
         if varcomponent is None:
             if len(varindexlist)==0:
                 if isinstance(node.var, rapid_ast.VariableAST):
@@ -1017,7 +1027,6 @@ class rapid_%s (pyrapid.rapid_struct):
                 else:
                     self.simple_writemodule( "pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data" % ( repr(node.var.name), repr(self.module_name), repr(self.function_name) ) )
             else:
-                
                 if isinstance(node.var, rapid_ast.VariableAST):
                     parse.visit( node.var )
                 else:
@@ -1037,11 +1046,19 @@ class rapid_%s (pyrapid.rapid_struct):
                 self.simple_writemodule( ".GetElem(%s)" % ( repr(varcomponent.name), ) )
             else:
                 raise Exception("if there is a component we need a variable as data before .")
+
+        if bget:
+            self.simple_writemodule( ".Get()" )
+        try:
+            del self.bGetVariableAST
+        except:
+            pass
             
     def visit_AssignmentStatementAST(self, node):
         #dest* is VariableAST
         #, source*
         self.simple_writeindent()
+        self.bGetVariableAST = False
         self.visit(node.dest)
         self.simple_writemodule( ".Set( " )
         self.visit(node.source)
@@ -1082,19 +1099,38 @@ class rapid_%s (pyrapid.rapid_struct):
         self.simple_writemodule( ") :" )
         self.simple_writemodule()
         self.pushModuleScope()
-        self.writemodule("pass")
+        if len(node.statement_list)==0:
+            self.writemodule("pass")
         
         for i in node.statement_list:
             self.visit(i)
         
+        self.popModuleScope()
         for i in node.elseif_list:
             self.visit(i)
         
-        if not(node.else_statement_list is None):
+        if len(node.else_statement_list)>0:
+            self.writemodule("else:")
+            self.pushModuleScope()
             for i in node.else_statement_list:
                 self.visit(i)
-        self.popModuleScope()
+            self.popModuleScope()
         
+    def visit_ElseIfStatement(self, node):    
+        #condition*, statement_list**
+        self.simple_writeindent()
+        self.simple_writemodule( "elif (" )
+        self.visit(node.condition)
+        self.simple_writemodule( ") :" )
+        self.simple_writemodule()
+        self.pushModuleScope()
+        if len(node.statement_list)==0:
+            self.writemodule("pass")
+        
+        for i in node.statement_list:
+            self.visit(i)
+        
+        self.popModuleScope()
         
     def visit_ProcedureDeclarationAST(self, node):
         #procedure_name*, parameter_list**, data_definitions**, statement_list**, routine_backward*, routine_error*, routine_undo*
@@ -1202,18 +1238,29 @@ MODULE syun1
     LOCAL VAR num a4:=12;
     VAR num a5 := a3{2};
     VAR string s1:="pippo";
+    VAR bool b := TRUE;
     PROC PIPPO(VAR num p1, VAR num p2{*})
         VAR num p10 := 1;
         VAR num p11{3} := [ 10, 30, 50 ];
         VAR prova p12 := [ 100 ];
         VAR prova p13{3};
-        VAR bool b := TRUE;
+        
         a5 := 1;
-        p11{2} := 100;
-        p12.usecount :=1;
-        !p13{1}.usecount :=1;
-        !p13{2}.usecount :=1;
+        a5 := 1+2*3;
+        a5 := (1+2)*3;
+        p11{2} := a5;
+        p12.usecount := p11{2};
+        p13{1}.usecount :=p12.usecount;
+        p13{2}.usecount :=p13{2}.usecount;
         IF b THEN
+            a5 := 2;
+        ELSEIF B = FALSE THEN
+            a6 := 3;
+        ELSE
+            a5 := 6;
+        ENDIF
+        
+        IF b = TRUE THEN
             a5 := 2;
         ENDIF
     ENDPROC
