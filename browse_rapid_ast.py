@@ -1132,6 +1132,28 @@ class rapid_%s (pyrapid.rapid_struct):
         
         self.popModuleScope()
         
+    def visit_ProcedureCallAST(self, node):
+        #procedure is IdentifierAST or ExpressionAST
+        #arguments list of ProcedureArgumentAST
+        procedure_name = node.procedure.name
+        refsym = pyrapid.Symbols().GetSymbol(symbolname=procedure_name, modulename=self.module_name, functionname=self.function_name)
+        if refsym is None:
+            raise Exception("procedure %s used in module %s function %s not defined"%(procedure_name, self.module_name, self.function_name))
+        procedure_call = refsym.data
+        if refsym.type != pyrapid.Symbol.SYM_TYPE_PROCEDURE:
+            raise Exception("symbol %s used in module %s function %s has to be a procedure"%(procedure_name, self.module_name, self.function_name))
+        self.writemodule( "procedure_call = pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data" % ( repr(procedure_name), repr(self.module_name), repr(self.function_name) ) )
+        self.parameters_defined = copy.deepcopy(refsym.parameters)
+        #compute parameter list
+        self.parameters_actual = {}
+        
+        for i in node.arguments:
+            self.visit(i)
+        
+        self.writemodule("procedure_call(%s)"%(repr(self.parameters_actual),))
+        
+        self.writemodule("del procedure_call")
+        
     def visit_ProcedureDeclarationAST(self, node):
         #procedure_name*, parameter_list**, data_definitions**, statement_list**, routine_backward*, routine_error*, routine_undo*
         self.function_name =  node.procedure_name.name
@@ -1239,6 +1261,11 @@ MODULE syun1
     VAR num a5 := a3{2};
     VAR string s1:="pippo";
     VAR bool b := TRUE;
+    
+    PROC TEST1()
+        a5 := 100;
+    ENDPROC
+    
     PROC PIPPO(VAR num p1, VAR num p2{*})
         VAR num p10 := 1;
         VAR num p11{3} := [ 10, 30, 50 ];
@@ -1263,6 +1290,8 @@ MODULE syun1
         IF b = TRUE THEN
             a5 := 2;
         ENDIF
+        
+        TEST1;
     ENDPROC
 ENDMODULE
     """
