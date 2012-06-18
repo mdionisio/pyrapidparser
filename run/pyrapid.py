@@ -93,6 +93,9 @@ class SymProcedure(Symbol):
 
 class Symbols(Singleton.Singleton):
     def __global_init__(self):
+        self.reset()
+        
+    def reset(self):
         self.global_symbol = {}
         self.module_symbol = {}
         self.local_symbol = {}
@@ -103,7 +106,8 @@ class Symbols(Singleton.Singleton):
             try:
                 return self.scope_symbol[-1][2][symbolname]
             except IndexError:
-                print ("error: there is no scope defined")
+                pass
+                #print ("error: there is no scope defined")
             except KeyError:
                 pass
             if (functionname is None) and (modulename is None):

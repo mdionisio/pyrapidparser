@@ -28,7 +28,12 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         self.writemodule("import pyrapid")
         self.writemodule("from collections import OrderedDict")
         
-    def close(self):
+    def close(self, etrypoint=None):
+        if not(entrypoint is None):
+            self.writemodule("if __name__ == '__main__':" )
+            self.pushModuleScope()
+            self.writemodule("pyrapid.Symbols().GetSymbol(%s).data({})"%(repr(entrypoint),))
+            self.popModuleScope()
         self.file_init.close()
         self.file_module.close()
         
@@ -110,7 +115,12 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         
         
     def visit_CommentAST(self, node):
-        self.writemodule( "# ## COMMENT:" + node.comment +" ##")
+        const_python_start = "python:"
+        if node.comment.startswith(const_python_start):
+            self.writemodule( "# from python comment ...")
+            self.writemodule( node.comment[len(const_python_start):])
+        else:
+            self.writemodule( "# ## COMMENT:" + node.comment +" ##")
         
     def pre_visit_TypeDefAST(self, node):
         self.writemodule("############################# start type definition")
@@ -414,6 +424,8 @@ class rapid_%s (pyrapid.rapid_struct):
                     parse.visit( node.var )
                 else:
                     self.simple_writemodule( "pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s)" % ( repr(node.var.name), repr(self.module_name), repr(self.function_name) ) )
+                if bsym:
+                    self.simple_writemodule( ".data" )
             else:
                 if isinstance(node.var, rapid_ast.VariableAST):
                     parse.visit( node.var )
@@ -423,7 +435,10 @@ class rapid_%s (pyrapid.rapid_struct):
                 self.simple_writemodule( ".GetElem( "  )
                 
                 for i in varindexlist[:-1]:
+                    old = self.bSymVariableAST
+                    self.bSymVariableAST = False
                     self.visit( i )
+                    self.bSymVariableAST = old
                     self.simple_writemodule( ", ")
                 self.visit( varindexlist[-1] )
                     
@@ -435,8 +450,7 @@ class rapid_%s (pyrapid.rapid_struct):
             else:
                 raise Exception("if there is a component we need a variable as data before .")
 
-        if bsym:
-            self.simple_writemodule( ".data" )
+        
         if bget:
             self.simple_writemodule( ".Get()" )
         try:
@@ -681,9 +695,12 @@ class rapid_%s (pyrapid.rapid_struct):
 
 if __name__ == '__main__':
     import sys
-    if len(sys.argv)>0:
+    entrypoint = None
+    if len(sys.argv)>1:
+        entrypoint = sys.argv[1]
+    if len(sys.argv)>2:
         ltext = []
-        for i in sys.argv[1:]:
+        for i in sys.argv[2:]:
             with open(i,"r") as f:
                 ltext.append(f.read())
         text = "\n".join(ltext)
@@ -696,5 +713,6 @@ if __name__ == '__main__':
     traslate = TraslateRapidToPython()
     
     traslate.visit(allmodule)
-    traslate.close()
+    traslate.close(entrypoint)
+    
 
