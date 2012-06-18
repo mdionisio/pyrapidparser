@@ -136,14 +136,14 @@ class RAPIDParser(PLYParser):
     def p_module_declaration_list_1(self, p):
         """ module_declaration_list    : 
         """
-        p[0] = [ ]
+        p[0] = rapid_ast.ModulesAST([ ])
         
     def p_module_declaration_list_2(self, p):
         """ module_declaration_list    :  module_declaration_list module_declaration
         """
-        attriblist = p[1]
+        attriblist = p[1].module_list
         attriblist.append(p[2])
-        p[0] = attriblist
+        p[0] = rapid_ast.ModulesAST(attriblist)
     
     
     ###

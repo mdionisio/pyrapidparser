@@ -69,7 +69,7 @@ class SymPers(Symbol):
 class SymFunction(Symbol):
     def __init__(self, parameters, returntype, call):
         Symbol.__init__(self, Symbol.SYM_TYPE_PROCEDURE, call)
-        self.parameters = {}
+        self.parameters = parameters
         self.localsymbol = {}
         self.returntype = returntype
     
@@ -82,7 +82,7 @@ class SymFunction(Symbol):
 class SymProcedure(Symbol):
     def __init__(self, parameters, call):
         Symbol.__init__(self, Symbol.SYM_TYPE_PROCEDURE, call)
-        self.parameters = {}
+        self.parameters = parameters
         self.localsymbol = {}
     
     def AddLocalSymbol(self, symbolname, data):
