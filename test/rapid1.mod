@@ -6,6 +6,7 @@ MODULE syun1
         num usecount;
     ENDRECORD
     CONST prova p1 := [ 100 ];
+    VAR prova pp1 := [ 100 ];
     CONST num n1 := p1.usecount;
     CONST num c1:=10;
     CONST num c2:=c1+1;
@@ -36,6 +37,58 @@ MODULE syun1
         a5 := 4;
     ENDPROC
     
+    PROC TEST5(VAR num p1, VAR num p2{*})
+        VAR num p10 := 1;
+        VAR num p11{3} := [ 10, 30, 50 ];
+        VAR prova p12 := [ 100 ];
+        VAR prova p13{3};
+        !python:print "test5"
+        !python:print "p1"
+        !python:print pyrapid.Symbols().GetSymbol("p1").data.Get()
+        !python:print "p2 .1"
+        !python:print pyrapid.Symbols().GetSymbol("p2").data.GetElem(1).Get()
+        !python:print "p2 .2"
+        !python:print pyrapid.Symbols().GetSymbol("p2").data.GetElem(2).Get()
+        !python:print "p2 .3"
+        !python:print pyrapid.Symbols().GetSymbol("p2").data.GetElem(3).Get()
+        p2{3} := p2{3} +1;
+        p2{2} := p2{2} +1;
+        p2{1} := p2{1} +1;
+    ENDPROC
+    
+    PROC TEST6(num p1, num p2{*})
+        VAR num p10 := 1;
+        VAR num p11{3} := [ 10, 30, 50 ];
+        VAR prova p12 := [ 100 ];
+        VAR prova p13{3};
+        !python:print "test6"
+        !python:print "p1"
+        !python:print pyrapid.Symbols().GetSymbol("p1").data.Get()
+        !python:print "p2 .1"
+        !python:print pyrapid.Symbols().GetSymbol("p2").data.GetElem(1).Get()
+        !python:print "p2 .2"
+        !python:print pyrapid.Symbols().GetSymbol("p2").data.GetElem(2).Get()
+        !python:print "p2 .3"
+        !python:print pyrapid.Symbols().GetSymbol("p2").data.GetElem(3).Get()
+        p2{3} := p2{3} +1;
+        p2{2} := p2{2} +1;
+        p2{1} := p2{1} +1;
+    ENDPROC
+    
+    PROC TEST7(VAR prova p1)
+        !python:print "test7"
+        !python:print "p1"
+        !python:print pyrapid.Symbols().GetSymbol("p1").data.GetElem("usecount").Get()
+        p1.usecount := 1;
+    ENDPROC
+    
+    PROC TEST8(prova p1)
+        !python:print "test8"
+        !python:print "p1"
+        !python:print pyrapid.Symbols().GetSymbol("p1").data.GetElem("usecount").Get()
+        p1.usecount := 1;
+    ENDPROC
+    
     
     
     PROC PIPPO(VAR num p1, VAR num p2{*})
@@ -46,6 +99,15 @@ MODULE syun1
         !python:print "pippo"
         !python:print "p1"
         !python:print pyrapid.Symbols().GetSymbol("p1").data.Get()
+        !python:print "p2 .1"
+        !python:print pyrapid.Symbols().GetSymbol("p2").data.GetElem(1).Get()
+        !python:print "p2 .2"
+        !python:print pyrapid.Symbols().GetSymbol("p2").data.GetElem(2).Get()
+        !python:print "p2 .3"
+        !python:print pyrapid.Symbols().GetSymbol("p2").data.GetElem(3).Get()
+        p2{3} := p2{3} +1;
+        p2{2} := p2{2} +1;
+        p2{1} := p2{1} +1;
         
         p1 := 2;
         a5 := 1;
@@ -73,20 +135,57 @@ MODULE syun1
         !python:print pyrapid.Symbols().GetSymbol("a5").data.Get()
         TEST2 a5;
         !python:print pyrapid.Symbols().GetSymbol("a5").data.Get()
-        TEST4 a5;
-        !python:print pyrapid.Symbols().GetSymbol("a5").data.Get()
         TEST3 TRUE;
+        !python:print pyrapid.Symbols().GetSymbol("a5").data.Get()
+        TEST4 a5;
         !python:print pyrapid.Symbols().GetSymbol("a5").data.Get()
     ENDPROC
     
     PROC MAINPROC()
     !python:print "main"
         VAR num pnum := 1;
-        VAR num pvec{3} := [ 10, 30, 50 ];
+        VAR num pvec{3} := [ 11, 21, 31 ];
         !python:print "pnum"
         !python:print pyrapid.Symbols().GetSymbol("pnum").data.Get()
+        
+        TEST6 1, [1, 2, 3];
+        
+        TEST5 pnum, pvec;
+        !python:print "pnum"
+        !python:print pyrapid.Symbols().GetSymbol("pnum").data.Get()
+        !python:print "pvec .1"
+        !python:print pyrapid.Symbols().GetSymbol("pvec").data.GetElem(1).Get()
+        !python:print "pvec .2"
+        !python:print pyrapid.Symbols().GetSymbol("pvec").data.GetElem(2).Get()
+        !python:print "pvec .3"
+        !python:print pyrapid.Symbols().GetSymbol("pvec").data.GetElem(3).Get()
+        
+        TEST6 pnum, pvec;
+        !python:print "pnum"
+        !python:print pyrapid.Symbols().GetSymbol("pnum").data.Get()
+        !python:print "pvec .1"
+        !python:print pyrapid.Symbols().GetSymbol("pvec").data.GetElem(1).Get()
+        !python:print "pvec .2"
+        !python:print pyrapid.Symbols().GetSymbol("pvec").data.GetElem(2).Get()
+        !python:print "pvec .3"
+        !python:print pyrapid.Symbols().GetSymbol("pvec").data.GetElem(3).Get()
+        
+        TEST8 pp1;
+        !python:print "pp1"
+        !python:print pyrapid.Symbols().GetSymbol("pp1").data.GetElem("usecount").Get()
+        
+        TEST7 pp1;
+        !python:print "pp1"
+        !python:print pyrapid.Symbols().GetSymbol("pp1").data.GetElem("usecount").Get()
+        
         PIPPO pnum, pvec;
         !python:print "pnum"
         !python:print pyrapid.Symbols().GetSymbol("pnum").data.Get()
+        !python:print "pvec .1"
+        !python:print pyrapid.Symbols().GetSymbol("pvec").data.GetElem(1).Get()
+        !python:print "pvec .2"
+        !python:print pyrapid.Symbols().GetSymbol("pvec").data.GetElem(2).Get()
+        !python:print "pvec .3"
+        !python:print pyrapid.Symbols().GetSymbol("pvec").data.GetElem(3).Get()
     ENDPROC
 ENDMODULE

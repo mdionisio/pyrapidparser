@@ -27,6 +27,7 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         self.writemodule( "#this file is an automatic traslation of rapid code")
         self.writemodule("import pyrapid")
         self.writemodule("from collections import OrderedDict")
+        self.writemodule("import copy")
         
     def close(self, etrypoint=None):
         if not(entrypoint is None):
@@ -564,9 +565,11 @@ class rapid_%s (pyrapid.rapid_struct):
             if self.parameters_defined[argumentname][1]=="NORMAL":
                 vartype = self.parameters_defined[argumentname][2]
                 #todo make type compare
-                self.simple_writemodule("pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(" % ( repr(vartype), repr(self.module_name), repr(self.function_name) ))
+                self.bSymVariableAST = False
+                self.bGetVariableAST = False
+                self.simple_writemodule("copy.deepcopy(")
                 self.visit( node.argumentvalue )
-                self.simple_writemodule("))")
+                self.simple_writemodule(")")
             elif (self.parameters_defined[argumentname][1]=="VAR") or (self.parameters_defined[argumentname][1]=="PERS") or (self.parameters_defined[argumentname][1]=="INOUT"):
                 self.bSymVariableAST = False
                 self.bGetVariableAST = False
@@ -576,9 +579,15 @@ class rapid_%s (pyrapid.rapid_struct):
         else:
             if (self.parameters_defined[argumentname][1]=="NORMAL") or (self.parameters_defined[argumentname][1]=="INOUT"):
                 vartype = self.parameters_defined[argumentname][2]
-                self.simple_writemodule("pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(" % ( repr(vartype), repr(self.module_name), repr(self.function_name) ))
-                self.visit( node.argumentvalue )
-                self.simple_writemodule("))")
+                varinstance_size = self.parameters_defined[argumentname][3]
+                if varinstance_size==0:
+                    self.simple_writemodule("pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(" % ( repr(vartype), repr(self.module_name), repr(self.function_name) ))
+                    self.visit( node.argumentvalue )
+                    self.simple_writemodule("))")
+                else:
+                    self.simple_writemodule("pyrapid.Symbol.CreateVar( pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data, " % ( repr(vartype), repr(self.module_name), repr(self.function_name) ) )
+                    self.visit( node.argumentvalue )
+                    self.simple_writemodule("))")
             else:
                 raise Exception("error 3")
             

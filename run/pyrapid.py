@@ -224,6 +224,7 @@ class rapid_array :
     def __init__(self, size=[], elem_type=None, val=None):
         if len(size)==0:
             if not (val is None):
+                self.elem_type = elem_type
                 self.Set(val)
             else:
                 self.size = None
@@ -236,11 +237,12 @@ class rapid_array :
             
     def SetSize(self, size, val=None):
         if self.size is None:
-            self.size = size  
             if val is None:
+                self.size = size
                 self.val = [ self.elem_type() for i in range(reduce(operator.mul,self.size)) ]
             else:
-                val =  rapid_array.unrollarray(val)
+                self.size = size
+                val, psize =  rapid_array.unrollarray(val)
                 self.val = [ self.elem_type(val[i]) for i in range(reduce(operator.mul,self.size)) ]
         else:
             raise Exception("size already defined")
@@ -248,12 +250,21 @@ class rapid_array :
     @staticmethod
     def unrollarray(indata):
         out = []
+        psize = [ len(indata) ]
+        tmp_psize = None
         for i in indata:
             if isinstance(i, list):
-                out += unrollarray(i)
+                outt, psizet = rapid_array.unrollarray(i) 
+                out += outt 
+                if tmp_psize is None:
+                    tmp_psize = psizet
+                elif tmp_psize != psizet:
+                    raise Exception("it is not an array")
             else:
                 out.append(i)
-        return out
+        if not (tmp_psize is None):
+            psize += tmp_psize
+        return (out, psize)
             
     def toLinear(self, val):
         if isinstance(val, int):
@@ -286,6 +297,10 @@ class rapid_array :
             # add type check and compute size
             self.elem_type = val.GetType()
             self.size = val.GetSize()
+        elif isinstance(val, list):
+            val, psize =  rapid_array.unrollarray(val)
+            self.size = [ len(val) ]
+            self.val = [ self.elem_type(val[i]) for i in range(reduce(operator.mul,self.size)) ]
         else:
             raise Exception("type unsupported")
         
