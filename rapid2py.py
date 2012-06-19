@@ -5,6 +5,7 @@ import os.path
 import run.pyrapid as pyrapid
 import copy
 import rapid_parser
+from collections import OrderedDict
 
 class TraslateRapidToPython( rapid_ast.NodeVisitor ):
     
@@ -16,6 +17,7 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         self.module_name = None
         self.module_attribute = []
         self.function_name = None
+        self.return_type = None
         self.indent_module = 0
         self.indent_init = 0
         self.directory = "run"
@@ -85,6 +87,7 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         self.indent_module = 0
         self.indent_init = 0
         self.function_name = None
+        self.return_type = None
         self.module_attribute = []
         
         #module_name*, module_attribute**, type_definitions**, data_definitions**, routine_definitions**
@@ -116,6 +119,7 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         self.module_name = None
         self.module_attribute = []
         self.function_name = None
+        self.return_type = None
         
         
     def visit_CommentAST(self, node):
@@ -505,11 +509,16 @@ class rapid_%s (pyrapid.rapid_struct):
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
         self.simple_writeindent()
+        
         if node.result is None:
+            if not(self.return_type is None):
+                raise Exception("function %s return nothing"%(self.function_name,))
             self.simple_writemodule( "return " )
         else:
+            if self.return_type is None:
+                raise Exception("procedure %s return a type"%(self.function_name,))
             self.simple_writemodule( "return ( " )
-            self.visit(node.source)
+            self.visit(node.result)
             self.simple_writemodule(" )")
         self.simple_writemodule()
         
@@ -578,6 +587,76 @@ class rapid_%s (pyrapid.rapid_struct):
             self.visit(i)
         
         self.popModuleScope()
+        
+    def visit_FunctionArgumentAST(self, node):    
+        #type "Required" or "Optional" or "Conditional" or None
+        #argumentname is IdentifierAST or None
+        #argumentvalue is ExpressionAST ... or VariableAST or None
+        
+        if node.type is None:
+            raise Exception("function parameter not completly defined")
+        
+        if node.argumentname is None:
+            if isinstance(self.parameters_index, int):
+                try:
+                    argumentname = self.parameters_defined.keys()[self.parameters_index]
+                except:
+                    raise Exception("too much parameters")
+                self.parameters_index += 1
+            else:
+                raise Exception("positional parameter after a named one")
+        else:
+            argumentname = node.argumentname.name
+            self.parameters_index = None
+        
+        try:
+            self.defined.index(argumentname)
+            raise Exception("argument %s already defined"%(argumentname,))
+        except ValueError:
+            pass
+        
+        try:
+            self.parameters_defined[argumentname]
+        except:
+            raise Exception("%s is not a valid parameter"%(argumentname))
+            
+        self.defined.append(argumentname)
+        self.simple_writemodule( "%s:" % (repr(argumentname),))
+        if isinstance(node.argumentvalue, rapid_ast.VariableAST):
+            #todo add check type
+            #take the type of the symbol self.parameters_defined[argumentname] and compare it with
+            #
+            #vartype = self.parameters_defined[argumentname][2]
+            #varsize = self.parameters_defined[argumentname][2]
+            #
+            if self.parameters_defined[argumentname][1]=="NORMAL":
+                
+                #todo make type compare
+                self.bSymVariableAST = False
+                self.bGetVariableAST = False
+                self.simple_writemodule("copy.deepcopy(")
+                self.visit( node.argumentvalue )
+                self.simple_writemodule(")")
+            elif (self.parameters_defined[argumentname][1]=="VAR") or (self.parameters_defined[argumentname][1]=="PERS") or (self.parameters_defined[argumentname][1]=="INOUT"):
+                self.bSymVariableAST = False
+                self.bGetVariableAST = False
+                self.visit(node.argumentvalue)
+            else:
+                raise Exception("Only NORMAL, VAR, PERS, and INOUT are supported is the imput is a variable")
+        else:
+            if (self.parameters_defined[argumentname][1]=="NORMAL") or (self.parameters_defined[argumentname][1]=="INOUT"):
+                vartype = self.parameters_defined[argumentname][2]
+                varinstance_size = self.parameters_defined[argumentname][3]
+                if varinstance_size==0:
+                    self.simple_writemodule("pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(" % ( repr(vartype), repr(self.module_name), repr(self.function_name) ))
+                    self.visit( node.argumentvalue )
+                    self.simple_writemodule("))")
+                else:
+                    self.simple_writemodule("pyrapid.Symbol.CreateVar( pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data, " % ( repr(vartype), repr(self.module_name), repr(self.function_name) ) )
+                    self.visit( node.argumentvalue )
+                    self.simple_writemodule("))")
+            else:
+                raise Exception("only NORMAL or INOUT are supported if the input is an expression")
     
     def visit_ProcedureArgumentAST(self, node):    
         #type "Required" or "Optional" or "Conditional" or None
@@ -588,7 +667,7 @@ class rapid_%s (pyrapid.rapid_struct):
             self.writemodule("# Line %s"%(str(node.coord),))
         
         if node.type is None:
-            raise Exception("error 1")
+            raise Exception("procedure parameter not completly defined")
         
         if node.argumentname is None:
             if isinstance(self.parameters_index, int):
@@ -655,6 +734,47 @@ class rapid_%s (pyrapid.rapid_struct):
             
         self.simple_writemodule( )
         
+    def visit_FunctionCallAST(self, node):
+        #function is IdentifierAST or ExpressionAST
+        #arguments list of FunctionArgumentAST
+        
+        function_name = node.function.name
+        
+        refsym = pyrapid.Symbols().GetSymbol(symbolname=function_name, modulename=self.module_name, functionname=self.function_name)
+        if refsym is None:
+            raise Exception("procedure %s used in module %s function %s not defined"%(function_name, self.module_name, self.function_name))
+        procedure_call = refsym.data
+        if refsym.type != pyrapid.Symbol.SYM_TYPE_PROCEDURE:
+            raise Exception("symbol %s used in module %s function %s has to be a procedure"%(function_name, self.module_name, self.function_name))
+        
+        self.parameters_defined = refsym.parameters
+        #compute parameter list
+        self.parameters_index = 0
+        self.defined = []
+        
+        self.simple_writemodule("pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data( {" % ( repr(function_name), repr(self.module_name), repr(self.function_name) ))
+        
+        if len(node.arguments)>0:
+            for i in node.arguments[:-1]:
+                self.visit(i)
+                self.simple_writemodule(",")
+            self.visit(node.arguments[-1])
+            
+        self.simple_writemodule("} )")
+        
+            
+        for ik,iv in self.parameters_defined.iteritems():
+            if iv[0]=='required':
+                try:
+                    self.defined.index(ik)
+                except ValueError:
+                    raise Exception("argument %s is required"%(ik,))
+                    
+        del self.parameters_defined
+        del self.parameters_index
+        del self.defined
+                    
+        
         
     def visit_ProcedureCallAST(self, node):
         #procedure is IdentifierAST or ExpressionAST
@@ -671,7 +791,7 @@ class rapid_%s (pyrapid.rapid_struct):
         procedure_call = refsym.data
         if refsym.type != pyrapid.Symbol.SYM_TYPE_PROCEDURE:
             raise Exception("symbol %s used in module %s function %s has to be a procedure"%(procedure_name, self.module_name, self.function_name))
-        self.writemodule( "procedure_call = pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data" % ( repr(procedure_name), repr(self.module_name), repr(self.function_name) ) )
+        
         self.parameters_defined = refsym.parameters
         #compute parameter list
         self.writemodule("parameters_actual = {}")
@@ -688,12 +808,11 @@ class rapid_%s (pyrapid.rapid_struct):
                 except ValueError:
                     raise Exception("argument %s is required"%(ik,))
         
-        self.writemodule("procedure_call(parameters_actual)")
+        self.writemodule("pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(parameters_actual)" % ( repr(procedure_name), repr(self.module_name), repr(self.function_name) ))
         self.writemodule("del parameters_actual")
-        self.writemodule("del procedure_call")
-        self.writemodule("del self.parameters_index")
-        self.writemodule("del self.parameters_defined")
-        self.writemodule("del self.defined")
+        del self.parameters_index
+        del self.parameters_defined
+        del self.defined
         self.writemodule("# End Call procedure")
         
     def visit_ProcedureDeclarationAST(self, node):
@@ -701,9 +820,11 @@ class rapid_%s (pyrapid.rapid_struct):
         
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
+            
+        self.writemodule("# Start Procedure Definition")
         
-        self.function_name =  node.procedure_name.name
-        from collections import OrderedDict
+        self.return_type = None
+        
         self.params = OrderedDict()
         self.lastparamadded = None
         
@@ -711,6 +832,8 @@ class rapid_%s (pyrapid.rapid_struct):
         for i in node.parameter_list:
             #ParameterDefinitionAST or OptionalParameterDefinitionAST or SwitchParameterDefinitionAST or None
             self.visit(i)
+            
+        self.function_name =  node.procedure_name.name
         
         params = repr(self.params)
             
@@ -728,48 +851,48 @@ class rapid_%s (pyrapid.rapid_struct):
             
         self.pushModuleScope()
         
-        pyrapid.Symbols().PushScope(modulename=self.module_name, functionname=self.function_name, invalue={})
-        
-        for ik,iv in self.params.iteritems():
-            vartype, paramtype, ptype, psize, pdep = iv
-            if psize==0:
-                getvar = pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data())
-            else:
-                getvar = pyrapid.Symbol.CreateVar(pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data) )
-            pyrapid.Symbols().AddScopeSym(ik, getvar)
-        
-        self.writemodule( "pyrapid.Symbols().PushScope(modulename=%s, functionname=%s, invalue=local_args_scope)"%(repr(self.module_name), repr(self.function_name)))
-        
-        self.writemodule("# data definitions")
-        
-        for i in node.data_definitions:
-            self.visit(i)
-        
-        self.writemodule("# stantments")
-        
-        for i in node.statement_list:
-            self.visit(i)
-        
-        self.writemodule("# backward stantment")
-        
-        if not ( node.routine_backward is None ):
-            self.visit(node.routine_backward)
-        
-        self.writemodule("# error stantment")
-        
-        if not ( node.routine_error is None ):    
-            self.visit(node.routine_error)
-        
-        self.writemodule("# error undo")
-        
-        if not ( node.routine_undo is None ):
-            self.visit(node.routine_undo)
+        with pyrapid.Symbols().Scope(modulename=self.module_name, functionname=self.function_name, invalue={}):
             
-        self.writemodule("# end stantment")
-        
-        self.writemodule("pyrapid.Symbols().PopScope()")
+            for ik,iv in self.params.iteritems():
+                vartype, paramtype, ptype, psize, pdep = iv
+                if psize==0:
+                    getvar = pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data())
+                else:
+                    getvar = pyrapid.Symbol.CreateVar(pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data) )
+                pyrapid.Symbols().AddScopeSym(ik, getvar)
+            
+            self.writemodule( "with pyrapid.Symbols().Scope(modulename=%s, functionname=%s, invalue=local_args_scope):"%(repr(self.module_name), repr(self.function_name)))
+            self.pushModuleScope()
+            
+            self.writemodule("# data definitions")
+            
+            for i in node.data_definitions:
+                self.visit(i)
+            
+            self.writemodule("# stantments")
+            
+            for i in node.statement_list:
+                self.visit(i)
+            
+            self.writemodule("# backward stantment")
+            
+            if not ( node.routine_backward is None ):
+                self.visit(node.routine_backward)
+            
+            self.writemodule("# error stantment")
+            
+            if not ( node.routine_error is None ):    
+                self.visit(node.routine_error)
+            
+            self.writemodule("# error undo")
+            
+            if not ( node.routine_undo is None ):
+                self.visit(node.routine_undo)
+                
+            self.writemodule("# end stantment")
+            
+            self.popModuleScope()
         self.popModuleScope()
-        pyrapid.Symbols().PopScope()
         
         if self.tmp_outineDeclarationATS_data is None:
             self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateProcedure(%s, rapid_proc_%s))"%(repr(self.function_name), params, self.function_name,))
@@ -778,7 +901,103 @@ class rapid_%s (pyrapid.rapid_struct):
             
         self.writemodule("del rapid_proc_%s" % (self.function_name,))
         
+        self.function_name =  None
+        self.return_type = None
+        
         del self.params
+        
+        self.writemodule("# End Procedure Definition")
+        
+    def visit_FunctionDeclarationAST(self, node):
+        #data_type* function_name*, parameter_list**, data_definitions**, statement_list**, routine_error*, routine_undo*
+        
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
+            
+        self.writemodule("# Start Function Definition")
+        
+        self.return_type = node.data_type.name
+        
+        returntype = pyrapid.Symbols().GetSymbol(self.return_type, self.module_name, self.function_name)
+        sreturntype = "pyrapid.Symbols().GetSymbol(%s, %s, %s)" %(repr(self.return_type), repr(self.module_name), repr(self.function_name))       
+        
+        self.params = OrderedDict()
+        self.lastparamadded = None
+        
+        self.paramslist = []
+        for i in node.parameter_list:
+            #ParameterDefinitionAST or OptionalParameterDefinitionAST or SwitchParameterDefinitionAST or None
+            self.visit(i)
+        
+        self.function_name =  node.function_name.name
+        
+        params = repr(self.params)
+            
+        proc = "def rapid_func_%s (local_args_scope):" % (self.function_name)
+
+        def _rapid_func_(local_args_scope):
+            pass
+        
+        self.writemodule(proc)
+        
+        if self.tmp_outineDeclarationATS_data is None:
+            pyrapid.Symbols().AddGlobalSym(self.function_name, pyrapid.Symbol.CreateFunction(self.params, returntype, _rapid_func_))
+        else:
+            pyrapid.Symbols().AddModuleSym(self.module_name, self.function_name, pyrapid.Symbol.CreateFunction(self.params, returntype, _rapid_proc_))
+            
+        self.pushModuleScope()
+        
+        with pyrapid.Symbols().Scope(modulename=self.module_name, functionname=self.function_name, invalue={}):
+            
+            for ik,iv in self.params.iteritems():
+                vartype, paramtype, ptype, psize, pdep = iv
+                if psize==0:
+                    getvar = pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data())
+                else:
+                    getvar = pyrapid.Symbol.CreateVar(pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data) )
+                pyrapid.Symbols().AddScopeSym(ik, getvar)
+            
+            self.writemodule( "with pyrapid.Symbols().Scope(modulename=%s, functionname=%s, invalue=local_args_scope):"%(repr(self.module_name), repr(self.function_name)))
+            self.pushModuleScope()
+            
+            self.writemodule("# data definitions")
+            
+            for i in node.data_definitions:
+                self.visit(i)
+            
+            self.writemodule("# stantments")
+            
+            for i in node.statement_list:
+                self.visit(i)
+                    
+            self.writemodule("# error stantment")
+            
+            if not ( node.routine_error is None ):    
+                self.visit(node.routine_error)
+            
+            self.writemodule("# error undo")
+            
+            if not ( node.routine_undo is None ):
+                self.visit(node.routine_undo)
+                
+            self.writemodule("# end stantment")
+            
+            self.popModuleScope()
+        self.popModuleScope()
+        
+        if self.tmp_outineDeclarationATS_data is None:
+            self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateFunction(%s, %s, rapid_func_%s))"%(repr(self.function_name), params, sreturntype, self.function_name,))
+        else:
+            self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, pyrapid.Symbol.CreateFunction(%s, %s, rapid_func_%s))"%(repr(self.module_name), params, sreturntype, repr(self.function_name), self.function_name, ))
+            
+        self.writemodule("del rapid_func_%s" % (self.function_name,))
+        
+        self.function_name =  None
+        self.return_type = None
+        
+        del self.params
+        
+        self.writemodule("# End Function Definition")
         
     #
 

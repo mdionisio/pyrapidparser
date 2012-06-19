@@ -155,6 +155,19 @@ class Symbols(Singleton.Singleton):
         else:
             msymbol[symbolname] = data
             
+    class Scope():
+        def __init__(self, modulename, functionname=None, invalue={}):
+            self.modulename = modulename
+            self.functionname = functionname
+            self.invalue = invalue
+            
+        def __enter__(self):
+            Symbols().PushScope(self.modulename, self.functionname, self.invalue)
+            return Symbols()
+            
+        def __exit__(self, type, value, traceback):
+            Symbols().PopScope()
+            
     def PushScope(self, modulename, functionname=None, invalue={}):
         self.scope_symbol.append( ( modulename, functionname, invalue ) )
         

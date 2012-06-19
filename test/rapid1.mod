@@ -141,11 +141,26 @@ MODULE syun1
         !python:print pyrapid.Symbols().GetSymbol("a5").data.Get()
     ENDPROC
     
+    FUNC num FUNC1()
+        RETURN 1;
+    ENDFUNC
+    
+    FUNC num FUNC2(num a)
+        RETURN a;
+    ENDFUNC
+    
     PROC MAINPROC()
     !python:print "main"
         VAR num pnum := 1;
         VAR num pvec{3} := [ 11, 21, 31 ];
         !python:print "pnum"
+        !python:print pyrapid.Symbols().GetSymbol("pnum").data.Get()
+        
+        pnum := FUNC1();
+        !python:print "pnum after func1"
+        !python:print pyrapid.Symbols().GetSymbol("pnum").data.Get()
+        pnum := FUNC2(2);
+        !python:print "pnum after func2"
         !python:print pyrapid.Symbols().GetSymbol("pnum").data.Get()
         
         TEST6 1, [1, 2, 3];
