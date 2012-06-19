@@ -142,10 +142,23 @@ MODULE syun1
     ENDPROC
     
     FUNC num FUNC1()
+        VAR num i:=1;
+        WHILE (i < 10) DO
+            !python:print "in while"
+            !python:print pyrapid.Symbols().GetSymbol("i").data.Get()
+            i := i + 1;
+        ENDWHILE
         RETURN 1;
     ENDFUNC
     
     FUNC num FUNC2(num a)
+        VAR num i;
+        FOR i FROM 1 TO a STEP 1 DO
+            !python:print "in for"
+            !python:print pyrapid.Symbols().GetSymbol("i").data.Get()
+            !python:print pyrapid.Symbols().GetSymbol("a").data.Get()
+            !python:print "--"
+        ENDFOR
         RETURN a;
     ENDFUNC
     

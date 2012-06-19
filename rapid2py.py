@@ -57,6 +57,30 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         if not (self.file_init is None):
             self.file_init.write ((" " * self.indent_init) + a + "\n")
             
+    def ModuleScope(self):
+        class Scope():
+            def __init__(self, this):
+                self.this = this
+                
+            def __enter__(self):
+                self.this.pushModuleScope()
+                
+            def __exit__(self, type, value, traceback):
+                self.this.popModuleScope()
+        return Scope(self)
+                
+    def InitScope(self):
+        class Scope():
+            def __init__(self, this):
+                self.this = this
+                
+            def __enter__(self):
+                self.this.pushInitScope()
+                
+            def __exit__(self, type, value, traceback):
+                self.this.popInitScope()
+        return Scope(self)
+            
     def pushModuleScope(self):
         self.indent_module += 4
         
@@ -552,23 +576,21 @@ class rapid_%s (pyrapid.rapid_struct):
         self.visit(node.condition)
         self.simple_writemodule( ") :" )
         self.simple_writemodule()
-        self.pushModuleScope()
-        if len(node.statement_list)==0:
-            self.writemodule("pass")
+        with self.ModuleScope():
+            if len(node.statement_list)==0:
+                self.writemodule("pass")
+            
+            for i in node.statement_list:
+                self.visit(i)
         
-        for i in node.statement_list:
-            self.visit(i)
-        
-        self.popModuleScope()
         for i in node.elseif_list:
             self.visit(i)
         
         if len(node.else_statement_list)>0:
             self.writemodule("else:")
-            self.pushModuleScope()
-            for i in node.else_statement_list:
-                self.visit(i)
-            self.popModuleScope()
+            with self.ModuleScope():
+                for i in node.else_statement_list:
+                    self.visit(i)
         
     def visit_ElseIfStatement(self, node):    
         #condition*, statement_list**
@@ -579,14 +601,62 @@ class rapid_%s (pyrapid.rapid_struct):
         self.visit(node.condition)
         self.simple_writemodule( ") :" )
         self.simple_writemodule()
-        self.pushModuleScope()
-        if len(node.statement_list)==0:
-            self.writemodule("pass")
+        with self.ModuleScope():
+            if len(node.statement_list)==0:
+                self.writemodule("pass")
+            
+            for i in node.statement_list:
+                self.visit(i)
+                
+    def visit_ForStatement(self, node):    
+        #loop_variable*, ifrom*, ito*, istep*, statement_list**
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
+        self.writemodule("# FOR Statement")
+        self.simple_writeindent()
+        self.simple_writemodule( "pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data.Set( " % ( repr(node.loop_variable.name), repr(self.module_name), repr(self.function_name) ) )
+        self.visit(node.ifrom)
+        self.simple_writemodule(" ) ")
+        self.simple_writemodule()
         
-        for i in node.statement_list:
-            self.visit(i)
+        self.simple_writeindent()
+        self.simple_writemodule("while ( ")
+        self.simple_writemodule( "pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data.Get() <= (" % ( repr(node.loop_variable.name), repr(self.module_name), repr(self.function_name) ) )
+        self.visit(node.ito)
+        self.simple_writemodule( ")" )
+        self.simple_writemodule("): ")
+        self.simple_writemodule()
+        with self.ModuleScope():
+            for i in node.statement_list:
+                self.visit(i)
+                
+            self.simple_writeindent()
+            self.simple_writemodule( "pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data.Set( " % ( repr(node.loop_variable.name), repr(self.module_name), repr(self.function_name) ) )
+            self.simple_writemodule( "pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data.Get() + (" % ( repr(node.loop_variable.name), repr(self.module_name), repr(self.function_name) ) )
+            self.visit(node.ifrom)
+            self.simple_writemodule(") ) ")
+            self.simple_writemodule()
+        self.writemodule("# END FOR Statement")
         
-        self.popModuleScope()
+    ####
+    def visit_WhileStatement(self, node):    
+        #condition*, statement_list****
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
+        self.writemodule("# WHILE Statement")
+        self.simple_writeindent()
+        self.simple_writemodule("while ( ")
+        self.visit(node.condition)
+        self.simple_writemodule("): ")
+        self.simple_writemodule()
+        with self.ModuleScope():
+            if len(node.statement_list)==0:
+                self.writemodule("pass")
+            for i in node.statement_list:
+                self.visit(i)
+                
+        self.writemodule("# END WHILE Statement")
+    ####
         
     def visit_FunctionArgumentAST(self, node):    
         #type "Required" or "Optional" or "Conditional" or None
@@ -849,50 +919,46 @@ class rapid_%s (pyrapid.rapid_struct):
         else:
             pyrapid.Symbols().AddModuleSym(self.module_name, self.function_name, pyrapid.Symbol.CreateProcedure(self.params, _rapid_proc_))
             
-        self.pushModuleScope()
-        
-        with pyrapid.Symbols().Scope(modulename=self.module_name, functionname=self.function_name, invalue={}):
+        with self.ModuleScope():
             
-            for ik,iv in self.params.iteritems():
-                vartype, paramtype, ptype, psize, pdep = iv
-                if psize==0:
-                    getvar = pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data())
-                else:
-                    getvar = pyrapid.Symbol.CreateVar(pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data) )
-                pyrapid.Symbols().AddScopeSym(ik, getvar)
-            
-            self.writemodule( "with pyrapid.Symbols().Scope(modulename=%s, functionname=%s, invalue=local_args_scope):"%(repr(self.module_name), repr(self.function_name)))
-            self.pushModuleScope()
-            
-            self.writemodule("# data definitions")
-            
-            for i in node.data_definitions:
-                self.visit(i)
-            
-            self.writemodule("# stantments")
-            
-            for i in node.statement_list:
-                self.visit(i)
-            
-            self.writemodule("# backward stantment")
-            
-            if not ( node.routine_backward is None ):
-                self.visit(node.routine_backward)
-            
-            self.writemodule("# error stantment")
-            
-            if not ( node.routine_error is None ):    
-                self.visit(node.routine_error)
-            
-            self.writemodule("# error undo")
-            
-            if not ( node.routine_undo is None ):
-                self.visit(node.routine_undo)
+            with pyrapid.Symbols().Scope(modulename=self.module_name, functionname=self.function_name, invalue={}):
                 
-            self.writemodule("# end stantment")
-            
-            self.popModuleScope()
-        self.popModuleScope()
+                for ik,iv in self.params.iteritems():
+                    vartype, paramtype, ptype, psize, pdep = iv
+                    if psize==0:
+                        getvar = pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data())
+                    else:
+                        getvar = pyrapid.Symbol.CreateVar(pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data) )
+                    pyrapid.Symbols().AddScopeSym(ik, getvar)
+                
+                self.writemodule( "with pyrapid.Symbols().Scope(modulename=%s, functionname=%s, invalue=local_args_scope):"%(repr(self.module_name), repr(self.function_name)))
+                with self.ModuleScope():
+                    self.writemodule("# data definitions")
+                    
+                    for i in node.data_definitions:
+                        self.visit(i)
+                    
+                    self.writemodule("# stantments")
+                    
+                    for i in node.statement_list:
+                        self.visit(i)
+                    
+                    self.writemodule("# backward stantment")
+                    
+                    if not ( node.routine_backward is None ):
+                        self.visit(node.routine_backward)
+                    
+                    self.writemodule("# error stantment")
+                    
+                    if not ( node.routine_error is None ):    
+                        self.visit(node.routine_error)
+                    
+                    self.writemodule("# error undo")
+                    
+                    if not ( node.routine_undo is None ):
+                        self.visit(node.routine_undo)
+                        
+                    self.writemodule("# end stantment")
         
         if self.tmp_outineDeclarationATS_data is None:
             self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateProcedure(%s, rapid_proc_%s))"%(repr(self.function_name), params, self.function_name,))
@@ -945,45 +1011,40 @@ class rapid_%s (pyrapid.rapid_struct):
         else:
             pyrapid.Symbols().AddModuleSym(self.module_name, self.function_name, pyrapid.Symbol.CreateFunction(self.params, returntype, _rapid_proc_))
             
-        self.pushModuleScope()
-        
-        with pyrapid.Symbols().Scope(modulename=self.module_name, functionname=self.function_name, invalue={}):
-            
-            for ik,iv in self.params.iteritems():
-                vartype, paramtype, ptype, psize, pdep = iv
-                if psize==0:
-                    getvar = pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data())
-                else:
-                    getvar = pyrapid.Symbol.CreateVar(pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data) )
-                pyrapid.Symbols().AddScopeSym(ik, getvar)
-            
-            self.writemodule( "with pyrapid.Symbols().Scope(modulename=%s, functionname=%s, invalue=local_args_scope):"%(repr(self.module_name), repr(self.function_name)))
-            self.pushModuleScope()
-            
-            self.writemodule("# data definitions")
-            
-            for i in node.data_definitions:
-                self.visit(i)
-            
-            self.writemodule("# stantments")
-            
-            for i in node.statement_list:
-                self.visit(i)
-                    
-            self.writemodule("# error stantment")
-            
-            if not ( node.routine_error is None ):    
-                self.visit(node.routine_error)
-            
-            self.writemodule("# error undo")
-            
-            if not ( node.routine_undo is None ):
-                self.visit(node.routine_undo)
+        with self.ModuleScope():
+            with pyrapid.Symbols().Scope(modulename=self.module_name, functionname=self.function_name, invalue={}):
                 
-            self.writemodule("# end stantment")
-            
-            self.popModuleScope()
-        self.popModuleScope()
+                for ik,iv in self.params.iteritems():
+                    vartype, paramtype, ptype, psize, pdep = iv
+                    if psize==0:
+                        getvar = pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data())
+                    else:
+                        getvar = pyrapid.Symbol.CreateVar(pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data) )
+                    pyrapid.Symbols().AddScopeSym(ik, getvar)
+                
+                self.writemodule( "with pyrapid.Symbols().Scope(modulename=%s, functionname=%s, invalue=local_args_scope):"%(repr(self.module_name), repr(self.function_name)))
+                with self.ModuleScope():
+                    self.writemodule("# data definitions")
+                    
+                    for i in node.data_definitions:
+                        self.visit(i)
+                    
+                    self.writemodule("# stantments")
+                    
+                    for i in node.statement_list:
+                        self.visit(i)
+                            
+                    self.writemodule("# error stantment")
+                    
+                    if not ( node.routine_error is None ):    
+                        self.visit(node.routine_error)
+                    
+                    self.writemodule("# error undo")
+                    
+                    if not ( node.routine_undo is None ):
+                        self.visit(node.routine_undo)
+                        
+                    self.writemodule("# end stantment")
         
         if self.tmp_outineDeclarationATS_data is None:
             self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateFunction(%s, %s, rapid_func_%s))"%(repr(self.function_name), params, sreturntype, self.function_name,))
