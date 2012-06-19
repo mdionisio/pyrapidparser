@@ -28,6 +28,7 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         self.writemodule("import pyrapid")
         self.writemodule("from collections import OrderedDict")
         self.writemodule("import copy")
+        self.writemodule("import sys")
         
     def close(self, etrypoint=None):
         if not(entrypoint is None):
@@ -79,6 +80,8 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
             2. create a file __init.__py inside the 1. folder
             3. create a file modulename.py  inside the 1. folder
         """
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
         self.indent_module = 0
         self.indent_init = 0
         self.function_name = None
@@ -116,6 +119,8 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         
         
     def visit_CommentAST(self, node):
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
         const_python_start = "python:"
         if node.comment.startswith(const_python_start):
             self.writemodule( "# from python comment ...")
@@ -124,6 +129,8 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
             self.writemodule( "# ## COMMENT:" + node.comment +" ##")
         
     def pre_visit_TypeDefAST(self, node):
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
         self.writemodule("############################# start type definition")
         self.tmp_TypeDefAST_data = node.type
         
@@ -132,6 +139,8 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         self.writemodule("# end type definition")
         
     def visit_AliasDefATS(self, node):
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
         typename = node.type_name.name
         aliasname = node.alias_name.name
         if typename is None:
@@ -154,6 +163,8 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
             self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, pyrapid.Symbol.CreateDataType(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data))"%(repr(self.module_name), repr(aliasname), repr(typename), repr(self.module_name), repr(self.function_name), ))
 
     def visit_RecordDefAST(self, node):
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
         record_name = node.record_name.name
         components = node.components
 
@@ -199,6 +210,8 @@ class rapid_%s (pyrapid.rapid_struct):
 
     def pre_visit_DataDefATS(self, node):
         self.writemodule("############################# start declaration")
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
         self.tmp_DataDefATS_data = node.type
         
     def post_visit_DataDefATS(self, node):
@@ -234,6 +247,8 @@ class rapid_%s (pyrapid.rapid_struct):
             
         
     def visit_VarDeclarationAST(self, node):
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
         varinstance_name, getvar, sgetvar = self.VarConstPersDeclaration(node, pyrapid.Symbol.CreateVar, "pyrapid.Symbol.CreateVar")
         
         if self.tmp_DataDefATS_data is None:
@@ -257,6 +272,8 @@ class rapid_%s (pyrapid.rapid_struct):
                 self.writemodule( "pyrapid.Symbols().AddScopeSym(%s, %s)"%(repr(varinstance_name), sgetvar) )
         
     def visit_ConstDeclarationAST(self, node):
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
         varinstance_name, getvar, sgetvar = self.VarConstPersDeclaration(node, pyrapid.Symbol.CreateConst, "pyrapid.Symbol.CreateConst")
         
         if self.tmp_DataDefATS_data is None:
@@ -280,6 +297,9 @@ class rapid_%s (pyrapid.rapid_struct):
                 self.writemodule( "pyrapid.Symbols().AddScopeSym(%s, %s)"%(repr(varinstance_name), sgetvar) )
     
     def visit_PersDeclarationAST(self, node):
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
+            
         varinstance_name, getvar, sgetvar = self.VarConstPersDeclaration(node, pyrapid.Symbol.CreatePers, "pyrapid.Symbol.CreatePers")
         
         if self.tmp_DataDefATS_data is None:
@@ -465,7 +485,9 @@ class rapid_%s (pyrapid.rapid_struct):
             
     def visit_AssignmentStatementAST(self, node):
         #dest* is VariableAST
-        #, source*
+        #source*
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
         self.simple_writeindent()
         self.bGetVariableAST = False
         self.visit(node.dest)
@@ -475,9 +497,13 @@ class rapid_%s (pyrapid.rapid_struct):
         self.simple_writemodule()
         
     def visit_GotoStatementAST(self, node):
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
         raise Exception("GOTO not yet supported")
         
     def visit_ReturnStatementAST(self, node):
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
         self.simple_writeindent()
         if node.result is None:
             self.simple_writemodule( "return " )
@@ -488,20 +514,30 @@ class rapid_%s (pyrapid.rapid_struct):
         self.simple_writemodule()
         
     def visit_ExitStatementAST(self, node):
-        self.writemodule("import sys")
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
+        
         self.writemodule("sys.exit(1)")
         
     def visit_RetryStatementAST(self, node):
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
         raise Exception("Retry not yet supported")
         
     def visit_TrynextStatementAST(self, node):
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
         raise Exception("Try next not yet supported")
         
     def visit_ConnectStatementAST(self, node):
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
         raise Exception("Connect not yet supported")
         
     def visit_IfStatement(self, node):
         #condition*, statement_list**, elseif_list**, else_statement_list**
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
         self.simple_writeindent()
         self.simple_writemodule( "if (" )
         self.visit(node.condition)
@@ -527,6 +563,8 @@ class rapid_%s (pyrapid.rapid_struct):
         
     def visit_ElseIfStatement(self, node):    
         #condition*, statement_list**
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
         self.simple_writeindent()
         self.simple_writemodule( "elif (" )
         self.visit(node.condition)
@@ -546,24 +584,48 @@ class rapid_%s (pyrapid.rapid_struct):
         #argumentname is IdentifierAST or None
         #argumentvalue is ExpressionAST ... or VariableAST or None
         
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
+        
         if node.type is None:
             raise Exception("error 1")
         
         if node.argumentname is None:
             if isinstance(self.parameters_index, int):
-                argumentname = self.parameters_defined.keys()[self.parameters_index]
+                try:
+                    argumentname = self.parameters_defined.keys()[self.parameters_index]
+                except:
+                    raise Exception("too much parameters")
                 self.parameters_index += 1
             else:
-                raise Exception("error 2")
+                raise Exception("positional parameter after a named one")
         else:
             argumentname = node.argumentname.name
             self.parameters_index = None
         
+        try:
+            self.defined.index(argumentname)
+            raise Exception("argument %s already defined"%(argumentname,))
+        except ValueError:
+            pass
+        
+        try:
+            self.parameters_defined[argumentname]
+        except:
+            raise Exception("%s is not a valid parameter"%(argumentname))
+            
+        self.defined.append(argumentname)
         self.simple_writeindent()
         self.simple_writemodule( "parameters_actual[%s] = " % (repr(argumentname),))
         if isinstance(node.argumentvalue, rapid_ast.VariableAST):
+            #todo add check type
+            #take the type of the symbol self.parameters_defined[argumentname] and compare it with
+            #
+            #vartype = self.parameters_defined[argumentname][2]
+            #varsize = self.parameters_defined[argumentname][2]
+            #
             if self.parameters_defined[argumentname][1]=="NORMAL":
-                vartype = self.parameters_defined[argumentname][2]
+                
                 #todo make type compare
                 self.bSymVariableAST = False
                 self.bGetVariableAST = False
@@ -575,7 +637,7 @@ class rapid_%s (pyrapid.rapid_struct):
                 self.bGetVariableAST = False
                 self.visit(node.argumentvalue)
             else:
-                raise Exception("error 3")
+                raise Exception("Only NORMAL, VAR, PERS, and INOUT are supported is the imput is a variable")
         else:
             if (self.parameters_defined[argumentname][1]=="NORMAL") or (self.parameters_defined[argumentname][1]=="INOUT"):
                 vartype = self.parameters_defined[argumentname][2]
@@ -589,7 +651,7 @@ class rapid_%s (pyrapid.rapid_struct):
                     self.visit( node.argumentvalue )
                     self.simple_writemodule("))")
             else:
-                raise Exception("error 3")
+                raise Exception("only NORMAL or INOUT are supported if the input is an expression")
             
         self.simple_writemodule( )
         
@@ -597,6 +659,10 @@ class rapid_%s (pyrapid.rapid_struct):
     def visit_ProcedureCallAST(self, node):
         #procedure is IdentifierAST or ExpressionAST
         #arguments list of ProcedureArgumentAST
+        
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
+        
         procedure_name = node.procedure.name
         self.writemodule("# Call procedure %s"%(procedure_name,))
         refsym = pyrapid.Symbols().GetSymbol(symbolname=procedure_name, modulename=self.module_name, functionname=self.function_name)
@@ -610,17 +676,32 @@ class rapid_%s (pyrapid.rapid_struct):
         #compute parameter list
         self.writemodule("parameters_actual = {}")
         self.parameters_index = 0
+        self.defined = []
         
         for i in node.arguments:
             self.visit(i)
+            
+        for ik,iv in self.parameters_defined.iteritems():
+            if iv[0]=='required':
+                try:
+                    self.defined.index(ik)
+                except ValueError:
+                    raise Exception("argument %s is required"%(ik,))
         
         self.writemodule("procedure_call(parameters_actual)")
         self.writemodule("del parameters_actual")
         self.writemodule("del procedure_call")
+        self.writemodule("del self.parameters_index")
+        self.writemodule("del self.parameters_defined")
+        self.writemodule("del self.defined")
         self.writemodule("# End Call procedure")
         
     def visit_ProcedureDeclarationAST(self, node):
         #procedure_name*, parameter_list**, data_definitions**, statement_list**, routine_backward*, routine_error*, routine_undo*
+        
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
+        
         self.function_name =  node.procedure_name.name
         from collections import OrderedDict
         self.params = OrderedDict()
@@ -711,17 +792,24 @@ if __name__ == '__main__':
         ltext = []
         for i in sys.argv[2:]:
             with open(i,"r") as f:
-                ltext.append(f.read())
-        text = "\n".join(ltext)
+                ltext.append( (i, f.read()) )
     else:
-        text = sys.stdin.read()
+        ltext = [ ("stdin", sys.stdin.read()) ]
     
-    parser = rapid_parser.RAPIDParser(lex_optimize=True, yacc_debug=False, yacc_optimize=False, start_from='module_declaration_list')
-    allmodule = parser.parse(text, 'x.rapid', debuglevel=0)
+    attriblist = []
+    for fname, text in ltext:
+        parser = rapid_parser.RAPIDParser(lex_optimize=True, yacc_debug=False, yacc_optimize=False, start_from='module_declaration_list')
+        attriblist += parser.parse(text, fname, debuglevel=0).module_list
+    
+    allmodule = rapid_ast.ModulesAST(attriblist)
     
     traslate = TraslateRapidToPython()
+    try:
+        traslate.visit(allmodule)
+    except:
+        traslate.close()
+        raise
     
-    traslate.visit(allmodule)
     traslate.close(entrypoint)
     
 
