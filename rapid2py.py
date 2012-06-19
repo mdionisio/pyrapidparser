@@ -719,7 +719,10 @@ class rapid_%s (pyrapid.rapid_struct):
                 raise Exception("positional parameter after a named one")
         else:
             argumentname = node.argumentname.name
-            self.parameters_index = None
+            if self.parameters_defined.keys()[self.parameters_index] == argumentname:
+                self.parameters_index += 1
+            else:
+                self.parameters_index = None
         
         try:
             self.defined.index(argumentname)
@@ -792,8 +795,11 @@ class rapid_%s (pyrapid.rapid_struct):
                 raise Exception("positional parameter after a named one")
         else:
             argumentname = node.argumentname.name
-            self.parameters_index = None
-        
+            if self.parameters_defined.keys()[self.parameters_index] == argumentname:
+                self.parameters_index += 1
+            else:
+                self.parameters_index = None
+            
         try:
             self.defined.index(argumentname)
             raise Exception("argument %s already defined"%(argumentname,))
@@ -830,7 +836,9 @@ class rapid_%s (pyrapid.rapid_struct):
             else:
                 raise Exception("Only NORMAL, VAR, PERS, and INOUT are supported is the imput is a variable")
         else:
-            if (self.parameters_defined[argumentname][1]=="NORMAL") or (self.parameters_defined[argumentname][1]=="INOUT"):
+            if self.parameters_defined[argumentname][0] == "switch":
+                self.simple_writemodule("pyrapid.Symbol.CreateNone()")
+            elif (self.parameters_defined[argumentname][1]=="NORMAL") or (self.parameters_defined[argumentname][1]=="INOUT"):
                 vartype = self.parameters_defined[argumentname][2]
                 varinstance_size = self.parameters_defined[argumentname][3]
                 if varinstance_size==0:
@@ -842,7 +850,7 @@ class rapid_%s (pyrapid.rapid_struct):
                     self.visit( node.argumentvalue )
                     self.simple_writemodule("))")
             else:
-                raise Exception("only NORMAL or INOUT are supported if the input is an expression")
+                raise Exception("only NORMAL or INOUT are supported if the input is an expression, received=%s"%(self.parameters_defined[argumentname][1],))
             
         self.simple_writemodule( )
         
@@ -967,14 +975,18 @@ class rapid_%s (pyrapid.rapid_struct):
                 
                 for ik,iv in self.params.iteritems():
                     vartype, paramtype, ptype, psize, pdep = iv
-                    if psize==0:
-                        getvar = pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data())
+                    if vartype=="switch":
+                        getvar = pyrapid.Symbol.CreateNone()
                     else:
-                        getvar = pyrapid.Symbol.CreateVar(pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data) )
+                        if psize==0:
+                            getvar = pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data())
+                        else:
+                            getvar = pyrapid.Symbol.CreateVar(pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data) )
                     pyrapid.Symbols().AddScopeSym(ik, getvar)
                 
                 self.writemodule( "with pyrapid.Symbols().Scope(modulename=%s, functionname=%s, invalue=local_args_scope):"%(repr(self.module_name), repr(self.function_name)))
                 with self.ModuleScope():
+                    self.writemodule("pass")
                     self.writemodule("# data definitions")
                     
                     for i in node.data_definitions:
@@ -1058,14 +1070,18 @@ class rapid_%s (pyrapid.rapid_struct):
                 
                 for ik,iv in self.params.iteritems():
                     vartype, paramtype, ptype, psize, pdep = iv
-                    if psize==0:
-                        getvar = pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data())
+                    if vartype=="switch":
+                        getvar = pyrapid.Symbol.CreateNone()
                     else:
-                        getvar = pyrapid.Symbol.CreateVar(pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data) )
+                        if psize==0:
+                            getvar = pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data())
+                        else:
+                            getvar = pyrapid.Symbol.CreateVar(pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data) )
                     pyrapid.Symbols().AddScopeSym(ik, getvar)
                 
                 self.writemodule( "with pyrapid.Symbols().Scope(modulename=%s, functionname=%s, invalue=local_args_scope):"%(repr(self.module_name), repr(self.function_name)))
                 with self.ModuleScope():
+                    self.writemodule("pass")
                     self.writemodule("# data definitions")
                     
                     for i in node.data_definitions:
@@ -1110,15 +1126,24 @@ if __name__ == '__main__':
     entrypoint = None
     if len(sys.argv)>1:
         entrypoint = sys.argv[1]
+        
+    ltext = []
+    import glob
+    
+    for i in glob.glob('./default/*.sys'):
+        with open(i,"r") as f:
+            ltext.append( (i, f.read()) )
+            
     if len(sys.argv)>2:
-        ltext = []
         for i in sys.argv[2:]:
             with open(i,"r") as f:
                 ltext.append( (i, f.read()) )
     else:
-        ltext = [ ("stdin", sys.stdin.read()) ]
+        ltext.append( ("stdin", sys.stdin.read()) )
     
     attriblist = []
+    
+    
     for fname, text in ltext:
         parser = rapid_parser.RAPIDParser(lex_optimize=True, yacc_debug=False, yacc_optimize=False, start_from='module_declaration_list')
         attriblist += parser.parse(text, fname, debuglevel=0).module_list

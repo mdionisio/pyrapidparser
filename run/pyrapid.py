@@ -10,6 +10,7 @@ class Symbol:
     SYM_TYPE_FUNCTION    = 4
     SYM_TYPE_PROCEDURE   = 5
     SYM_TYPE_DATATYPE    = 6
+    SYM_TYPE_NONE        = 7
 
     def __init__(self, type, data):
         self.type = type
@@ -17,6 +18,10 @@ class Symbol:
         
     def Get(self):
         return (self.type, self.data)
+        
+    @classmethod
+    def CreateNone(cls):
+        return cls(cls.SYM_TYPE_NONE, None)
         
     @classmethod
     def CreateDataType(cls, datatype):

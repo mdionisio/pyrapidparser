@@ -1,0 +1,10 @@
+MODULE SYSTEMMODULE(SYSMODULE)
+    PROC WaitTime(switch InPos, num Time)
+        !python:print "---------------------WaitTime"
+        !python:print pyrapid.Symbols().GetSymbol("Time").data.Get()
+        !python:print pyrapid.Symbols().IsInScope("InPos")
+        !python:import time
+        !python:time.sleep(pyrapid.Symbols().GetSymbol("Time").data.Get())
+        !python:print "---------------------"
+    ENDPROC
+ENDMODULE
