@@ -215,5 +215,16 @@ MODULE syun1
         !python:print pyrapid.Symbols().GetSymbol("pvec").data.GetElem(2).Get()
         !python:print "pvec .3"
         !python:print pyrapid.Symbols().GetSymbol("pvec").data.GetElem(3).Get()
+        
+        
+        TEST pnum
+        CASE 1,2,3 :
+        !python:print "test 1 2 3"
+        CASE 4 :
+        !python:print "test 4"
+        DEFAULT :
+        !python:print "test default"
+        ENDTEST
+
     ENDPROC
 ENDMODULE

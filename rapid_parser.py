@@ -194,18 +194,19 @@ class RAPIDParser(PLYParser):
         attriblist = p[1]
         attriblist.append(p[2])
         p[0] = attriblist
-        
+                
     def p_data_declaration_list_1(self, p):
         """ data_declaration_list         : 
         """
-        p[0] = []
-            
+        p[0] = [ ]
+        
     def p_data_declaration_list_2(self, p):
         """ data_declaration_list         : data_declaration_list data_declaration
         """
         attriblist = p[1]
         attriblist.append(p[2])
         p[0] = attriblist
+        
         
     def p_routine_definition_list_1(self, p):
         """ routine_definition_list         :
@@ -218,6 +219,7 @@ class RAPIDParser(PLYParser):
         attriblist = p[1]
         attriblist.append(p[2])
         p[0] = attriblist
+        
     
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
@@ -477,11 +479,12 @@ class RAPIDParser(PLYParser):
         p[0] = [ ]
         
     def p_statement_list_2(self, p):
-        """ statement_list         : statement statement_list
+        """ statement_list         : statement_list statement 
         """
-        attriblist = p[2]
-        attriblist.insert(0, p[1])
+        attriblist = p[1]
+        attriblist.append(p[2])
         p[0] = attriblist
+        
         
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
@@ -851,10 +854,17 @@ class RAPIDParser(PLYParser):
         """
         p[0] = p[3]
         
-    def p_test_value(self, p): 
+    def p_test_value_1(self, p): 
         """ test_value : expression
         """
-        p[0] = p[1]
+        p[0] = [ p[1] ]
+        
+    def p_test_value_2(self, p): 
+        """ test_value : expression COMMA test_value
+        """
+        attriblist = p[3]
+        attriblist.insert(0, p[1])
+        p[0] = attriblist 
         
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
@@ -871,6 +881,7 @@ class RAPIDParser(PLYParser):
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revB_en_library.pdf
     ###  Data Declaration.    par:2.18
     ###
+    
     def p_data_declaration_1(self, p):
         """ data_declaration         : COMMENT
         """
@@ -1562,9 +1573,21 @@ MODULE syun1
     ENDPROC
 ENDMODULE
 """
+
+    text = r"""
+MODULE syun1
+        PROC pippo ()
+        ! comment 1
+        ! comment 2
+        VAR num i1 := 1;
+        VAR num i2 := 1;
+        ENDPROC
+
+ENDMODULE
+"""
     
     ## set debuglevel to 2 for debugging
-    t = parser.parse(text, 'x.rapid', debuglevel=0)
+    t = parser.parse(text, 'x.rapid', debuglevel=1)
     
     sys.stdout.write("end parse: "+ str(time.time() - t1)+"\n")
     

@@ -577,8 +577,7 @@ class rapid_%s (pyrapid.rapid_struct):
         self.simple_writemodule( ") :" )
         self.simple_writemodule()
         with self.ModuleScope():
-            if len(node.statement_list)==0:
-                self.writemodule("pass")
+            self.writemodule("pass")
             
             for i in node.statement_list:
                 self.visit(i)
@@ -602,8 +601,7 @@ class rapid_%s (pyrapid.rapid_struct):
         self.simple_writemodule( ") :" )
         self.simple_writemodule()
         with self.ModuleScope():
-            if len(node.statement_list)==0:
-                self.writemodule("pass")
+            self.writemodule("pass")
             
             for i in node.statement_list:
                 self.visit(i)
@@ -638,7 +636,6 @@ class rapid_%s (pyrapid.rapid_struct):
             self.simple_writemodule()
         self.writemodule("# END FOR Statement")
         
-    ####
     def visit_WhileStatement(self, node):    
         #condition*, statement_list****
         if not (node.coord is None):
@@ -650,13 +647,58 @@ class rapid_%s (pyrapid.rapid_struct):
         self.simple_writemodule("): ")
         self.simple_writemodule()
         with self.ModuleScope():
-            if len(node.statement_list)==0:
-                self.writemodule("pass")
+            self.writemodule("pass")
             for i in node.statement_list:
                 self.visit(i)
                 
         self.writemodule("# END WHILE Statement")
-    ####
+        
+    ##
+    def visit_TestStatement(self, node):    
+        #expression*, cases**, default**
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
+        self.writemodule("# TEST Statement")
+        self.simple_writeindent()
+        self.simple_writemodule("val = ( ")
+        self.visit(node.expression)
+        self.simple_writemodule(") ")
+        self.simple_writemodule()
+        self.writemodule("if False:")
+        with self.ModuleScope():
+            self.writemodule("pass")
+        for i in node.cases:
+            self.visit(i)
+        if len(node.default)>0:
+            self.writemodule("else:")
+            with self.ModuleScope():
+                for i in node.default:
+                    self.visit(i)
+        
+        self.writemodule("# END TEST Statement")
+        
+    def visit_CaseStatement(self, node):    
+        #test_value**, statement_list**
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
+        self.writemodule("# CASE Statement")
+        self.simple_writeindent()
+        self.simple_writemodule("elif (")
+        for i in node.test_value[:-1]:
+            self.simple_writemodule("(val == (")
+            self.visit(i)
+            self.simple_writemodule(")) or ")
+        self.simple_writemodule("(val == (")
+        self.visit(node.test_value[-1])
+        self.simple_writemodule("))")
+        self.simple_writemodule("): ")
+        self.simple_writemodule()
+        with self.ModuleScope():
+            self.writemodule("pass")
+            for i in node.statement_list:
+                self.visit(i)
+        self.writemodule("# END CASE Statement")
+    ##
         
     def visit_FunctionArgumentAST(self, node):    
         #type "Required" or "Optional" or "Conditional" or None

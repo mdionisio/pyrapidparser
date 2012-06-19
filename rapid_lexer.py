@@ -182,7 +182,7 @@ class RAPIDLexer(object):
         'LPAREN', 'RPAREN',         # ( )
         'LBRACKET', 'RBRACKET',     # [ ]
         'LBRACE', 'RBRACE',         # { } 
-        'COMMA', 'PERIOD',          # . ,
+        'COMMA', 'PERIOD',          # , .
         'SEMI', 'COLON',            # ; :
         'PERCENT',                  # %
         
