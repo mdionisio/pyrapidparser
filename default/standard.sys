@@ -7,4 +7,25 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:time.sleep(pyrapid.Symbols().GetSymbol("Time").data.Get())
         !python:print "---------------------"
     ENDPROC
+    
+    PROC TPWrite ( string String \ num Num | bool Bool | pos Pos | orient Orient )
+        !python:val = pyrapid.Symbols().GetSymbol("String").data.Get()
+        
+        IF Present(Num) THEN
+            !python:val = val + " Num: " + str(pyrapid.Symbols().GetSymbol("Num").data.Get())
+        ELSEIF Present(Bool) THEN
+            !python:val = val + " Bool: " + str(pyrapid.Symbols().GetSymbol("Bool").data.Get())
+        ELSEIF Present(Pos) THEN
+            !python:val = val + " Pos: " + ",".join([ str(pyrapid.Symbols().GetSymbol("Pos").data.GetElem("x").Get()), 
+            !python:                                 str(pyrapid.Symbols().GetSymbol("Pos").data.GetElem("y").Get()), 
+            !python:                                 str(pyrapid.Symbols().GetSymbol("Pos").data.GetElem("z").Get())])
+        ELSEIF Present(Orient) THEN
+            !python:val = val + " Orient: " + ",".join([ str(pyrapid.Symbols().GetSymbol("Orient").data.GetElem("q1").Get()), 
+            !python:                                    str(pyrapid.Symbols().GetSymbol("Orient").data.GetElem("q2").Get()), 
+            !python:                                    str(pyrapid.Symbols().GetSymbol("Orient").data.GetElem("q3").Get()), 
+            !python:                                    str(pyrapid.Symbols().GetSymbol("Orient").data.GetElem("q4").Get())])
+        ENDIF
+        !python:print( val )
+    ENDPROC
+    
 ENDMODULE

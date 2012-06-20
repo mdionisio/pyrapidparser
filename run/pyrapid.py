@@ -447,7 +447,7 @@ Symbols().AddGlobalSym("string", Symbol.CreateDataType(rapid_string))
 class rapid_Confdata (rapid_struct):
     def __init__(self, val=None):
         rapid_struct.__init__(self, ["cf1", "cf4", "cf6", "cfx"], [rapid_num, rapid_num, rapid_num, rapid_num])
-        if not(self.val  is None):
+        if not(val  is None):
             self.Set( val )
             
     def Set(self, val):
@@ -575,7 +575,7 @@ Symbols().AddGlobalSym("ERR_WHLSEARCH", Symbol.CreateConst(rapid_errnum, rapid_e
 class rapid_extjoint (rapid_struct):
     def __init__(self, val=None):
         rapid_struct.__init__(self, ["eax_a", "eax_b", "eax_c", "eax_d", "eax_e", "eax_f"], [rapid_num, rapid_num, rapid_num, rapid_num, rapid_num, rapid_num])
-        if not(self.val  is None):
+        if not(val  is None):
             self.Set( val )
             
     def Set(self, val):
@@ -633,7 +633,7 @@ Symbols().AddGlobalSym("iodev", Symbol.CreateDataType(rapid_iodev))
 class rapid_jointtarget (rapid_struct):
     def __init__(self, val=None):
         rapid_struct.__init__(self, ["robax", "extax"], [rapid_robjoint, rapid_extjoint])
-        if not(self.val  is None):
+        if not(val  is None):
             self.Set( val )
             
     def Set(self, val):
@@ -647,7 +647,7 @@ Symbols().AddGlobalSym("jointtarget", Symbol.CreateDataType(rapid_jointtarget))
 class rapid_loaddata (rapid_struct):
     def __init__(self, val=None):
         rapid_struct.__init__(self, ["mass", "cog", "aom", "ix", "iy", "iz"], [rapid_num, rapid_pos, rapid_orient, rapid_num, rapid_num, rapid_num])
-        if not(self.val  is None):
+        if not(val  is None):
             self.Set( val )
             
     def Set(self, val):
@@ -665,7 +665,7 @@ Symbols().AddGlobalSym("loaddata", Symbol.CreateDataType(rapid_loaddata))
 class rapid_o_jointtarget (rapid_struct):
     def __init__(self, val=None):
         rapid_struct.__init__(self, ["robax", "extax"], [rapid_robjoint, rapid_extjoint])
-        if not(self.val  is None):
+        if not(val  is None):
             self.Set( val )
             
     def Set(self, val):
@@ -679,7 +679,7 @@ Symbols().AddGlobalSym("o_jointtarget", Symbol.CreateDataType(rapid_o_jointtarge
 class rapid_orient (rapid_struct):
     def __init__(self, val=None):
         rapid_struct.__init__(self, ["q1", "q2", "q3", "q4"], [rapid_num, rapid_num, rapid_num, rapid_num])
-        if not(self.val  is None):
+        if not(val  is None):
             self.Set( val )
             
     def Set(self, val):
@@ -693,7 +693,7 @@ Symbols().AddGlobalSym("orient", Symbol.CreateDataType(rapid_orient))
 class rapid_o_robtarget (rapid_struct):
     def __init__(self, val=None):
         rapid_struct.__init__(self, ["trans", "rot", "robconf", "extax"], [rapid_pos, rapid_orient, rapid_confdata, rapid_extjoint])
-        if not(self.val  is None):
+        if not(val  is None):
             self.Set( val )
             
     def Set(self, val):
@@ -707,9 +707,9 @@ Symbols().AddGlobalSym("o_robtarget", Symbol.CreateDataType(rapid_o_robtarget))
 class rapid_pos (rapid_struct):
     def __init__(self, val=None):
         rapid_struct.__init__(self, ["x", "y", "z"], [rapid_num, rapid_num, rapid_num])
-        if not(self.val  is None):
+        if not(val is None):
             self.Set( val )
-            
+           
     def Set(self, val):
         if isinstance(val, rapid_pos):
             self.val = val.val
@@ -721,7 +721,7 @@ Symbols().AddGlobalSym("pos", Symbol.CreateDataType(rapid_pos))
 class rapid_pose (rapid_struct):
     def __init__(self, val=None):
         rapid_struct.__init__(self, ["trans", "rot"], [rapid_pos, rapid_orient])
-        if not(self.val  is None):
+        if not(val is None):
             self.Set( val )
             
     def Set(self, val):
@@ -735,7 +735,7 @@ Symbols().AddGlobalSym("pose", Symbol.CreateDataType(rapid_pose))
 class rapid_progdisp (rapid_struct):
     def __init__(self, val=None):
         rapid_struct.__init__(self, ["pdisp", "eoffs"], [rapid_pose, rapid_extjoints])
-        if not(self.val  is None):
+        if not(val  is None):
             self.Set( val )
             
     def Set(self, val):
@@ -750,7 +750,7 @@ Symbols().AddGlobalSym("progdisp", Symbol.CreateDataType(rapid_progdisp))
 class rapid_robjoint (rapid_struct):
     def __init__(self, val=None):
         rapid_struct.__init__(self, ["rax_1", "rax_2", "rax_3", "rax_4", "rax_5", "rax_6"], [rapid_num, rapid_num, rapid_num, rapid_num, rapid_num, rapid_num])
-        if not(self.val  is None):
+        if not(val  is None):
             self.Set( val )
             
     def Set(self, val):
@@ -764,7 +764,7 @@ Symbols().AddGlobalSym("robjoint", Symbol.CreateDataType(rapid_robjoint))
 class rapid_robtarget (rapid_struct):
     def __init__(self, val=None):
         rapid_struct.__init__(self, ["trans", "rot", "robconf", "extax"], [rapid_pos, rapid_orient, rapid_confdata, rapid_extjoint])
-        if not(self.val  is None):
+        if not(val  is None):
             self.Set( val )
             
     def Set(self, val):
@@ -786,7 +786,7 @@ Symbols().AddGlobalSym("robtarget", Symbol.CreateDataType(rapid_robtarget))
 class rapid_speeddata (rapid_struct):
     def __init__(self, val=None):
         rapid_struct.__init__(self, ["v_tcp", "v_ori", "v_leax", "v_reax"], [rapid_num, rapid_num, rapid_num, rapid_num])
-        if not(self.val  is None):
+        if not(val  is None):
             self.Set( val )
             
     def Set(self, val):
@@ -849,7 +849,7 @@ Symbols().AddGlobalSym("v7000", Symbol.CreateConst(rapid_speeddata, rapid_speedd
 class rapid_tooldata (rapid_struct):
     def __init__(self, val=None):
         rapid_struct.__init__(self, ["robhold", "tframe", "tload"], [rapid_bool, rapid_pose, rapid_loaddata])
-        if not(self.val  is None):
+        if not(val  is None):
             self.Set( val )
             
     def Set(self, val):
@@ -888,7 +888,7 @@ Symbols().AddGlobalSym("tooldata", Symbol.CreateDataType(rapid_tooldata))
 class rapid_zonedata (rapid_struct):
     def __init__(self, val=None):
         rapid_struct.__init__(self, ["finep", "pzone_tcp", "pzone_ori", "pzone_eax", "zone_ori", "zone_leax", "zone_reax"], [rapid_bool, rapid_num, rapid_num, rapid_num, rapid_num, rapid_num, rapid_num])
-        if not(self.val  is None):
+        if not(val  is None):
             self.Set( val )
             
     def Set(self, val):

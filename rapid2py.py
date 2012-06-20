@@ -379,8 +379,6 @@ class rapid_%s (pyrapid.rapid_struct):
         #switchs list of None or ParameterDefinitionAST or SwitchParameterDefinitionAST
 
         self.visit(node.parameter)
-        if self.params.has_key(pname):
-            raise Exception("parameter %s already defined"%(pname,))
         
         list_switch = set()
         list_switch.update([self.lastparamadded])
@@ -393,7 +391,10 @@ class rapid_%s (pyrapid.rapid_struct):
             old0, old1, old2, old3, old4 = self.params[i]
             old4 = copy.copy(list_switch)
             old4.remove(i)
-            self.params[self.lastparamadded] = ( "optional", old1, old2, old3, list(old4) ) 
+            if old0 == "required":
+                self.params[i] = ( "optional", old1, old2, old3, list(old4) ) 
+            else:
+                self.params[i] = ( "switch", old1, old2, old3, list(old4) ) 
         
     
     def visit_SwitchParameterDefinitionAST(self, node):
@@ -807,7 +808,7 @@ class rapid_%s (pyrapid.rapid_struct):
             pass
         
         try:
-            print self.parameters_defined[argumentname]
+            self.parameters_defined[argumentname]
         except:
             raise Exception("%s is not a valid parameter"%(argumentname))
             
@@ -1008,7 +1009,6 @@ class rapid_%s (pyrapid.rapid_struct):
         self.params = OrderedDict()
         self.lastparamadded = None
         
-        self.paramslist = []
         for i in node.parameter_list:
             #ParameterDefinitionAST or OptionalParameterDefinitionAST or SwitchParameterDefinitionAST or None
             self.visit(i)
@@ -1032,7 +1032,6 @@ class rapid_%s (pyrapid.rapid_struct):
         with self.ModuleScope():
             
             with pyrapid.Symbols().Scope(modulename=self.module_name, functionname=self.function_name, invalue={}):
-                
                 for ik,iv in self.params.iteritems():
                     vartype, paramtype, ptype, psize, pdep = iv
                     if vartype=="switch":
@@ -1043,7 +1042,6 @@ class rapid_%s (pyrapid.rapid_struct):
                         else:
                             getvar = pyrapid.Symbol.CreateVar(pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data) )
                     pyrapid.Symbols().AddScopeSym(ik, getvar)
-                
                 self.writemodule( "with pyrapid.Symbols().Scope(modulename=%s, functionname=%s, invalue=local_args_scope):"%(repr(self.module_name), repr(self.function_name)))
                 with self.ModuleScope():
                     self.writemodule("pass")
@@ -1104,7 +1102,6 @@ class rapid_%s (pyrapid.rapid_struct):
         self.params = OrderedDict()
         self.lastparamadded = None
         
-        self.paramslist = []
         for i in node.parameter_list:
             #ParameterDefinitionAST or OptionalParameterDefinitionAST or SwitchParameterDefinitionAST or None
             self.visit(i)

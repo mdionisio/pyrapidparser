@@ -1586,6 +1586,13 @@ MODULE syun1
 
 ENDMODULE
 """
+
+    text = r"""
+MODULE syun1
+    PROC TPWrite ( string String \ num Num | bool Bool | pos Pos | orient Orient )
+    ENDPROC
+ENDMODULE
+"""
     
     ## set debuglevel to 2 for debugging
     t = parser.parse(text, 'x.rapid', debuglevel=1)

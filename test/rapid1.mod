@@ -178,6 +178,17 @@ MODULE syun1
         VAR num pnum := 1;
         VAR num pvec{3} := [ 11, 21, 31 ];
         
+        VAR pos pos1 := [1,2,3];
+        !python:print "pos1.x"
+        !python:print pyrapid.Symbols().GetSymbol("pos1").data.GetElem('x').Get()
+        !python:print "pos1.y"
+        !python:print pyrapid.Symbols().GetSymbol("pos1").data.GetElem('y').Get()
+        !python:print "pos1.7"
+        !python:print pyrapid.Symbols().GetSymbol("pos1").data.GetElem('z').Get()
+        pos1.x := 100;
+        !python:print "pos1.x"
+        !python:print pyrapid.Symbols().GetSymbol("pos1").data.GetElem('x').Get()
+        
         PIPPO pnum, pvec;
         
         !python:print "pnum"
@@ -240,14 +251,18 @@ MODULE syun1
         !python:print "test default"
         ENDTEST
         
-        !!python:print "WaitTime 10"
-        !WaitTime 10;
-        !python:print "WaitTime Time:=10"
-        WaitTime Time:=10;
-        !python:print "WaitTime \InPos, 10"
-        WaitTime \InPos, 10;
-        !python:print "WaitTime \InPos, 10"
-        WaitTime \InPos, Time:=10;
+        !!!python:print "WaitTime 10"
+        !!WaitTime 10;
+        !!python:print "WaitTime Time:=10"
+        !WaitTime Time:=10;
+        !!python:print "WaitTime \InPos, 10"
+        !WaitTime \InPos, 10;
+        !!python:print "WaitTime \InPos, 10"
+        !WaitTime \InPos, Time:=10;
+        
+        TPWrite "PROVAAAAAAAAAAAAAAAAAAAAAA";
+        TPWrite "PROVAAAAAAAAAAAAAAAAAAAAAA", \Num:=101;
+        TPWrite "PROVAAAAAAAAAAAAAAAAAAAAAA", \Pos:=pos1;
 
     ENDPROC
 ENDMODULE
