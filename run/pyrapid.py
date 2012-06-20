@@ -306,8 +306,14 @@ class rapid_array :
     def GetType(self):
         return self.elem_type
         
-    def GetSize(self):
-        return self.size
+    def GetSize(self, DimNo=None):
+        if DimNo is None:
+            return self.size
+        else:
+            if isinstance(DimNo, int):
+                return self.size[DimNo - 1]
+            else:
+                return self.size[DimNo.data.Get() - 1]
         
     def Set(self, val):
         if isinstance(val, rapid_array):

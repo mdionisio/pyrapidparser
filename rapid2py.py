@@ -807,7 +807,7 @@ class rapid_%s (pyrapid.rapid_struct):
             pass
         
         try:
-            self.parameters_defined[argumentname]
+            print self.parameters_defined[argumentname]
         except:
             raise Exception("%s is not a valid parameter"%(argumentname))
             
@@ -859,40 +859,100 @@ class rapid_%s (pyrapid.rapid_struct):
         #arguments list of FunctionArgumentAST
         
         function_name = node.function.name
-        
-        refsym = pyrapid.Symbols().GetSymbol(symbolname=function_name, modulename=self.module_name, functionname=self.function_name)
-        if refsym is None:
-            raise Exception("procedure %s used in module %s function %s not defined"%(function_name, self.module_name, self.function_name))
-        procedure_call = refsym.data
-        if refsym.type != pyrapid.Symbol.SYM_TYPE_PROCEDURE:
-            raise Exception("symbol %s used in module %s function %s has to be a procedure"%(function_name, self.module_name, self.function_name))
-        
-        self.parameters_defined = refsym.parameters
-        #compute parameter list
-        self.parameters_index = 0
-        self.defined = []
-        
-        self.simple_writemodule("pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data( {" % ( repr(function_name), repr(self.module_name), repr(self.function_name) ))
-        
-        if len(node.arguments)>0:
-            for i in node.arguments[:-1]:
-                self.visit(i)
-                self.simple_writemodule(",")
-            self.visit(node.arguments[-1])
             
-        self.simple_writemodule("} )")
-        
+        # SPECIAL FUNCTION #
+        if function_name=="Present":
+            if len(node.arguments)!=1:
+                raise Exception("Present function accept one parameter")
+            if node.arguments[0].type=="Required":
+                if node.arguments[0].argumentname is None:
+                    if isinstance(node.arguments[0].argumentvalue, rapid_ast.VariableAST):
+                        if isinstance(node.arguments[0].argumentvalue.var, rapid_ast.IdentifierAST):
+                            self.simple_writemodule("pyrapid.Symbols().IsInScope(%s)"%(repr(node.arguments[0].argumentvalue.var.name)))
+                        else:
+                            raise Exception("Present function accept one sympol Variable as parameter")
+                    else:
+                        raise Exception("Present function accept one Variable as parameter")
+                else:
+                    raise Exception("Present function accept one unqualified name")
+            else:
+                raise Exception("Present function accept one required unqualified name")
+        elif function_name=="Dim":
+            if len(node.arguments)!=2:
+                raise Exception("Dim function accept 2 parameter")
+            if node.arguments[0].type=="Required":
+                if (node.arguments[0].argumentname is None) or (node.arguments[0].argumentname=="ArrPar"):
+                    if isinstance(node.arguments[0].argumentvalue, rapid_ast.VariableAST):
+                        if isinstance(node.arguments[0].argumentvalue.var, rapid_ast.IdentifierAST):
+                            pass
+                        else:
+                            raise Exception("Dim function first param has to be a sympol Variable")
+                    else:
+                        raise Exception("Dim function first param has to be a sympol Variable")
+                else:
+                    raise Exception("Dim function first parameter ArrPar")
+            else:
+                raise Exception("Dim function first parameter has to be Reuired")
+            if node.arguments[1].type=="Required":
+                if (node.arguments[0].argumentname is None) or (node.arguments[0].argumentname=="DimNo"):
+                    pass
+                else:
+                    raise Exception("Dim function first parameter ArrPar")
+            else:
+                raise Exception("Dim function first parameter has to be Reuired")
+                
+            self.simple_writemodule("pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data.GetSize(**{"%(repr(node.arguments[0].argumentvalue.var.name), repr(self.module_name), repr(self.function_name)) )
+            self.parameters_defined = OrderedDict()
+            self.parameters_defined["ArrPar"] = ("Required", "REF", 'any', 0, [])
+            self.parameters_defined["DimNo"] = ("Required", "NORMAL", 'num', 0, [])
+            self.parameters_index = 1
+            self.defined = []
+            self.visit(node.arguments[1])
+            del self.parameters_index
+            del self.defined
+            del self.parameters_defined
+            self.simple_writemodule("})")
+        elif function_name=="IsVar":
+            if len(node.arguments)!=1:
+                raise Exception("IsVar function accept one parameter")
+        elif function_name=="IsPers":
+            if len(node.arguments)!=1:
+                raise Exception("IsPers function accept one parameter")
+        else:
+            # NORMAL FUNCTION #
+            refsym = pyrapid.Symbols().GetSymbol(symbolname=function_name, modulename=self.module_name, functionname=self.function_name)
+            if refsym is None:
+                raise Exception("procedure %s used in module %s function %s not defined"%(function_name, self.module_name, self.function_name))
+            procedure_call = refsym.data
+            if refsym.type != pyrapid.Symbol.SYM_TYPE_PROCEDURE:
+                raise Exception("symbol %s used in module %s function %s has to be a procedure"%(function_name, self.module_name, self.function_name))
             
-        for ik,iv in self.parameters_defined.iteritems():
-            if iv[0]=='required':
-                try:
-                    self.defined.index(ik)
-                except ValueError:
-                    raise Exception("argument %s is required"%(ik,))
-                    
-        del self.parameters_defined
-        del self.parameters_index
-        del self.defined
+            self.parameters_defined = refsym.parameters
+            #compute parameter list
+            self.parameters_index = 0
+            self.defined = []
+            
+            self.simple_writemodule("pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data( {" % ( repr(function_name), repr(self.module_name), repr(self.function_name) ))
+            
+            if len(node.arguments)>0:
+                for i in node.arguments[:-1]:
+                    self.visit(i)
+                    self.simple_writemodule(",")
+                self.visit(node.arguments[-1])
+                
+            self.simple_writemodule("} )")
+            
+                
+            for ik,iv in self.parameters_defined.iteritems():
+                if iv[0]=='required':
+                    try:
+                        self.defined.index(ik)
+                    except ValueError:
+                        raise Exception("argument %s is required"%(ik,))
+                        
+            del self.parameters_defined
+            del self.parameters_index
+            del self.defined
                     
         
         

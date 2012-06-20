@@ -96,6 +96,11 @@ MODULE syun1
         VAR num p11{3} := [ 10, 30, 50 ];
         VAR prova p12 := [ 100 ];
         VAR prova p13{3};
+        
+        p10 := Dim(p2, 1);
+        !python:print "TEST SIZE"
+        !python:print pyrapid.Symbols().GetSymbol("p10").data.Get()
+        
         !python:print "pippo"
         !python:print "p1"
         !python:print pyrapid.Symbols().GetSymbol("p1").data.Get()
@@ -152,7 +157,12 @@ MODULE syun1
     ENDFUNC
     
     FUNC num FUNC2(num a)
+        VAR bool b;
         VAR num i;
+        
+        b:=Present(a);
+        !python:print "Test Present"
+        !python:print pyrapid.Symbols().GetSymbol("b").data.Get()
         FOR i FROM 1 TO a STEP 1 DO
             !python:print "in for"
             !python:print pyrapid.Symbols().GetSymbol("i").data.Get()
@@ -162,10 +172,14 @@ MODULE syun1
         RETURN a;
     ENDFUNC
     
+    
     PROC MAINPROC()
     !python:print "main"
         VAR num pnum := 1;
         VAR num pvec{3} := [ 11, 21, 31 ];
+        
+        PIPPO pnum, pvec;
+        
         !python:print "pnum"
         !python:print pyrapid.Symbols().GetSymbol("pnum").data.Get()
         
