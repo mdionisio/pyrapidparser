@@ -18,22 +18,22 @@ MODULE syun1
     VAR bool b := TRUE;
     
     PROC TEST1()
-    !python:print "test1"
+        TPWrite "test1";
         a5 := 1;
     ENDPROC
     
     PROC TEST2(VAR num p1)
-    !python:print "test2"
+        TPWrite "test2";
         a5 := 2;
     ENDPROC
     
     PROC TEST3(bool b1)
-    !python:print "test3"
+        TPWrite "test3";
         a5 := 3;
     ENDPROC
     
     PROC TEST4(num p1)
-    !python:print "test4"
+        TPWrite "test4";
         a5 := 4;
     ENDPROC
     
@@ -42,15 +42,12 @@ MODULE syun1
         VAR num p11{3} := [ 10, 30, 50 ];
         VAR prova p12 := [ 100 ];
         VAR prova p13{3};
-        !python:print "test5"
-        !python:print "p1"
-        !python:print pyrapid.Symbols().GetSymbol("p1").data.Get()
-        !python:print "p2 .1"
-        !python:print pyrapid.Symbols().GetSymbol("p2").data.GetElem(1).Get()
-        !python:print "p2 .2"
-        !python:print pyrapid.Symbols().GetSymbol("p2").data.GetElem(2).Get()
-        !python:print "p2 .3"
-        !python:print pyrapid.Symbols().GetSymbol("p2").data.GetElem(3).Get()
+        TPWrite "test5";
+        TPWrite "p1",\Num:=p1;
+        TPWrite "p2.1",\Num:=p2{1};
+        TPWrite "p2.2",\Num:=p2{2};
+        TPWrite "p2.3",\Num:=p2{3};
+        
         p2{3} := p2{3} +1;
         p2{2} := p2{2} +1;
         p2{1} := p2{1} +1;
@@ -61,31 +58,25 @@ MODULE syun1
         VAR num p11{3} := [ 10, 30, 50 ];
         VAR prova p12 := [ 100 ];
         VAR prova p13{3};
-        !python:print "test6"
-        !python:print "p1"
-        !python:print pyrapid.Symbols().GetSymbol("p1").data.Get()
-        !python:print "p2 .1"
-        !python:print pyrapid.Symbols().GetSymbol("p2").data.GetElem(1).Get()
-        !python:print "p2 .2"
-        !python:print pyrapid.Symbols().GetSymbol("p2").data.GetElem(2).Get()
-        !python:print "p2 .3"
-        !python:print pyrapid.Symbols().GetSymbol("p2").data.GetElem(3).Get()
+        TPWrite "test6";
+        TPWrite "p1",\Num:=p1;
+        TPWrite "p2.1",\Num:=p2{1};
+        TPWrite "p2.2",\Num:=p2{2};
+        TPWrite "p2.3",\Num:=p2{3};
         p2{3} := p2{3} +1;
         p2{2} := p2{2} +1;
         p2{1} := p2{1} +1;
     ENDPROC
     
     PROC TEST7(VAR prova p1)
-        !python:print "test7"
-        !python:print "p1"
-        !python:print pyrapid.Symbols().GetSymbol("p1").data.GetElem("usecount").Get()
+        TPWrite "test7";
+        TPWrite "p1",\Num:=p1.usecount;
         p1.usecount := 1;
     ENDPROC
     
     PROC TEST8(prova p1)
-        !python:print "test8"
-        !python:print "p1"
-        !python:print pyrapid.Symbols().GetSymbol("p1").data.GetElem("usecount").Get()
+        TPWrite "test8";
+        TPWrite "p1",\Num:=p1.usecount;
         p1.usecount := 1;
     ENDPROC
     
@@ -98,18 +89,14 @@ MODULE syun1
         VAR prova p13{3};
         
         p10 := Dim(p2, 1);
-        !python:print "TEST SIZE"
-        !python:print pyrapid.Symbols().GetSymbol("p10").data.Get()
+        TPWrite "PIPPO";
+        TPWrite "size of p2",\Num:=p10;
         
-        !python:print "pippo"
-        !python:print "p1"
-        !python:print pyrapid.Symbols().GetSymbol("p1").data.Get()
-        !python:print "p2 .1"
-        !python:print pyrapid.Symbols().GetSymbol("p2").data.GetElem(1).Get()
-        !python:print "p2 .2"
-        !python:print pyrapid.Symbols().GetSymbol("p2").data.GetElem(2).Get()
-        !python:print "p2 .3"
-        !python:print pyrapid.Symbols().GetSymbol("p2").data.GetElem(3).Get()
+        TPWrite "p1",\Num:=p1;
+        TPWrite "p2.1",\Num:=p2{1};
+        TPWrite "p2.2",\Num:=p2{2};
+        TPWrite "p2.3",\Num:=p2{3};
+        
         p2{3} := p2{3} +1;
         p2{2} := p2{2} +1;
         p2{1} := p2{1} +1;
@@ -118,7 +105,7 @@ MODULE syun1
         a5 := 1;
         a5 := 1+2*3;
         a5 := (1+2)*3;
-        !python:print pyrapid.Symbols().GetSymbol("a5").data.Get()
+        TPWrite "a5",\Num:=a5;
         p11{2} := a5;
         p12.usecount := p11{2};
         p13{1}.usecount :=p12.usecount;
@@ -135,22 +122,21 @@ MODULE syun1
             a5 := 2;
         ENDIF
         
-        !python:print pyrapid.Symbols().GetSymbol("a5").data.Get()
+        TPWrite "a5",\Num:=a5;
         TEST1;
-        !python:print pyrapid.Symbols().GetSymbol("a5").data.Get()
+        TPWrite "a5",\Num:=a5;
         TEST2 a5;
-        !python:print pyrapid.Symbols().GetSymbol("a5").data.Get()
+        TPWrite "a5",\Num:=a5;
         TEST3 TRUE;
-        !python:print pyrapid.Symbols().GetSymbol("a5").data.Get()
+        TPWrite "a5",\Num:=a5;
         TEST4 a5;
-        !python:print pyrapid.Symbols().GetSymbol("a5").data.Get()
+        TPWrite "a5",\Num:=a5;
     ENDPROC
     
     FUNC num FUNC1()
         VAR num i:=1;
         WHILE (i < 10) DO
-            !python:print "in while"
-            !python:print pyrapid.Symbols().GetSymbol("i").data.Get()
+            TPWrite "in while",\Num:=i;
             i := i + 1;
         ENDWHILE
         RETURN 1;
@@ -161,13 +147,10 @@ MODULE syun1
         VAR num i;
         
         b:=Present(a);
-        !python:print "Test Present"
-        !python:print pyrapid.Symbols().GetSymbol("b").data.Get()
+        TPWrite "test preset",\Bool:=b;
+        TPWrite "for limit",\Num:=a;
         FOR i FROM 1 TO a STEP 1 DO
-            !python:print "in for"
-            !python:print pyrapid.Symbols().GetSymbol("i").data.Get()
-            !python:print pyrapid.Symbols().GetSymbol("a").data.Get()
-            !python:print "--"
+            TPWrite "in for",\Num:=i;
         ENDFOR
         RETURN a;
     ENDFUNC
@@ -179,67 +162,46 @@ MODULE syun1
         VAR num pvec{3} := [ 11, 21, 31 ];
         
         VAR pos pos1 := [1,2,3];
-        !python:print "pos1.x"
-        !python:print pyrapid.Symbols().GetSymbol("pos1").data.GetElem('x').Get()
-        !python:print "pos1.y"
-        !python:print pyrapid.Symbols().GetSymbol("pos1").data.GetElem('y').Get()
-        !python:print "pos1.7"
-        !python:print pyrapid.Symbols().GetSymbol("pos1").data.GetElem('z').Get()
+        TPWrite "pos1.x", \Num:=pos1.x;
+        TPWrite "pos1.y", \Num:=pos1.y;
+        TPWrite "pos1.z", \Num:=pos1.z;
         pos1.x := 100;
-        !python:print "pos1.x"
-        !python:print pyrapid.Symbols().GetSymbol("pos1").data.GetElem('x').Get()
+        TPWrite "pos1.x", \Num:=pos1.x;
         
         PIPPO pnum, pvec;
         
-        !python:print "pnum"
-        !python:print pyrapid.Symbols().GetSymbol("pnum").data.Get()
+        TPWrite "pnum", \Num:=pnum;
         
         pnum := FUNC1();
-        !python:print "pnum after func1"
-        !python:print pyrapid.Symbols().GetSymbol("pnum").data.Get()
+        TPWrite "pnum", \Num:=pnum;
         pnum := FUNC2(2);
-        !python:print "pnum after func2"
-        !python:print pyrapid.Symbols().GetSymbol("pnum").data.Get()
+        TPWrite "pnum", \Num:=pnum;
         
         TEST6 1, [1, 2, 3];
         
         TEST5 pnum, pvec;
-        !python:print "pnum"
-        !python:print pyrapid.Symbols().GetSymbol("pnum").data.Get()
-        !python:print "pvec .1"
-        !python:print pyrapid.Symbols().GetSymbol("pvec").data.GetElem(1).Get()
-        !python:print "pvec .2"
-        !python:print pyrapid.Symbols().GetSymbol("pvec").data.GetElem(2).Get()
-        !python:print "pvec .3"
-        !python:print pyrapid.Symbols().GetSymbol("pvec").data.GetElem(3).Get()
+        TPWrite "pnum", \Num:=pnum;
+        TPWrite "pvec.1", \Num:=pvec{1};
+        TPWrite "pvec.2", \Num:=pvec{2};
+        TPWrite "pvec.3", \Num:=pvec{3};
         
         TEST6 pnum, pvec;
-        !python:print "pnum"
-        !python:print pyrapid.Symbols().GetSymbol("pnum").data.Get()
-        !python:print "pvec .1"
-        !python:print pyrapid.Symbols().GetSymbol("pvec").data.GetElem(1).Get()
-        !python:print "pvec .2"
-        !python:print pyrapid.Symbols().GetSymbol("pvec").data.GetElem(2).Get()
-        !python:print "pvec .3"
-        !python:print pyrapid.Symbols().GetSymbol("pvec").data.GetElem(3).Get()
+        TPWrite "pnum", \Num:=pnum;
+        TPWrite "pvec.1", \Num:=pvec{1};
+        TPWrite "pvec.2", \Num:=pvec{2};
+        TPWrite "pvec.3", \Num:=pvec{3};
         
         TEST8 pp1;
-        !python:print "pp1"
-        !python:print pyrapid.Symbols().GetSymbol("pp1").data.GetElem("usecount").Get()
+        TPWrite "pp1", \Num:=pp1.usecount;
         
         TEST7 pp1;
-        !python:print "pp1"
-        !python:print pyrapid.Symbols().GetSymbol("pp1").data.GetElem("usecount").Get()
+        TPWrite "pp1", \Num:=pp1.usecount;
         
         PIPPO pnum, pvec;
-        !python:print "pnum"
-        !python:print pyrapid.Symbols().GetSymbol("pnum").data.Get()
-        !python:print "pvec .1"
-        !python:print pyrapid.Symbols().GetSymbol("pvec").data.GetElem(1).Get()
-        !python:print "pvec .2"
-        !python:print pyrapid.Symbols().GetSymbol("pvec").data.GetElem(2).Get()
-        !python:print "pvec .3"
-        !python:print pyrapid.Symbols().GetSymbol("pvec").data.GetElem(3).Get()
+        TPWrite "pnum", \Num:=pnum;
+        TPWrite "pvec.1", \Num:=pvec{1};
+        TPWrite "pvec.2", \Num:=pvec{2};
+        TPWrite "pvec.3", \Num:=pvec{3};
         
         
         TEST pnum
@@ -251,17 +213,16 @@ MODULE syun1
         !python:print "test default"
         ENDTEST
         
-        !!!python:print "WaitTime 10"
+        TPWrite "WaitTime 10";
         !!WaitTime 10;
-        !!python:print "WaitTime Time:=10"
+        TPWrite "WaitTime Time:=10";
         !WaitTime Time:=10;
-        !!python:print "WaitTime \InPos, 10"
+        TPWrite "WaitTime \InPos, 10";
         !WaitTime \InPos, 10;
-        !!python:print "WaitTime \InPos, 10"
+        TPWrite "WaitTime \InPos, 10";
         !WaitTime \InPos, Time:=10;
         
         TPWrite "PROVAAAAAAAAAAAAAAAAAAAAAA";
-        TPWrite "PROVAAAAAAAAAAAAAAAAAAAAAA", \Num:=101;
         TPWrite "PROVAAAAAAAAAAAAAAAAAAAAAA", \Pos:=pos1;
 
     ENDPROC

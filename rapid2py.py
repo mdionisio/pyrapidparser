@@ -748,11 +748,20 @@ class rapid_%s (pyrapid.rapid_struct):
             if self.parameters_defined[argumentname][1]=="NORMAL":
                 
                 #todo make type compare
-                self.bSymVariableAST = False
-                self.bGetVariableAST = False
-                self.simple_writemodule("copy.deepcopy(")
-                self.visit( node.argumentvalue )
-                self.simple_writemodule(")")
+                vartype = self.parameters_defined[argumentname][2]
+                varinstance_size = self.parameters_defined[argumentname][3]
+                if varinstance_size==0:
+                    self.simple_writemodule("pyrapid.Symbol.CreateVar( pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(" % ( repr(vartype), repr(self.module_name), repr(self.function_name) ))
+                    self.visit( node.argumentvalue )
+                    self.simple_writemodule("))")
+                else:
+                    self.simple_writemodule("pyrapid.Symbol.CreateVar( pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data, " % ( repr(vartype), repr(self.module_name), repr(self.function_name) ) )
+                    self.visit( node.argumentvalue )
+                    self.simple_writemodule("))")
+                    
+                #self.simple_writemodule("copy.deepcopy(")
+                #self.visit( node.argumentvalue )
+                #self.simple_writemodule(")")
             elif (self.parameters_defined[argumentname][1]=="VAR") or (self.parameters_defined[argumentname][1]=="PERS") or (self.parameters_defined[argumentname][1]=="INOUT"):
                 self.bSymVariableAST = False
                 self.bGetVariableAST = False
@@ -764,7 +773,7 @@ class rapid_%s (pyrapid.rapid_struct):
                 vartype = self.parameters_defined[argumentname][2]
                 varinstance_size = self.parameters_defined[argumentname][3]
                 if varinstance_size==0:
-                    self.simple_writemodule("pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(" % ( repr(vartype), repr(self.module_name), repr(self.function_name) ))
+                    self.simple_writemodule("pyrapid.Symbol.CreateVar( pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(" % ( repr(vartype), repr(self.module_name), repr(self.function_name) ))
                     self.visit( node.argumentvalue )
                     self.simple_writemodule("))")
                 else:
@@ -825,11 +834,16 @@ class rapid_%s (pyrapid.rapid_struct):
             if self.parameters_defined[argumentname][1]=="NORMAL":
                 
                 #todo make type compare
-                self.bSymVariableAST = False
-                self.bGetVariableAST = False
-                self.simple_writemodule("copy.deepcopy(")
-                self.visit( node.argumentvalue )
-                self.simple_writemodule(")")
+                vartype = self.parameters_defined[argumentname][2]
+                varinstance_size = self.parameters_defined[argumentname][3]
+                if varinstance_size==0:
+                    self.simple_writemodule("pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(" % ( repr(vartype), repr(self.module_name), repr(self.function_name) ))
+                    self.visit( node.argumentvalue )
+                    self.simple_writemodule("))")
+                else:
+                    self.simple_writemodule("pyrapid.Symbol.CreateVar( pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data, " % ( repr(vartype), repr(self.module_name), repr(self.function_name) ) )
+                    self.visit( node.argumentvalue )
+                    self.simple_writemodule("))")
             elif (self.parameters_defined[argumentname][1]=="VAR") or (self.parameters_defined[argumentname][1]=="PERS") or (self.parameters_defined[argumentname][1]=="INOUT"):
                 self.bSymVariableAST = False
                 self.bGetVariableAST = False
