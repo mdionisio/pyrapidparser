@@ -9,22 +9,17 @@ from collections import OrderedDict
 
 class TraslateRapidToPython( rapid_ast.NodeVisitor ):
     
-    def __init__(self):
-        self.file_init_name = None
+    def __init__(self, out_filename="rapid_program.py", out_folder="run"):
         self.file_module_name = None
-        self.file_init = None
         self.file_module = None
         self.module_name = None
         self.module_attribute = []
         self.function_name = None
         self.return_type = None
         self.indent_module = 0
-        self.indent_init = 0
-        self.directory = "run"
+        self.directory = out_folder
         ensure_dir(self.directory)
-        self.file_init_name = os.path.join(self.directory, "_rapid_program_init_.py")
-        self.file_module_name = os.path.join(self.directory, "rapid_program.py")
-        self.file_init = open(self.file_init_name, "w")
+        self.file_module_name = os.path.join(self.directory, out_filename)
         self.file_module = open(self.file_module_name, "w")
         self.writemodule( "#this file is an automatic traslation of rapid code")
         self.writemodule("import pyrapid")
@@ -38,8 +33,8 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
             self.pushModuleScope()
             self.writemodule("pyrapid.Symbols().GetSymbol(%s).data({})"%(repr(entrypoint),))
             self.popModuleScope()
-        self.file_init.close()
-        self.file_module.close()
+        if not (self.file_module is None):
+            self.file_module.close()
         
     def simple_writeindent(self):
         if not (self.file_module is None):
@@ -52,11 +47,7 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
     def writemodule(self, a):
         if not (self.file_module is None):
             self.file_module.write ((" " * self.indent_module) + a + "\n")
-            
-    def writeinit(self, a):
-        if not (self.file_init is None):
-            self.file_init.write ((" " * self.indent_init) + a + "\n")
-            
+                        
     def ModuleScope(self):
         class Scope():
             def __init__(self, this):
@@ -68,30 +59,12 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
             def __exit__(self, type, value, traceback):
                 self.this.popModuleScope()
         return Scope(self)
-                
-    def InitScope(self):
-        class Scope():
-            def __init__(self, this):
-                self.this = this
-                
-            def __enter__(self):
-                self.this.pushInitScope()
-                
-            def __exit__(self, type, value, traceback):
-                self.this.popInitScope()
-        return Scope(self)
-            
+                           
     def pushModuleScope(self):
         self.indent_module += 4
         
-    def pushInitScope(self):
-        self.indent_init += 4
-        
     def popModuleScope(self):
         self.indent_module -= 4
-        
-    def popInitScope(self):
-        self.indent_init -= 4
     
     def visit_IdentifierAST(self, node):
         pass
@@ -109,7 +82,6 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
         self.indent_module = 0
-        self.indent_init = 0
         self.function_name = None
         self.return_type = None
         self.module_attribute = []
@@ -138,7 +110,6 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         self.writemodule( "################### End module %s ####################" % (self.module_name,))
         
         self.indent_module = 0
-        self.indent_init = 0
         
         self.module_name = None
         self.module_attribute = []
@@ -1194,9 +1165,25 @@ class rapid_%s (pyrapid.rapid_struct):
 
 if __name__ == '__main__':
     import sys
-    entrypoint = None
-    if len(sys.argv)>1:
-        entrypoint = sys.argv[1]
+    
+    from optparse import OptionParser
+    parser = OptionParser()
+    parser.add_option("-f", "--file", action="store", type="string", dest="filename", default="rapid_program.py",
+                        help="output filename", metavar="FILE")
+    parser.add_option("-d", "--directory", action="store", type="string", dest="directory", default="run",
+                        help="output directory", metavar="DIRECTORY")
+    parser.add_option("-e", "--entrypoint", action="store", type="string", dest="entrypoint",
+                        help="procedure to call as entry point", metavar="PROCNAME")
+                        
+    parser.add_option("-i", "--infile", action="append", type="string", dest="infiles",
+                        help="input file to convert", metavar="FILE")
+                        
+    parser.add_option("-r", "--run", action="store_true", dest="run", default=False,
+                      help="run entry point")
+    
+    (options, args) = parser.parse_args()
+    
+    entrypoint = options.entrypoint
         
     ltext = []
     import glob
@@ -1205,23 +1192,18 @@ if __name__ == '__main__':
         with open(i,"r") as f:
             ltext.append( (i, f.read()) )
             
-    if len(sys.argv)>2:
-        for i in sys.argv[2:]:
-            with open(i,"r") as f:
-                ltext.append( (i, f.read()) )
-    else:
-        ltext.append( ("stdin", sys.stdin.read()) )
+    for i in options.infiles:
+        with open(i,"r") as f:
+            ltext.append( (i, f.read()) )
     
     attriblist = []
-    
-    
     for fname, text in ltext:
         parser = rapid_parser.RAPIDParser(lex_optimize=True, yacc_debug=False, yacc_optimize=False, start_from='module_declaration_list')
         attriblist += parser.parse(text, fname, debuglevel=0).module_list
     
     allmodule = rapid_ast.ModulesAST(attriblist)
     
-    traslate = TraslateRapidToPython()
+    traslate = TraslateRapidToPython(out_filename=options.filename, out_folder=options.directory)
     try:
         traslate.visit(allmodule)
     except:
@@ -1229,5 +1211,13 @@ if __name__ == '__main__':
         raise
     
     traslate.close(entrypoint)
+    
+    if options.run:
+        import subprocess
+        a=subprocess.Popen(["python", traslate.file_module_name], shell=False)
+        a.wait()
+        print "End"
+        #
+        #
     
 

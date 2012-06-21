@@ -385,7 +385,7 @@ class rapid_clock :
             self.Set(val)
         
     def Set(self, val):
-        if isinstance(val, int):
+        if isinstance(val, tuple):
             self.val = val
         elif isinstance(val, rapid_clock):
             self.val = val.val

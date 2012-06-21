@@ -1,11 +1,7 @@
 MODULE SYSTEMMODULE(SYSMODULE)
     PROC WaitTime(switch InPos, num Time)
-        !python:print "---------------------WaitTime"
-        !python:print pyrapid.Symbols().GetSymbol("Time").data.Get()
-        !python:print pyrapid.Symbols().IsInScope("InPos")
         !python:import time
         !python:time.sleep(pyrapid.Symbols().GetSymbol("Time").data.Get())
-        !python:print "---------------------"
     ENDPROC
     
     PROC TPWrite ( string String \ num Num | bool Bool | pos Pos | orient Orient )
@@ -28,4 +24,42 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:print( val )
     ENDPROC
     
+    PROC ClkStart( INOUT clock Clock )
+        !python:import datetime
+        !python:val = pyrapid.Symbols().GetSymbol("Clock").data.Get()
+        !python:val = (val[0], None, True)
+        !python:pyrapid.Symbols().GetSymbol("Clock").data.Set(val)
+    ENDPROC
+    
+    PROC ClkStop( INOUT clock Clock )
+        !python:import datetime
+        !python:val = pyrapid.Symbols().GetSymbol("Clock").data.Get()
+        !python:val = (val[0], datetime.datetime.now(), False)
+        !python:pyrapid.Symbols().GetSymbol("Clock").data.Set(val)
+    ENDPROC
+    
+    PROC ClkReset( INOUT clock Clock )
+        !python:import datetime
+        !python:val = (datetime.datetime.now(), None, False)
+        !python:try:
+        !python:    val = pyrapid.Symbols().GetSymbol("Clock").data.Get()
+        !python:except:
+        !python:    pass
+        !python:val = (datetime.datetime.now(), val[1], val[2])
+        !python:pyrapid.Symbols().GetSymbol("Clock").data.Set(val)
+    ENDPROC
+    
+    FUNC num ClkRead( clock Clock )
+        LOCAL VAR num ret;
+        !python:import datetime
+        !python:val = pyrapid.Symbols().GetSymbol("Clock").data.Get()
+        !python:starttime = datetime.datetime.now()
+        !python:stoptime = datetime.datetime.now()
+        !python:if not(val[0] is None):
+        !python:    starttime = val[0]
+        !python:if not(val[1] is None):
+        !python:    stoptime = val[1]
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( (stoptime-starttime).total_seconds() )
+        RETURN ret;
+    ENDFUNC
 ENDMODULE
