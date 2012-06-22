@@ -345,7 +345,24 @@ class rapid_array :
         if self.val is None:
             raise Exception("variable never assigned")
         else:
-            return self.val   
+            return self.val  
+            
+class rapid_anytype :
+    def __init__(self, val=None):
+        self.val = None
+        if not (val is None):
+            self.Set(val)
+        
+    def Set(self, val):
+        self.val = val
+        
+    def Get(self):
+        if self.val is None:
+            raise Exception("variable never assigned")
+        else:
+            return self.val
+            
+Symbols().AddGlobalSym("anytype", Symbol.CreateDataType(rapid_anytype))
 
 class rapid_num :
     def __init__(self, val=None):

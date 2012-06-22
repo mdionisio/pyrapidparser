@@ -82,4 +82,17 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:    __import__(FilePath)
     ENDPROC
     
+    FUNC string NumToStr (num Val, num Dec \switch Exp)
+        VAR string ret;
+        !python:val = pyrapid.Symbols().GetSymbol("Val").data.Get()
+        !python:dec = pyrapid.Symbols().GetSymbol("Dec").data.Get()
+        IF Present(Exp) THEN
+            !python:val=("{0:.%dE}"%(dec,)).format(val)
+        ELSE
+            !python:val=("{0:.%dF}"%(dec,)).format(val)
+        ENDIF
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( val )
+        RETURN ret;
+    ENDFUNC
+    
 ENDMODULE

@@ -740,7 +740,9 @@ class rapid_%s (pyrapid.rapid_struct):
             else:
                 raise Exception("Only NORMAL, VAR, PERS, and INOUT are supported is the imput is a variable")
         else:
-            if (self.parameters_defined[argumentname][1]=="NORMAL") or (self.parameters_defined[argumentname][1]=="INOUT"):
+            if self.parameters_defined[argumentname][0] == "switch":
+                self.simple_writemodule("pyrapid.Symbol.CreateNone()")
+            elif (self.parameters_defined[argumentname][1]=="NORMAL") or (self.parameters_defined[argumentname][1]=="INOUT"):
                 vartype = self.parameters_defined[argumentname][2]
                 varinstance_size = self.parameters_defined[argumentname][3]
                 if varinstance_size==0:
@@ -845,6 +847,21 @@ class rapid_%s (pyrapid.rapid_struct):
         #arguments list of FunctionArgumentAST
         
         function_name = node.function.name
+
+        try:
+            old_param_defined = self.parameters_defined
+        except:
+            pass
+            
+        try:
+            old_parameters_index = self.parameters_index
+        except:
+            pass
+            
+        try:
+            old_defined = self.defined
+        except:
+            pass
             
         # SPECIAL FUNCTION #
         if function_name=="Present":
@@ -889,7 +906,7 @@ class rapid_%s (pyrapid.rapid_struct):
                 
             self.simple_writemodule("pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data.GetSize(**{"%(repr(node.arguments[0].argumentvalue.var.name), repr(self.module_name), repr(self.function_name)) )
             self.parameters_defined = OrderedDict()
-            self.parameters_defined["ArrPar"] = ("Required", "REF", 'any', 0, [])
+            self.parameters_defined["ArrPar"] = ("Required", "REF", 'anytype', 0, [])
             self.parameters_defined["DimNo"] = ("Required", "NORMAL", 'num', 0, [])
             self.parameters_index = 1
             self.defined = []
@@ -904,6 +921,20 @@ class rapid_%s (pyrapid.rapid_struct):
         elif function_name=="IsPers":
             if len(node.arguments)!=1:
                 raise Exception("IsPers function accept one parameter")
+        elif function_name=="ValToStr":
+            #not pefectly compliant with rapid
+            if len(node.arguments)!=1:
+                raise Exception("ValToStr function accept 1 parameter")
+            self.parameters_defined = OrderedDict()
+            self.parameters_defined["Val"] = ("Required", "NORMAL", 'anytype', 0, [])
+            self.parameters_index = 0
+            self.defined = []
+            self.simple_writemodule("str({")
+            self.visit(node.arguments[0])
+            self.simple_writemodule("}['Val'].data.Get())")
+            del self.parameters_index
+            del self.defined
+            del self.parameters_defined
         else:
             # NORMAL FUNCTION #
             refsym = pyrapid.Symbols().GetSymbol(symbolname=function_name, modulename=self.module_name, functionname=self.function_name)
@@ -912,6 +943,7 @@ class rapid_%s (pyrapid.rapid_struct):
             procedure_call = refsym.data
             if refsym.type != pyrapid.Symbol.SYM_TYPE_PROCEDURE:
                 raise Exception("symbol %s used in module %s function %s has to be a procedure"%(function_name, self.module_name, self.function_name))
+            
             
             self.parameters_defined = refsym.parameters
             #compute parameter list
@@ -939,6 +971,21 @@ class rapid_%s (pyrapid.rapid_struct):
             del self.parameters_defined
             del self.parameters_index
             del self.defined
+            
+        try:
+            self.parameters_defined = old_param_defined
+        except:
+            pass
+            
+        try:
+            self.parameters_index = old_parameters_index
+        except:
+            pass
+            
+        try:
+            self.defined = old_defined
+        except:
+            pass
                     
         
         
@@ -949,37 +996,74 @@ class rapid_%s (pyrapid.rapid_struct):
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
         
-        procedure_name = node.procedure.name
-        self.writemodule("# Call procedure %s"%(procedure_name,))
-        refsym = pyrapid.Symbols().GetSymbol(symbolname=procedure_name, modulename=self.module_name, functionname=self.function_name)
-        if refsym is None:
-            raise Exception("procedure %s used in module %s function %s not defined"%(procedure_name, self.module_name, self.function_name))
-        procedure_call = refsym.data
-        if refsym.type != pyrapid.Symbol.SYM_TYPE_PROCEDURE:
-            raise Exception("symbol %s used in module %s function %s has to be a procedure"%(procedure_name, self.module_name, self.function_name))
-        
-        self.parameters_defined = refsym.parameters
-        #compute parameter list
-        self.writemodule("parameters_actual = {}")
-        self.parameters_index = 0
-        self.defined = []
-        
-        for i in node.arguments:
-            self.visit(i)
+        try:
+            old_param_defined = self.parameters_defined
+        except:
+            pass
             
-        for ik,iv in self.parameters_defined.iteritems():
-            if iv[0]=='required':
-                try:
-                    self.defined.index(ik)
-                except ValueError:
-                    raise Exception("argument %s is required"%(ik,))
-        
-        self.writemodule("pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(parameters_actual)" % ( repr(procedure_name), repr(self.module_name), repr(self.function_name) ))
-        self.writemodule("del parameters_actual")
-        del self.parameters_index
-        del self.parameters_defined
-        del self.defined
-        self.writemodule("# End Call procedure")
+        try:
+            old_parameters_index = self.parameters_index
+        except:
+            pass
+            
+        try:
+            old_defined = self.defined
+        except:
+            pass
+            
+        procedure_name = node.procedure.name
+        #SPECIAL PROCEDURE
+        if False:
+            pass
+        else:
+            self.writemodule("# Call procedure %s"%(procedure_name,))
+            refsym = pyrapid.Symbols().GetSymbol(symbolname=procedure_name, modulename=self.module_name, functionname=self.function_name)
+            if refsym is None:
+                raise Exception("procedure %s used in module %s function %s not defined"%(procedure_name, self.module_name, self.function_name))
+            procedure_call = refsym.data
+            if refsym.type != pyrapid.Symbol.SYM_TYPE_PROCEDURE:
+                raise Exception("symbol %s used in module %s function %s has to be a procedure"%(procedure_name, self.module_name, self.function_name))
+            
+            
+                
+            self.parameters_defined = refsym.parameters
+            self.parameters_index = 0
+            self.defined = []
+            
+            self.writemodule("parameters_actual = OrderedDict()")
+            #compute parameter list
+            
+            for i in node.arguments:
+                self.visit(i)
+                
+            for ik,iv in self.parameters_defined.iteritems():
+                if iv[0]=='required':
+                    try:
+                        self.defined.index(ik)
+                    except ValueError:
+                        raise Exception("argument %s is required"%(ik,))
+            
+            self.writemodule("pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(parameters_actual)" % ( repr(procedure_name), repr(self.module_name), repr(self.function_name) ))
+            self.writemodule("del parameters_actual")
+            del self.parameters_index
+            del self.parameters_defined
+            del self.defined
+            self.writemodule("# End Call procedure")
+            
+        try:
+            self.parameters_defined = old_param_defined
+        except:
+            pass
+            
+        try:
+            self.parameters_index = old_parameters_index
+        except:
+            pass
+            
+        try:
+            self.defined = old_defined
+        except:
+            pass
         
     def visit_ProcedureDeclarationAST(self, node):
         #procedure_name*, parameter_list**, data_definitions**, statement_list**, routine_backward*, routine_error*, routine_undo*

@@ -49,13 +49,14 @@ MODULE MAINTASK
         RETURN A_bForceLoadSchemas;
     ENDFUNC
     
-    PROC LoadSchema( num nsch )
+    PROC ALoadSchema( num nsch \switch DisableOnError)
         UnLoad FilePath:="schema.mod";
         Load FilePath:="schema.mod";
         INIT_SCHEMA;
         !TPWrite "TEST INIT SCHEMA", \Bool:=SchemaType_Valid;
         UnLoad FilePath:="schema.mod";
         ! todo aggiungere gestione errore per UnLoad
+        ! todo aggiungere gestione errore per Load
     ENDPROC
     
     PROC ALoadSchemas()
@@ -64,7 +65,7 @@ MODULE MAINTASK
         TPWrite "LOAD/RELOAD ALL SCHEMAS";
         
         FOR i FROM 1 TO nPLACELINE STEP 1 DO
-            LoadSchema i;
+            ALoadSchema i;
         ENDFOR
         
         TPWrite "END LOAD/RELOAD ALL SCHEMAS";
