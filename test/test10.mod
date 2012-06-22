@@ -1,0 +1,3 @@
+MODULE syun1(SYSMODULE)
+VAR pose p := [1,2,3,4,5];
+ENDMODULE

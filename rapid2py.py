@@ -1010,7 +1010,7 @@ class rapid_%s (pyrapid.rapid_struct):
         self.writemodule(proc)
         
         if self.tmp_outineDeclarationATS_data is None:
-            pyrapid.Symbols().AddGlobalSym(self.function_name, pyrapid.Symbol.CreateProcedure(self.params, _rapid_proc_))
+            pyrapid.Symbols().AddGlobalSym(self.function_name, pyrapid.Symbol.CreateProcedure(self.params, _rapid_proc_), self.module_name)
         else:
             pyrapid.Symbols().AddModuleSym(self.module_name, self.function_name, pyrapid.Symbol.CreateProcedure(self.params, _rapid_proc_))
             
@@ -1058,7 +1058,7 @@ class rapid_%s (pyrapid.rapid_struct):
                     self.writemodule("# end stantment")
         
         if self.tmp_outineDeclarationATS_data is None:
-            self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateProcedure(%s, rapid_proc_%s))"%(repr(self.function_name), params, self.function_name,))
+            self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateProcedure(%s, rapid_proc_%s), %s)"%(repr(self.function_name), params, self.function_name, repr(self.module_name),))
         else:
             self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, pyrapid.Symbol.CreateProcedure(%s, rapid_proc_%s))"%(repr(self.module_name), params, repr(self.function_name), self.function_name, ))
             
@@ -1103,7 +1103,7 @@ class rapid_%s (pyrapid.rapid_struct):
         self.writemodule(proc)
         
         if self.tmp_outineDeclarationATS_data is None:
-            pyrapid.Symbols().AddGlobalSym(self.function_name, pyrapid.Symbol.CreateFunction(self.params, returntype, _rapid_func_))
+            pyrapid.Symbols().AddGlobalSym(self.function_name, pyrapid.Symbol.CreateFunction(self.params, returntype, _rapid_func_), self.module_name)
         else:
             pyrapid.Symbols().AddModuleSym(self.module_name, self.function_name, pyrapid.Symbol.CreateFunction(self.params, returntype, _rapid_proc_))
             
@@ -1147,7 +1147,7 @@ class rapid_%s (pyrapid.rapid_struct):
                     self.writemodule("# end stantment")
         
         if self.tmp_outineDeclarationATS_data is None:
-            self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateFunction(%s, %s, rapid_func_%s))"%(repr(self.function_name), params, sreturntype, self.function_name,))
+            self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateFunction(%s, %s, rapid_func_%s), %s)"%(repr(self.function_name), params, sreturntype, self.function_name, repr(self.module_name),))
         else:
             self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, pyrapid.Symbol.CreateFunction(%s, %s, rapid_func_%s))"%(repr(self.module_name), params, sreturntype, repr(self.function_name), self.function_name, ))
             
@@ -1178,6 +1178,9 @@ if __name__ == '__main__':
     parser.add_option("-i", "--infile", action="append", type="string", dest="infiles",
                         help="input file to convert", metavar="FILE")
                         
+    parser.add_option("-s", "--nostandard", action="store_false", dest="standard", default=True,
+                      help="not include standard symbols")
+                      
     parser.add_option("-r", "--run", action="store_true", dest="run", default=False,
                       help="run entry point")
     
@@ -1186,11 +1189,13 @@ if __name__ == '__main__':
     entrypoint = options.entrypoint
         
     ltext = []
-    import glob
     
-    for i in glob.glob('./default/*.sys'):
-        with open(i,"r") as f:
-            ltext.append( (i, f.read()) )
+    if options.standard:
+        import glob
+        
+        for i in glob.glob('./default/*.sys'):
+            with open(i,"r") as f:
+                ltext.append( (i, f.read()) )
             
     for i in options.infiles:
         with open(i,"r") as f:
@@ -1198,6 +1203,7 @@ if __name__ == '__main__':
     
     attriblist = []
     for fname, text in ltext:
+        print "PARSING: "+str(fname)
         parser = rapid_parser.RAPIDParser(lex_optimize=True, yacc_debug=False, yacc_optimize=False, start_from='module_declaration_list')
         attriblist += parser.parse(text, fname, debuglevel=0).module_list
     

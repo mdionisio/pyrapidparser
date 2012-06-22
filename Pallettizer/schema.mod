@@ -1,0 +1,5 @@
+MODULE SCHEMA
+    PROC INIT_SCHEMA()
+        SchemaType_Valid := FALSE;
+    ENDPROC
+ENDMODULE

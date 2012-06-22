@@ -62,4 +62,24 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:pyrapid.Symbols().GetSymbol("ret").data.Set( (stoptime-starttime).total_seconds() )
         RETURN ret;
     ENDFUNC
+    
+    PROC UnLoad( string FilePath )
+        TPWrite("UnLoad it is unsafe");
+        !python:FilePath = pyrapid.Symbols().GetSymbol("FilePath").data.Get()
+        !python:FilePath = FilePath.split('/')[-1].split('.')[0].upper()
+        !python:pyrapid.Symbols().UnLoadModule(FilePath)
+    ENDPROC
+    
+
+    PROC Load( \switch Dynamic, string FilePath \string File \switch CheckRef )
+        TPWrite("Load it is unsafe");
+        !python:FilePath = pyrapid.Symbols().GetSymbol("FilePath").data.Get()
+        !python:FilePath = FilePath.split('/')[-1].split('.')[0]
+        !python:import sys
+        !python:if sys.modules.has_key(FilePath):
+        !python:    reload(sys.modules[FilePath])
+        !python:else:
+        !python:    __import__(FilePath)
+    ENDPROC
+    
 ENDMODULE

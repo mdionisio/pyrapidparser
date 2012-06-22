@@ -105,6 +105,7 @@ class Symbols(Singleton.Singleton):
         self.module_symbol = {}
         self.local_symbol = {}
         self.scope_symbol = []
+        self.module_global_symbol = {} # contain for each module the list of global symbol defined
         
     def GetSymbol(self, symbolname, modulename=None, functionname=None):
         try:
@@ -144,12 +145,24 @@ class Symbols(Singleton.Singleton):
             return self.scope_symbol[-1][2].has_key(symbolname)
         except:
             return False
+            
+    def UnLoadModule(self, modulename):
+        if self.module_global_symbol.has_key(modulename):
+            for i in self.module_global_symbol[modulename]:
+                self.global_symbol.pop(i)
+            self.module_global_symbol.pop(modulename)
+            
         
-    def AddGlobalSym(self, symbolname, data):
+    def AddGlobalSym(self, symbolname, data, modulename=None):
         if self.global_symbol.has_key(symbolname):
             raise Exception("symbol %s already defined"%(symbolname,))
         else:
             self.global_symbol[symbolname] = data
+            if not(modulename is None):
+                if self.module_global_symbol.has_key(modulename):
+                    self.module_global_symbol[modulename].append(symbolname)
+                else:
+                    self.module_global_symbol[modulename] = [ symbolname ]
         
     def AddModuleSym(self, module, symbolname, data):
         if not self.module_symbol.has_key(module):
