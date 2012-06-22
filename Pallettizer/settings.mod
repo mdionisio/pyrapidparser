@@ -20,7 +20,7 @@ MODULE SETTINGS
     
     
     ! schemaType Elements
-    VAR bool r_SchemaType_Valid;
+    VAR bool r_SchemaType_Valid{nPLACELINE};
     VAR num r_SchemaType_NSteps{nPLACELINE, nQueueForSchema};
     VAR num r_SchemaType_RunSteps{nPLACELINE, nQueueForSchema};
 ENDMODULE

@@ -95,4 +95,79 @@ MODULE SYSTEMMODULE(SYSMODULE)
         RETURN ret;
     ENDFUNC
     
+    PROC Incr (INOUT num Name)
+        Name := Name + 1;
+    ENDPROC
+    
+    PROC Decr (INOUT num Name)
+        Name := Name - 1;
+    ENDPROC
+    
+    PROC Add (INOUT num Name, num AddDvalue)
+        Name := Name + AddDvalue;
+    ENDPROC
+    
+    PROC TryInit (num DataObj)
+        !!!!!!!!!!!!!!!!!TODO
+    ENDPROC
+    
+    FUNC num Abs (num Value)
+        VAR num ret;
+        !python:val = pyrapid.Symbols().GetSymbol("Value").data.Get()
+        !python:val = abs(val)
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( val )
+        RETURN ret;
+    ENDFUNC
+    
+    FUNC num Round (num Value)
+        VAR num ret;
+        !python:val = pyrapid.Symbols().GetSymbol("Value").data.Get()
+        !python:val = round(val)
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( val )
+        RETURN ret;
+    ENDFUNC
+    
+    FUNC num Trunc (num Value)
+        VAR num ret;
+        !python:import math
+        !python:val = pyrapid.Symbols().GetSymbol("Value").data.Get()
+        !python:val = math.floor(val)
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( val )
+        RETURN ret;
+    ENDFUNC
+    
+    FUNC num Sqrt (num Value)
+        VAR num ret;
+        !python:import math
+        !python:val = pyrapid.Symbols().GetSymbol("Value").data.Get()
+        !python:val = math.sqrt(val)
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( val )
+        RETURN ret;
+    ENDFUNC
+    
+    FUNC num Exp (num Value)
+        VAR num ret;
+        !python:import math
+        !python:val = pyrapid.Symbols().GetSymbol("Value").data.Get()
+        !python:val = math.exp(val)
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( val )
+        RETURN ret;
+    ENDFUNC
+    
+    FUNC num Pow (num Base, num Exponent)
+        VAR num ret;
+        !TODO non gestito errore
+        !python:import math
+        !python:base = pyrapid.Symbols().GetSymbol("Value").data.Get()
+        !python:exponent = pyrapid.Symbols().GetSymbol("Value").data.Get()
+        !python:val = math.pow(base, exponent)
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( val )
+        RETURN ret;
+    ENDFUNC
+    
+    
+    
+
+
+    
 ENDMODULE

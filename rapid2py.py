@@ -66,14 +66,14 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
     def popModuleScope(self):
         self.indent_module -= 4
     
-    def visit_IdentifierAST(self, node):
+    def visit_IdentifierAST(self, node, **kwargs):
         pass
         
-    def visit_ModuleAttributeAST(self, node):
+    def visit_ModuleAttributeAST(self, node, **kwargs):
         #ModuleAttributeAST: [ name ]
         self.module_attribute.append(node.name)
         
-    def pre_visit_ModuleAST(self, node):
+    def pre_visit_ModuleAST(self, node, **kwargs):
         """
             1. create a folder with module name
             2. create a file __init.__py inside the 1. folder
@@ -98,7 +98,7 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         self.writemodule( "##################################################################")
         
         
-    def post_visit_ModuleAST(self, node):
+    def post_visit_ModuleAST(self, node, **kwargs):
         """ 
               1. write on the __init__.py the global symbol
               2. close the opend file
@@ -117,7 +117,7 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         self.return_type = None
         
         
-    def visit_CommentAST(self, node):
+    def visit_CommentAST(self, node, **kwargs):
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
         const_python_start = "python:"
@@ -127,17 +127,17 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         else:
             self.writemodule( "# ## COMMENT:" + node.comment +" ##")
         
-    def pre_visit_TypeDefAST(self, node):
+    def pre_visit_TypeDefAST(self, node, **kwargs):
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
         self.writemodule("############################# start type definition")
         self.tmp_TypeDefAST_data = node.type
         
-    def post_visit_TypeDefAST(self, node):
+    def post_visit_TypeDefAST(self, node, **kwargs):
         del self.tmp_TypeDefAST_data
         self.writemodule("# end type definition")
         
-    def visit_AliasDefATS(self, node):
+    def visit_AliasDefATS(self, node, **kwargs):
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
         typename = node.type_name.name
@@ -161,7 +161,7 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
             pyrapid.Symbols().AddModuleSym(self.module_name, aliasname, pyrapid.Symbol.CreateDataType(newsym))
             self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, pyrapid.Symbol.CreateDataType(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data))"%(repr(self.module_name), repr(aliasname), repr(typename), repr(self.module_name), repr(self.function_name), ))
 
-    def visit_RecordDefAST(self, node):
+    def visit_RecordDefAST(self, node, **kwargs):
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
         record_name = node.record_name.name
@@ -207,18 +207,18 @@ class rapid_%s (pyrapid.rapid_struct):
             
         self.writemodule("del rapid_%s"%(record_name,))
 
-    def pre_visit_DataDefATS(self, node):
+    def pre_visit_DataDefATS(self, node, **kwargs):
         self.writemodule("############################# start declaration")
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
         self.tmp_DataDefATS_data = node.type
         
-    def post_visit_DataDefATS(self, node):
+    def post_visit_DataDefATS(self, node, **kwargs):
         del self.tmp_DataDefATS_data
         self.writemodule("# end declaration")
         
         
-    def VarConstPersDeclaration(self, node, createvar, createvars):
+    def VarConstPersDeclaration(self, node, createvar, createvars, **kwargs):
         scope = self.tmp_DataDefATS_data
         vartype = node.type.name
         varinstance_name = node.variable_instance.name.name
@@ -227,7 +227,7 @@ class rapid_%s (pyrapid.rapid_struct):
             
         if not(varinstance_value is None):
             compute = EvaluateRapidExpression(self.module_name, self.function_name)
-            compute.visit(varinstance_value)
+            compute.visit(varinstance_value, **kwargs)
             varinstance_value = compute.return_value
                 
         if len(varinstance_size)==0:
@@ -237,7 +237,7 @@ class rapid_%s (pyrapid.rapid_struct):
             size = []
             for i in varinstance_size:
                 compute = EvaluateRapidExpression(self.module_name, self.function_name)
-                compute.visit(i)
+                compute.visit(i, **kwargs)
                 size.append(compute.return_value)
             getvar = createvar(   pyrapid.rapid_array(size, pyrapid.Symbols().GetSymbol(vartype, self.module_name, self.function_name).data, varinstance_value ) )
             sgetvar = "%s( pyrapid.rapid_array(%s, pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data, %s) )" % ( createvars, str(size), repr(vartype), repr(self.module_name), repr(self.function_name), repr(varinstance_value) )
@@ -245,7 +245,7 @@ class rapid_%s (pyrapid.rapid_struct):
         return (varinstance_name, getvar, sgetvar)
             
         
-    def visit_VarDeclarationAST(self, node):
+    def visit_VarDeclarationAST(self, node, **kwargs):
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
         varinstance_name, getvar, sgetvar = self.VarConstPersDeclaration(node, pyrapid.Symbol.CreateVar, "pyrapid.Symbol.CreateVar")
@@ -270,7 +270,7 @@ class rapid_%s (pyrapid.rapid_struct):
                 pyrapid.Symbols().AddScopeSym( varinstance_name, getvar )
                 self.writemodule( "pyrapid.Symbols().AddScopeSym(%s, %s)"%(repr(varinstance_name), sgetvar) )
         
-    def visit_ConstDeclarationAST(self, node):
+    def visit_ConstDeclarationAST(self, node, **kwargs):
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
         varinstance_name, getvar, sgetvar = self.VarConstPersDeclaration(node, pyrapid.Symbol.CreateConst, "pyrapid.Symbol.CreateConst")
@@ -295,7 +295,7 @@ class rapid_%s (pyrapid.rapid_struct):
                 pyrapid.Symbols().AddScopeSym( varinstance_name, getvar )
                 self.writemodule( "pyrapid.Symbols().AddScopeSym(%s, %s)"%(repr(varinstance_name), sgetvar) )
     
-    def visit_PersDeclarationAST(self, node):
+    def visit_PersDeclarationAST(self, node, **kwargs):
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
             
@@ -320,15 +320,15 @@ class rapid_%s (pyrapid.rapid_struct):
                 pyrapid.Symbols().AddLocalSym(self.module_name, self.function_name, varinstance_name, getvar )
                 self.writemodule( "pyrapid.Symbols().AddLocalSym($s, %s, %s, %s)"%(repr(self.module_name), repr(self.function_name), repr(varinstance_name), sgetvar) )
         
-    def pre_visit_RoutineDeclarationATS(self, node):
+    def pre_visit_RoutineDeclarationATS(self, node, **kwargs):
         self.writemodule("############################# start routine declaration")
         self.tmp_outineDeclarationATS_data = node.type
         
-    def post_visit_RoutineDeclarationATS(self, node):
+    def post_visit_RoutineDeclarationATS(self, node, **kwargs):
         del self.tmp_outineDeclarationATS_data
         self.writemodule("# end routine declaration")
         
-    def visit_ParameterDefinitionAST(self, node):
+    def visit_ParameterDefinitionAST(self, node, **kwargs):
         #parameter_type stringa
         #type IdentifierAST
         #name IdentifierAST
@@ -345,17 +345,17 @@ class rapid_%s (pyrapid.rapid_struct):
         else:
             self.params[pname] = ("required", paramtype, ptype, psize, [])
     
-    def visit_OptionalParameterDefinitionAST(self, node):
+    def visit_OptionalParameterDefinitionAST(self, node, **kwargs):
         #parameter None or ParameterDefinitionAST or SwitchParameterDefinitionAST
         #switchs list of None or ParameterDefinitionAST or SwitchParameterDefinitionAST
 
-        self.visit(node.parameter)
+        self.visit(node.parameter, **kwargs)
         
         list_switch = set()
         list_switch.update([self.lastparamadded])
             
         for i in node.switchs:
-            self.visit(i)
+            self.visit(i, **kwargs)
             list_switch.update([self.lastparamadded])
             
         for i in list_switch:
@@ -368,7 +368,7 @@ class rapid_%s (pyrapid.rapid_struct):
                 self.params[i] = ( "switch", old1, old2, old3, list(old4) ) 
         
     
-    def visit_SwitchParameterDefinitionAST(self, node):
+    def visit_SwitchParameterDefinitionAST(self, node, **kwargs):
         #name IdentifierAST
         pname = node.name.name
         
@@ -379,129 +379,107 @@ class rapid_%s (pyrapid.rapid_struct):
         else:
             self.params[pname] = ("switch", None, None, None, [])
             
-    def visit_ExpressionAST(self, node):
+    def visit_ExpressionAST(self, node, **kwargs):
         #expr is None or AggregateAST or Operator1AST or Operator2AST or FunctionCallAST or VariableAST or ExpressionAST or LiteralATS
         if node.expr is None:
             return
         else:
-            self.visit(node.expr)
+            self.visit(node.expr, **kwargs)
             
-    def visit_AggregateAST(self, node):
+    def visit_AggregateAST(self, node, **kwargs):
         self.simple_writemodule("[")
         if len(node.expr)>0:
             for i in node.expr[:-1]:
-                self.visit(i)
+                self.visit(i, **kwargs)
                 self.simple_writemodule(", ")
-            self.visit(node.expr[-1])
+            self.visit(node.expr[-1], **kwargs)
         self.simple_writemodule("]")
         
-    def visit_Operator1AST(self, node):
+    def visit_Operator1AST(self, node, **kwargs):
         if not(node.operator is None):
             self.simple_writemodule("( not ")
-            self.visit(node.par1)
+            self.visit(node.par1, **kwargs)
             self.simple_writemodule(" )")
         else:
-            self.visit(node.par1)
+            self.visit(node.par1, **kwargs)
         
-    def visit_Operator2AST(self, node):
+    def visit_Operator2AST(self, node, **kwargs):
         self.simple_writemodule("( ")
-        self.visit(node.par1)
+        self.visit(node.par1, **kwargs)
         self.simple_writemodule(" ")
         if node.operator == "=":
             self.simple_writemodule("==")
         else:
             self.simple_writemodule(node.operator)
         self.simple_writemodule(" ")
-        self.visit(node.par2)
+        self.visit(node.par2, **kwargs)
         self.simple_writemodule(" )")
             
-    def visit_LiteralATS(self, node):
+    def visit_LiteralATS(self, node, **kwargs):
         #value is int or float or string
         if isinstance(node.value, str):
             self.simple_writemodule(repr(node.value))
         else:
             self.simple_writemodule(str(node.value))
             
-    def visit_VariableAST(self, node):
+    def visit_VariableAST(self, node, bget_VariableAST=True, bsym_VariableAST=True, **kwargs):
         varindexlist = node.index
         varcomponent = node.component
-        bget = True
-        bsym = True
-        try:
-            bget = self.bGetVariableAST
-        except:
-            pass
-        try:
-            bsym = self.bSymVariableAST
-        except:
-            pass
-        if bget:
-            bsym = True
-        self.bGetVariableAST = False
-        #self.bSymVariableAST = True
+
+        if bget_VariableAST:
+            bsym_VariableAST = True
+            
         if varcomponent is None:
             if len(varindexlist)==0:
                 if isinstance(node.var, rapid_ast.VariableAST):
-                    parse.visit( node.var )
+                    parse.visit( node.var, **kwargs )
                 else:
                     self.simple_writemodule( "pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s)" % ( repr(node.var.name), repr(self.module_name), repr(self.function_name) ) )
-                if bsym:
+                if bsym_VariableAST:
                     self.simple_writemodule( ".data" )
             else:
                 if isinstance(node.var, rapid_ast.VariableAST):
-                    parse.visit( node.var )
+                    parse.visit( node.var, **kwargs )
                 else:
                     self.simple_writemodule( "pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data" % ( repr(node.var.name), repr(self.module_name), repr(self.function_name) ) )
                 
-                self.simple_writemodule( ".GetElem( "  )
+                self.simple_writemodule( ".GetElem( ["  )
                 
                 for i in varindexlist[:-1]:
-                    old = self.bSymVariableAST
-                    self.bSymVariableAST = False
-                    self.visit( i )
-                    self.bSymVariableAST = old
+                    self.visit( i, bget_VariableAST=False, bsym_VariableAST=False, **kwargs )
                     self.simple_writemodule( ", ")
-                self.visit( varindexlist[-1] )
+                self.visit( varindexlist[-1], bget_VariableAST=False, bsym_VariableAST=False, **kwargs )
                     
-                self.simple_writemodule( " )" )
+                self.simple_writemodule( "] )" )
         else:
             if isinstance(node.var, rapid_ast.VariableAST):
-                self.visit(node.var)
+                self.visit(node.var, **kwargs)
                 self.simple_writemodule( ".GetElem(%s)" % ( repr(varcomponent.name), ) )
             else:
                 raise Exception("if there is a component we need a variable as data before .")
 
         
-        if bget:
+        if bget_VariableAST:
             self.simple_writemodule( ".Get()" )
-        try:
-            del self.bGetVariableAST
-        except:
-            pass
-        try:
-            del self.bSymVariableAST
-        except:
-            pass
             
-    def visit_AssignmentStatementAST(self, node):
+    def visit_AssignmentStatementAST(self, node, **kwargs):
         #dest* is VariableAST
         #source*
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
         self.simple_writeindent()
-        self.bGetVariableAST = False
-        self.visit(node.dest)
+        self.visit(node.dest, bget_VariableAST=False, bsym_VariableAST=True, **kwargs)
         self.simple_writemodule( ".Set( " )
-        self.visit(node.source)
+        self.visit(node.source, **kwargs)
         self.simple_writemodule(" ) ")
         self.simple_writemodule()
         
-    def visit_GotoStatementAST(self, node):
+    def visit_GotoStatementAST(self, node, **kwargs):
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
         raise Exception("GOTO not yet supported")
-        
-    def visit_ReturnStatementAST(self, node):
+                
+    def visit_ReturnStatementAST(self, node, **kwargs):
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
         self.simple_writeindent()
@@ -514,142 +492,142 @@ class rapid_%s (pyrapid.rapid_struct):
             if self.return_type is None:
                 raise Exception("procedure %s return a type"%(self.function_name,))
             self.simple_writemodule( "return ( " )
-            self.visit(node.result)
+            self.visit(node.result, **kwargs)
             self.simple_writemodule(" )")
         self.simple_writemodule()
         
-    def visit_ExitStatementAST(self, node):
+    def visit_ExitStatementAST(self, node, **kwargs):
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
         
         self.writemodule("sys.exit(1)")
         
-    def visit_RetryStatementAST(self, node):
+    def visit_RetryStatementAST(self, node, **kwargs):
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
         raise Exception("Retry not yet supported")
         
-    def visit_TrynextStatementAST(self, node):
+    def visit_TrynextStatementAST(self, node, **kwargs):
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
         raise Exception("Try next not yet supported")
         
-    def visit_ConnectStatementAST(self, node):
+    def visit_ConnectStatementAST(self, node, **kwargs):
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
         raise Exception("Connect not yet supported")
         
-    def visit_IfStatement(self, node):
+    def visit_IfStatement(self, node, **kwargs):
         #condition*, statement_list**, elseif_list**, else_statement_list**
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
         self.simple_writeindent()
         self.simple_writemodule( "if (" )
-        self.visit(node.condition)
+        self.visit(node.condition, **kwargs)
         self.simple_writemodule( ") :" )
         self.simple_writemodule()
         with self.ModuleScope():
             self.writemodule("pass")
             
             for i in node.statement_list:
-                self.visit(i)
+                self.visit(i, **kwargs)
         
         for i in node.elseif_list:
-            self.visit(i)
+            self.visit(i, **kwargs)
         
         if len(node.else_statement_list)>0:
             self.writemodule("else:")
             with self.ModuleScope():
                 for i in node.else_statement_list:
-                    self.visit(i)
+                    self.visit(i, **kwargs)
         
-    def visit_ElseIfStatement(self, node):    
+    def visit_ElseIfStatement(self, node, **kwargs):    
         #condition*, statement_list**
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
         self.simple_writeindent()
         self.simple_writemodule( "elif (" )
-        self.visit(node.condition)
+        self.visit(node.condition, **kwargs)
         self.simple_writemodule( ") :" )
         self.simple_writemodule()
         with self.ModuleScope():
             self.writemodule("pass")
             
             for i in node.statement_list:
-                self.visit(i)
+                self.visit(i, **kwargs)
                 
-    def visit_ForStatement(self, node):    
+    def visit_ForStatement(self, node, **kwargs):    
         #loop_variable*, ifrom*, ito*, istep*, statement_list**
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
         self.writemodule("# FOR Statement")
         self.simple_writeindent()
         self.simple_writemodule( "pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data.Set( " % ( repr(node.loop_variable.name), repr(self.module_name), repr(self.function_name) ) )
-        self.visit(node.ifrom)
+        self.visit(node.ifrom, **kwargs)
         self.simple_writemodule(" ) ")
         self.simple_writemodule()
         
         self.simple_writeindent()
         self.simple_writemodule("while ( ")
         self.simple_writemodule( "pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data.Get() <= (" % ( repr(node.loop_variable.name), repr(self.module_name), repr(self.function_name) ) )
-        self.visit(node.ito)
+        self.visit(node.ito, **kwargs)
         self.simple_writemodule( ")" )
         self.simple_writemodule("): ")
         self.simple_writemodule()
         with self.ModuleScope():
             for i in node.statement_list:
-                self.visit(i)
+                self.visit(i, **kwargs)
                 
             self.simple_writeindent()
             self.simple_writemodule( "pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data.Set( " % ( repr(node.loop_variable.name), repr(self.module_name), repr(self.function_name) ) )
             self.simple_writemodule( "pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data.Get() + (" % ( repr(node.loop_variable.name), repr(self.module_name), repr(self.function_name) ) )
-            self.visit(node.ifrom)
+            self.visit(node.ifrom, **kwargs)
             self.simple_writemodule(") ) ")
             self.simple_writemodule()
         self.writemodule("# END FOR Statement")
         
-    def visit_WhileStatement(self, node):    
+    def visit_WhileStatement(self, node, **kwargs):    
         #condition*, statement_list****
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
         self.writemodule("# WHILE Statement")
         self.simple_writeindent()
         self.simple_writemodule("while ( ")
-        self.visit(node.condition)
+        self.visit(node.condition, **kwargs)
         self.simple_writemodule("): ")
         self.simple_writemodule()
         with self.ModuleScope():
             self.writemodule("pass")
             for i in node.statement_list:
-                self.visit(i)
+                self.visit(i, **kwargs)
                 
         self.writemodule("# END WHILE Statement")
         
     ##
-    def visit_TestStatement(self, node):    
+    def visit_TestStatement(self, node, **kwargs):    
         #expression*, cases**, default**
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
         self.writemodule("# TEST Statement")
         self.simple_writeindent()
         self.simple_writemodule("val = ( ")
-        self.visit(node.expression)
+        self.visit(node.expression, **kwargs)
         self.simple_writemodule(") ")
         self.simple_writemodule()
         self.writemodule("if False:")
         with self.ModuleScope():
             self.writemodule("pass")
         for i in node.cases:
-            self.visit(i)
+            self.visit(i, **kwargs)
         if len(node.default)>0:
             self.writemodule("else:")
             with self.ModuleScope():
                 for i in node.default:
-                    self.visit(i)
+                    self.visit(i, **kwargs)
         
         self.writemodule("# END TEST Statement")
         
-    def visit_CaseStatement(self, node):    
+    def visit_CaseStatement(self, node, **kwargs):    
         #test_value**, statement_list**
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
@@ -658,105 +636,105 @@ class rapid_%s (pyrapid.rapid_struct):
         self.simple_writemodule("elif (")
         for i in node.test_value[:-1]:
             self.simple_writemodule("(val == (")
-            self.visit(i)
+            self.visit(i, **kwargs)
             self.simple_writemodule(")) or ")
         self.simple_writemodule("(val == (")
-        self.visit(node.test_value[-1])
+        self.visit(node.test_value[-1], **kwargs)
         self.simple_writemodule("))")
         self.simple_writemodule("): ")
         self.simple_writemodule()
         with self.ModuleScope():
             self.writemodule("pass")
             for i in node.statement_list:
-                self.visit(i)
+                self.visit(i, **kwargs)
         self.writemodule("# END CASE Statement")
     ##
         
-    def visit_FunctionArgumentAST(self, node):    
+    def visit_FunctionArgumentAST(self, node, parameters_defined, parameters_index, defined, **kwargs):    
         #type "Required" or "Optional" or "Conditional" or None
         #argumentname is IdentifierAST or None
         #argumentvalue is ExpressionAST ... or VariableAST or None
         
         if node.type is None:
             raise Exception("function parameter not completly defined")
+            
+        in_parameters_index = parameters_index
+        parameters_index = in_parameters_index.pop()
         
         if node.argumentname is None:
-            if isinstance(self.parameters_index, int):
+            if isinstance(parameters_index, int):
                 try:
-                    argumentname = self.parameters_defined.keys()[self.parameters_index]
+                    argumentname = parameters_defined.keys()[parameters_index]
                 except:
                     raise Exception("too much parameters")
-                self.parameters_index += 1
+                parameters_index += 1
             else:
                 raise Exception("positional parameter after a named one")
         else:
             argumentname = node.argumentname.name
-            if self.parameters_defined.keys()[self.parameters_index] == argumentname:
-                self.parameters_index += 1
+            if parameters_defined.keys()[parameters_index] == argumentname:
+                parameters_index += 1
             else:
-                self.parameters_index = None
+                parameters_index = None
         
         try:
-            self.defined.index(argumentname)
+            defined.index(argumentname)
             raise Exception("argument %s already defined"%(argumentname,))
         except ValueError:
             pass
         
         try:
-            self.parameters_defined[argumentname]
+            parameters_defined[argumentname]
         except:
             raise Exception("%s is not a valid parameter"%(argumentname))
-            
-        self.defined.append(argumentname)
+                        
+        defined.append(argumentname)
         self.simple_writemodule( "%s:" % (repr(argumentname),))
         if isinstance(node.argumentvalue, rapid_ast.VariableAST):
             #todo add check type
-            #take the type of the symbol self.parameters_defined[argumentname] and compare it with
+            #take the type of the symbol parameters_defined[argumentname] and compare it with
             #
-            #vartype = self.parameters_defined[argumentname][2]
-            #varsize = self.parameters_defined[argumentname][2]
+            #vartype = parameters_defined[argumentname][2]
+            #varsize = parameters_defined[argumentname][2]
             #
-            if self.parameters_defined[argumentname][1]=="NORMAL":
+            if parameters_defined[argumentname][1]=="NORMAL":
                 
                 #todo make type compare
-                vartype = self.parameters_defined[argumentname][2]
-                varinstance_size = self.parameters_defined[argumentname][3]
+                vartype = parameters_defined[argumentname][2]
+                varinstance_size = parameters_defined[argumentname][3]
                 if varinstance_size==0:
                     self.simple_writemodule("pyrapid.Symbol.CreateVar( pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(" % ( repr(vartype), repr(self.module_name), repr(self.function_name) ))
-                    self.visit( node.argumentvalue )
+                    self.visit( node.argumentvalue, parameters_defined=parameters_defined, parameters_index=parameters_index, defined=defined, **kwargs )
                     self.simple_writemodule("))")
                 else:
                     self.simple_writemodule("pyrapid.Symbol.CreateVar( pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data, " % ( repr(vartype), repr(self.module_name), repr(self.function_name) ) )
-                    self.visit( node.argumentvalue )
+                    self.visit( node.argumentvalue, parameters_defined=parameters_defined, parameters_index=parameters_index, defined=defined, **kwargs )
                     self.simple_writemodule("))")
                     
-                #self.simple_writemodule("copy.deepcopy(")
-                #self.visit( node.argumentvalue )
-                #self.simple_writemodule(")")
-            elif (self.parameters_defined[argumentname][1]=="VAR") or (self.parameters_defined[argumentname][1]=="PERS") or (self.parameters_defined[argumentname][1]=="INOUT"):
-                self.bSymVariableAST = False
-                self.bGetVariableAST = False
-                self.visit(node.argumentvalue)
+            elif (parameters_defined[argumentname][1]=="VAR") or (parameters_defined[argumentname][1]=="PERS") or (parameters_defined[argumentname][1]=="INOUT"):
+                self.visit(node.argumentvalue, parameters_defined=parameters_defined, parameters_index=parameters_index, defined=defined, bget_VariableAST=False, bsym_VariableAST=False, **kwargs)
             else:
                 raise Exception("Only NORMAL, VAR, PERS, and INOUT are supported is the imput is a variable")
         else:
-            if self.parameters_defined[argumentname][0] == "switch":
+            if parameters_defined[argumentname][0] == "switch":
                 self.simple_writemodule("pyrapid.Symbol.CreateNone()")
-            elif (self.parameters_defined[argumentname][1]=="NORMAL") or (self.parameters_defined[argumentname][1]=="INOUT"):
-                vartype = self.parameters_defined[argumentname][2]
-                varinstance_size = self.parameters_defined[argumentname][3]
+            elif (parameters_defined[argumentname][1]=="NORMAL") or (parameters_defined[argumentname][1]=="INOUT"):
+                vartype = parameters_defined[argumentname][2]
+                varinstance_size = parameters_defined[argumentname][3]
                 if varinstance_size==0:
                     self.simple_writemodule("pyrapid.Symbol.CreateVar( pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(" % ( repr(vartype), repr(self.module_name), repr(self.function_name) ))
-                    self.visit( node.argumentvalue )
+                    self.visit( node.argumentvalue, parameters_defined=parameters_defined, parameters_index=parameters_index, defined=defined, **kwargs )
                     self.simple_writemodule("))")
                 else:
                     self.simple_writemodule("pyrapid.Symbol.CreateVar( pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data, " % ( repr(vartype), repr(self.module_name), repr(self.function_name) ) )
-                    self.visit( node.argumentvalue )
+                    self.visit( node.argumentvalue, parameters_defined=parameters_defined, parameters_index=parameters_index, defined=defined, **kwargs )
                     self.simple_writemodule("))")
             else:
                 raise Exception("only NORMAL or INOUT are supported if the input is an expression")
+                
+        in_parameters_index.append(parameters_index)
     
-    def visit_ProcedureArgumentAST(self, node):    
+    def visit_ProcedureArgumentAST(self, node, parameters_defined, parameters_index, defined, **kwargs):    
         #type "Required" or "Optional" or "Conditional" or None
         #argumentname is IdentifierAST or None
         #argumentvalue is ExpressionAST ... or VariableAST or None
@@ -766,102 +744,90 @@ class rapid_%s (pyrapid.rapid_struct):
         
         if node.type is None:
             raise Exception("procedure parameter not completly defined")
+            
+        in_parameters_index = parameters_index
+        parameters_index = in_parameters_index.pop()
         
         if node.argumentname is None:
-            if isinstance(self.parameters_index, int):
+            if isinstance(parameters_index, int):
                 try:
-                    argumentname = self.parameters_defined.keys()[self.parameters_index]
+                    argumentname = parameters_defined.keys()[parameters_index]
                 except:
                     raise Exception("too much parameters")
-                self.parameters_index += 1
+                parameters_index += 1
             else:
                 raise Exception("positional parameter after a named one")
         else:
             argumentname = node.argumentname.name
-            if self.parameters_defined.keys()[self.parameters_index] == argumentname:
-                self.parameters_index += 1
+            if parameters_defined.keys()[parameters_index] == argumentname:
+                parameters_index += 1
             else:
-                self.parameters_index = None
+                parameters_index = None
             
         try:
-            self.defined.index(argumentname)
+            defined.index(argumentname)
             raise Exception("argument %s already defined"%(argumentname,))
         except ValueError:
             pass
         
         try:
-            self.parameters_defined[argumentname]
+            parameters_defined[argumentname]
         except:
             raise Exception("%s is not a valid parameter"%(argumentname))
             
-        self.defined.append(argumentname)
+        defined.append(argumentname)
         self.simple_writeindent()
         self.simple_writemodule( "parameters_actual[%s] = " % (repr(argumentname),))
         if isinstance(node.argumentvalue, rapid_ast.VariableAST):
             #todo add check type
-            #take the type of the symbol self.parameters_defined[argumentname] and compare it with
+            #take the type of the symbol parameters_defined[argumentname] and compare it with
             #
-            #vartype = self.parameters_defined[argumentname][2]
-            #varsize = self.parameters_defined[argumentname][2]
+            #vartype = parameters_defined[argumentname][2]
+            #varsize = parameters_defined[argumentname][2]
             #
-            if self.parameters_defined[argumentname][1]=="NORMAL":
+            if parameters_defined[argumentname][1]=="NORMAL":
                 
                 #todo make type compare
-                vartype = self.parameters_defined[argumentname][2]
-                varinstance_size = self.parameters_defined[argumentname][3]
+                vartype = parameters_defined[argumentname][2]
+                varinstance_size = parameters_defined[argumentname][3]
                 if varinstance_size==0:
                     self.simple_writemodule("pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(" % ( repr(vartype), repr(self.module_name), repr(self.function_name) ))
-                    self.visit( node.argumentvalue )
+                    self.visit( node.argumentvalue, parameters_defined=parameters_defined, parameters_index=parameters_index, defined=defined, **kwargs )
                     self.simple_writemodule("))")
                 else:
                     self.simple_writemodule("pyrapid.Symbol.CreateVar( pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data, " % ( repr(vartype), repr(self.module_name), repr(self.function_name) ) )
-                    self.visit( node.argumentvalue )
+                    self.visit( node.argumentvalue, parameters_defined=parameters_defined, parameters_index=parameters_index, defined=defined, **kwargs )
                     self.simple_writemodule("))")
-            elif (self.parameters_defined[argumentname][1]=="VAR") or (self.parameters_defined[argumentname][1]=="PERS") or (self.parameters_defined[argumentname][1]=="INOUT"):
-                self.bSymVariableAST = False
-                self.bGetVariableAST = False
-                self.visit(node.argumentvalue)
+            elif (parameters_defined[argumentname][1]=="VAR") or (parameters_defined[argumentname][1]=="PERS") or (parameters_defined[argumentname][1]=="INOUT"):
+                self.visit(node.argumentvalue, parameters_defined=parameters_defined, parameters_index=parameters_index, defined=defined, bget_VariableAST=False, bsym_VariableAST=False, **kwargs)
             else:
                 raise Exception("Only NORMAL, VAR, PERS, and INOUT are supported is the imput is a variable")
         else:
-            if self.parameters_defined[argumentname][0] == "switch":
+            if parameters_defined[argumentname][0] == "switch":
                 self.simple_writemodule("pyrapid.Symbol.CreateNone()")
-            elif (self.parameters_defined[argumentname][1]=="NORMAL") or (self.parameters_defined[argumentname][1]=="INOUT"):
-                vartype = self.parameters_defined[argumentname][2]
-                varinstance_size = self.parameters_defined[argumentname][3]
+            elif (parameters_defined[argumentname][1]=="NORMAL") or (parameters_defined[argumentname][1]=="INOUT"):
+                vartype = parameters_defined[argumentname][2]
+                varinstance_size = parameters_defined[argumentname][3]
                 if varinstance_size==0:
                     self.simple_writemodule("pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(" % ( repr(vartype), repr(self.module_name), repr(self.function_name) ))
-                    self.visit( node.argumentvalue )
+                    self.visit( node.argumentvalue, parameters_defined=parameters_defined, parameters_index=parameters_index, defined=defined, **kwargs )
                     self.simple_writemodule("))")
                 else:
                     self.simple_writemodule("pyrapid.Symbol.CreateVar( pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data, " % ( repr(vartype), repr(self.module_name), repr(self.function_name) ) )
-                    self.visit( node.argumentvalue )
+                    self.visit( node.argumentvalue, parameters_defined=parameters_defined, parameters_index=parameters_index, defined=defined, **kwargs )
                     self.simple_writemodule("))")
             else:
-                raise Exception("only NORMAL or INOUT are supported if the input is an expression, received=%s"%(self.parameters_defined[argumentname][1],))
+                raise Exception("only NORMAL or INOUT are supported if the input is an expression, received=%s"%(parameters_defined[argumentname][1],))
             
         self.simple_writemodule( )
         
-    def visit_FunctionCallAST(self, node):
+        in_parameters_index.append(parameters_index)
+        
+    def visit_FunctionCallAST(self, node, **kwargs):
         #function is IdentifierAST or ExpressionAST
         #arguments list of FunctionArgumentAST
         
         function_name = node.function.name
-
-        try:
-            old_param_defined = self.parameters_defined
-        except:
-            pass
-            
-        try:
-            old_parameters_index = self.parameters_index
-        except:
-            pass
-            
-        try:
-            old_defined = self.defined
-        except:
-            pass
             
         # SPECIAL FUNCTION #
         if function_name=="Present":
@@ -905,15 +871,15 @@ class rapid_%s (pyrapid.rapid_struct):
                 raise Exception("Dim function first parameter has to be Reuired")
                 
             self.simple_writemodule("pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data.GetSize(**{"%(repr(node.arguments[0].argumentvalue.var.name), repr(self.module_name), repr(self.function_name)) )
-            self.parameters_defined = OrderedDict()
-            self.parameters_defined["ArrPar"] = ("Required", "REF", 'anytype', 0, [])
-            self.parameters_defined["DimNo"] = ("Required", "NORMAL", 'num', 0, [])
-            self.parameters_index = 1
-            self.defined = []
-            self.visit(node.arguments[1])
-            del self.parameters_index
-            del self.defined
-            del self.parameters_defined
+            parameters_defined = OrderedDict()
+            parameters_defined["ArrPar"] = ("Required", "REF", 'anytype', 0, [])
+            parameters_defined["DimNo"] = ("Required", "NORMAL", 'num', 0, [])
+            parameters_index = [1]
+            defined = []
+            kwargs["parameters_defined"] = parameters_defined
+            kwargs["parameters_index"] = parameters_index
+            kwargs["defined"] = defined
+            self.visit(node.arguments[1], **kwargs)
             self.simple_writemodule("})")
         elif function_name=="IsVar":
             if len(node.arguments)!=1:
@@ -925,16 +891,16 @@ class rapid_%s (pyrapid.rapid_struct):
             #not pefectly compliant with rapid
             if len(node.arguments)!=1:
                 raise Exception("ValToStr function accept 1 parameter")
-            self.parameters_defined = OrderedDict()
-            self.parameters_defined["Val"] = ("Required", "NORMAL", 'anytype', 0, [])
-            self.parameters_index = 0
-            self.defined = []
+            parameters_defined = OrderedDict()
+            parameters_defined["Val"] = ("Required", "NORMAL", 'anytype', 0, [])
+            parameters_index = [0]
+            defined = []
             self.simple_writemodule("str({")
-            self.visit(node.arguments[0])
+            kwargs["parameters_defined"] = parameters_defined
+            kwargs["parameters_index"] = parameters_index
+            kwargs["defined"] = defined
+            self.visit(node.arguments[0], **kwargs)
             self.simple_writemodule("}['Val'].data.Get())")
-            del self.parameters_index
-            del self.defined
-            del self.parameters_defined
         else:
             # NORMAL FUNCTION #
             refsym = pyrapid.Symbols().GetSymbol(symbolname=function_name, modulename=self.module_name, functionname=self.function_name)
@@ -944,72 +910,38 @@ class rapid_%s (pyrapid.rapid_struct):
             if refsym.type != pyrapid.Symbol.SYM_TYPE_PROCEDURE:
                 raise Exception("symbol %s used in module %s function %s has to be a procedure"%(function_name, self.module_name, self.function_name))
             
+            parameters_defined = refsym.parameters
+            parameters_index = [0]
+            defined = []
             
-            self.parameters_defined = refsym.parameters
             #compute parameter list
-            self.parameters_index = 0
-            self.defined = []
-            
             self.simple_writemodule("pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data( {" % ( repr(function_name), repr(self.module_name), repr(self.function_name) ))
             
+            kwargs["parameters_defined"] = parameters_defined
+            kwargs["parameters_index"] = parameters_index
+            kwargs["defined"] = defined
             if len(node.arguments)>0:
                 for i in node.arguments[:-1]:
-                    self.visit(i)
+                    self.visit(i, **kwargs)
                     self.simple_writemodule(",")
-                self.visit(node.arguments[-1])
+                self.visit(node.arguments[-1], **kwargs)
                 
             self.simple_writemodule("} )")
-            
                 
-            for ik,iv in self.parameters_defined.iteritems():
+            for ik,iv in parameters_defined.iteritems():
                 if iv[0]=='required':
                     try:
-                        self.defined.index(ik)
+                        defined.index(ik)
                     except ValueError:
                         raise Exception("argument %s is required"%(ik,))
-                        
-            del self.parameters_defined
-            del self.parameters_index
-            del self.defined
-            
-        try:
-            self.parameters_defined = old_param_defined
-        except:
-            pass
-            
-        try:
-            self.parameters_index = old_parameters_index
-        except:
-            pass
-            
-        try:
-            self.defined = old_defined
-        except:
-            pass
-                    
         
         
-    def visit_ProcedureCallAST(self, node):
+    def visit_ProcedureCallAST(self, node, **kwargs):
         #procedure is IdentifierAST or ExpressionAST
         #arguments list of ProcedureArgumentAST
         
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
-        
-        try:
-            old_param_defined = self.parameters_defined
-        except:
-            pass
-            
-        try:
-            old_parameters_index = self.parameters_index
-        except:
-            pass
-            
-        try:
-            old_defined = self.defined
-        except:
-            pass
             
         procedure_name = node.procedure.name
         #SPECIAL PROCEDURE
@@ -1023,49 +955,32 @@ class rapid_%s (pyrapid.rapid_struct):
             procedure_call = refsym.data
             if refsym.type != pyrapid.Symbol.SYM_TYPE_PROCEDURE:
                 raise Exception("symbol %s used in module %s function %s has to be a procedure"%(procedure_name, self.module_name, self.function_name))
-            
-            
                 
-            self.parameters_defined = refsym.parameters
-            self.parameters_index = 0
-            self.defined = []
+            parameters_defined = refsym.parameters
+            parameters_index = [0]
+            defined = []
             
             self.writemodule("parameters_actual = OrderedDict()")
             #compute parameter list
             
+            kwargs["parameters_defined"] = parameters_defined
+            kwargs["parameters_index"] = parameters_index
+            kwargs["defined"] = defined
             for i in node.arguments:
-                self.visit(i)
+                self.visit(i, **kwargs)
                 
-            for ik,iv in self.parameters_defined.iteritems():
+            for ik,iv in parameters_defined.iteritems():
                 if iv[0]=='required':
                     try:
-                        self.defined.index(ik)
+                        defined.index(ik)
                     except ValueError:
                         raise Exception("argument %s is required"%(ik,))
             
             self.writemodule("pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(parameters_actual)" % ( repr(procedure_name), repr(self.module_name), repr(self.function_name) ))
             self.writemodule("del parameters_actual")
-            del self.parameters_index
-            del self.parameters_defined
-            del self.defined
             self.writemodule("# End Call procedure")
-            
-        try:
-            self.parameters_defined = old_param_defined
-        except:
-            pass
-            
-        try:
-            self.parameters_index = old_parameters_index
-        except:
-            pass
-            
-        try:
-            self.defined = old_defined
-        except:
-            pass
         
-    def visit_ProcedureDeclarationAST(self, node):
+    def visit_ProcedureDeclarationAST(self, node, **kwargs):
         #procedure_name*, parameter_list**, data_definitions**, statement_list**, routine_backward*, routine_error*, routine_undo*
         
         if not (node.coord is None):
@@ -1080,7 +995,7 @@ class rapid_%s (pyrapid.rapid_struct):
         
         for i in node.parameter_list:
             #ParameterDefinitionAST or OptionalParameterDefinitionAST or SwitchParameterDefinitionAST or None
-            self.visit(i)
+            self.visit(i, **kwargs)
             
         self.function_name =  node.procedure_name.name
         
@@ -1117,27 +1032,27 @@ class rapid_%s (pyrapid.rapid_struct):
                     self.writemodule("# data definitions")
                     
                     for i in node.data_definitions:
-                        self.visit(i)
+                        self.visit(i, **kwargs)
                     
                     self.writemodule("# stantments")
                     
                     for i in node.statement_list:
-                        self.visit(i)
+                        self.visit(i, **kwargs)
                     
                     self.writemodule("# backward stantment")
                     
                     if not ( node.routine_backward is None ):
-                        self.visit(node.routine_backward)
+                        self.visit(node.routine_backward, **kwargs)
                     
                     self.writemodule("# error stantment")
                     
                     if not ( node.routine_error is None ):    
-                        self.visit(node.routine_error)
+                        self.visit(node.routine_error, **kwargs)
                     
                     self.writemodule("# error undo")
                     
                     if not ( node.routine_undo is None ):
-                        self.visit(node.routine_undo)
+                        self.visit(node.routine_undo, **kwargs)
                         
                     self.writemodule("# end stantment")
         
@@ -1155,7 +1070,7 @@ class rapid_%s (pyrapid.rapid_struct):
         
         self.writemodule("# End Procedure Definition")
         
-    def visit_FunctionDeclarationAST(self, node):
+    def visit_FunctionDeclarationAST(self, node, **kwargs):
         #data_type* function_name*, parameter_list**, data_definitions**, statement_list**, routine_error*, routine_undo*
         
         if not (node.coord is None):
@@ -1173,7 +1088,7 @@ class rapid_%s (pyrapid.rapid_struct):
         
         for i in node.parameter_list:
             #ParameterDefinitionAST or OptionalParameterDefinitionAST or SwitchParameterDefinitionAST or None
-            self.visit(i)
+            self.visit(i, **kwargs)
         
         self.function_name =  node.function_name.name
         
@@ -1211,22 +1126,22 @@ class rapid_%s (pyrapid.rapid_struct):
                     self.writemodule("# data definitions")
                     
                     for i in node.data_definitions:
-                        self.visit(i)
+                        self.visit(i, **kwargs)
                     
                     self.writemodule("# stantments")
                     
                     for i in node.statement_list:
-                        self.visit(i)
+                        self.visit(i, **kwargs)
                             
                     self.writemodule("# error stantment")
                     
                     if not ( node.routine_error is None ):    
-                        self.visit(node.routine_error)
+                        self.visit(node.routine_error, **kwargs)
                     
                     self.writemodule("# error undo")
                     
                     if not ( node.routine_undo is None ):
-                        self.visit(node.routine_undo)
+                        self.visit(node.routine_undo, **kwargs)
                         
                     self.writemodule("# end stantment")
         

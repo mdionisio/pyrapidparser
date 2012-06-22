@@ -49,6 +49,8 @@ MODULE MAINTASK
         RETURN A_bForceLoadSchemas;
     ENDFUNC
     
+    
+    
     PROC ALoadSchema( num nsch \switch DisableOnError)
         UnLoad FilePath:="schema.mod";
         Load FilePath:="schema.mod";
@@ -57,6 +59,19 @@ MODULE MAINTASK
         UnLoad FilePath:="schema.mod";
         ! todo aggiungere gestione errore per UnLoad
         ! todo aggiungere gestione errore per Load
+    ENDPROC
+    
+    PROC AResetAllSchemas()
+        LOCAL VAR num i;
+        
+        TPWrite "RESET ALL SCHEMAS";
+        
+        FOR i FROM 1 TO nPLACELINE STEP 1 DO
+            TPWrite "Stop Schema ", \Num:=i;
+            r_SchemaType_Valid{i} := FALSE;
+            ! todo delete schema
+        ENDFOR
+        ! todo gestione errore del delete schema
     ENDPROC
     
     PROC ALoadSchemas()
@@ -84,7 +99,8 @@ MODULE MAINTASK
         TPWrite "START AUTOMATIC TASK";
         
         GoHome;                     ! go to park
-        ASetLoadSchema;         ! set to load schema when it will be possible
+        ASetLoadSchema;        ! set to load schema when it will be possible
+        AResetAllSchemas;        ! stop all schemas
         
         WHILE bAutomaticContineExecution DO
         

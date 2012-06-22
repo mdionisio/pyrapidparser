@@ -300,21 +300,42 @@ class rapid_array :
     def toLinear(self, val):
         if isinstance(val, int):
             val = [ val ]
+            
         x = 0
         for i in range(len(self.size),0,-1):
             localsize = self.size[:(i-1)]
             if len(localsize)==0:
-                x += val[i-1]
+                tmp = val[i-1]
+                if isinstance(tmp, int):
+                    x += tmp
+                else:
+                    x += tmp.data.Get()
             else:
                 x += (reduce(operator.mul,localsize) * val[i-1])
         return (x-1)
         
     def GetElem(self, elem):
-        return self.val[ self.toLinear(elem) ]
+        if isinstance(elem, int):
+            ielem = elem;
+        elif isinstance(elem, list):
+            ielem = elem;
+        elif isinstance(elem, tuple):
+            ielem = elem;
+        else:
+            ielem = elem.Get();
+        return self.val[ self.toLinear(ielem) ]
         
     def SetElem(self, elem, val):
         # add check type
-        self.val[ self.toLinear(elem) ] = val
+        if isinstance(elem, int):
+            ielem = elem;
+        elif isinstance(elem, list):
+            ielem = elem;
+        elif isinstance(elem, tuple):
+            ielem = elem;
+        else:
+            ielem = elem.Get();
+        self.val[ self.toLinear(ielem) ] = val
             
     def GetType(self):
         return self.elem_type
