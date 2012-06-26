@@ -7,6 +7,14 @@ MODULE MAINTASK
 !
 !
 
+    ! this type contain the action that has to be done
+    ! if nProdLine=-1 or nQueue=-1 or nStep=-1 means nothing to do
+    LOCAL RECORD todoType
+        num nProdLine;
+        num nQueue;
+        num nStep;
+    ENDRECORD
+
 
     !  GLOBAL VARIABLE
     VAR bool bContinueExecution := TRUE;
@@ -31,9 +39,19 @@ MODULE MAINTASK
         TPWrite "GO TO PARK";
     ENDPROC
     
-    ! This function has to return TRUE only if there is almost one production line on
+    ! This function return the action that has to be done
     !
-    FUNC bool AThereIsSomethingToDo()
+    FUNC todoType AThereIsSomethingToDo()
+        VAR todoType res;
+        res.nProdLine := -1;
+        res.nQueue := -1;
+        res.nStep := -1;
+        RETURN res;
+    ENDFUNC
+    
+    ! This function return True if there is almost one line running
+    !
+    FUNC bool AThereIsSomethingRunning()
         RETURN TRUE;
     ENDFUNC
     
@@ -54,7 +72,7 @@ MODULE MAINTASK
     PROC ALoadSchema( num nsch \switch DisableOnError)
         UnLoad FilePath:="schema.mod";
         Load FilePath:="schema.mod";
-        INIT_SCHEMA;
+        !INIT_SCHEMA;
         !TPWrite "TEST INIT SCHEMA", \Bool:=SchemaType_Valid;
         UnLoad FilePath:="schema.mod";
         ! todo aggiungere gestione errore per UnLoad
@@ -93,6 +111,9 @@ MODULE MAINTASK
         CONST num nDescheduleTime := 1.0;
         LOCAL VAR bool bAutomaticContineExecution := TRUE;
         LOCAL VAR clock cTimeDoNothing;
+        LOCAL VAR bool bDoneSomething;
+        LOCAL VAR todoType ActionToDo;
+        
         ClkReset cTimeDoNothing;
         ClkStart cTimeDoNothing;
         
@@ -103,13 +124,23 @@ MODULE MAINTASK
         AResetAllSchemas;        ! stop all schemas
         
         WHILE bAutomaticContineExecution DO
+            bDoneSomething := FALSE;
         
             ! check action to do
             IF ASchemasHasToBeLoaded() THEN
                 ClkReset cTimeDoNothing;
                 AResetLoadSchema;
                 ALoadSchemas; ! load or reload all the schemas
-            ELSE
+                bDoneSomething := TRUE;
+            ENDIF
+            
+            ActionToDo := AThereIsSomethingToDo();
+            !if (ActionToDo.nProdLine!=-1) AND (ActionToDo.nQueue!=-1) AND (ActionToDo.nStep!=-1) THEN
+                !TPWrite ("DO ACTION ON LINE "+NumToStr(ActionToDo.nProdLine) + " QUEUE "+NumToStr(ActionToDo.nQueue) + " STEP " + NumToStr(ActionToDo.nStep));
+                !bDoneSomething := TRUE;
+            !ENDIF
+            
+            IF bDoneSomething=FALSE THEN
                 TPWrite "Nothing to do";
                 IF ClkRead(cTimeDoNothing)>5 THEN           ! if there is nothing to do for more than 5 seconds park the robot
                     ClkReset cTimeDoNothing;
@@ -118,7 +149,7 @@ MODULE MAINTASK
                 WaitTime Time:=nDescheduleTime;         !deschedule process
             ENDIF
         
-            bAutomaticContineExecution := AThereIsSomethingToDo();
+            bAutomaticContineExecution := AThereIsSomethingRunning();
         ENDWHILE
         
         

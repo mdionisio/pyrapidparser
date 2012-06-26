@@ -1,8 +1,8 @@
 MODULE SETTINGS
     
     CONST num nQueueForSchema := 2;
-    CONST num MAIN_QUEUE := 1;
-    CONST num ORDER_QUEUE := 2;
+    CONST num MAIN_QUEUE := 2;
+    CONST num ORDER_QUEUE := 1;
     CONST num MAX_STEP := 500;
     
     

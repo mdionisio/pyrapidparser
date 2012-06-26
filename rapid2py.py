@@ -453,6 +453,8 @@ class rapid_%s (pyrapid.rapid_struct):
                 self.simple_writemodule( "] )" )
         else:
             if isinstance(node.var, rapid_ast.VariableAST):
+                kwargs["bget_VariableAST"]=False
+                kwargs["bsym_VariableAST"]=True
                 self.visit(node.var, **kwargs)
                 self.simple_writemodule( ".GetElem(%s)" % ( repr(varcomponent.name), ) )
             else:

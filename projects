@@ -18,15 +18,18 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=3
-FILE_NAME_0=4097;Conf;0;16;1;1;0;/home/mdionisio/Develop/pyrapidparser/_rapid_ast.cfg;0;4
-FILE_NAME_1=56926;Python;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/rapid2py.py;0;4
-FILE_NAME_2=34899;Python;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/rapid_parser.py;0;4
-FILE_NAME_3=5117;Python;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/run/pyrapid.py;0;4
+current_page=1
+FILE_NAME_0=2718;Conf;0;16;1;1;0;/home/mdionisio/Develop/pyrapidparser/_rapid_ast.cfg;0;4
+FILE_NAME_1=30233;Python;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/rapid2py.py;0;4
+FILE_NAME_2=49357;Python;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/rapid_parser.py;0;4
+FILE_NAME_3=10795;Python;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/run/pyrapid.py;0;4
 FILE_NAME_4=128;None;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/test/rapid1.mod;0;4
 FILE_NAME_5=3527;Python;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/rapid_lexer.py;0;4
 FILE_NAME_6=14518;Python;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/test_rapid.py;0;4
-FILE_NAME_7=3724;None;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/default/standard.sys;0;4
+FILE_NAME_7=6422;None;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/default/standard.sys;0;4
+FILE_NAME_8=19704;Python;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/run/rapid_program.py;0;4
+FILE_NAME_9=16;Python;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/rapid_ast.py;0;4
+FILE_NAME_10=4592;Python;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/ast_gen.py;0;4
 
 [VTE]
 last_dir=/home/mdionisio

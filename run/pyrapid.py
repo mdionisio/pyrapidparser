@@ -242,7 +242,8 @@ class rapid_struct :
         if self.val is None:
             raise Exception("variable never assigned")
         else:
-            return self
+            #return self
+            return self.val
             
     def Set(self, val):
         if isinstance(val, list) and len(val)==len(self.names):
@@ -463,7 +464,7 @@ class rapid_bool :
         elif isinstance(val, rapid_bool):
             self.val = val.val
         else:
-            raise Exception("type unsupported")
+            raise Exception("type unsupported: %s",type(val))
         
     def Get(self):
         if self.val is None:
