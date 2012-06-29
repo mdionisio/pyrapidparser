@@ -46,7 +46,7 @@ def goto(fn):
                 if globalName == 'label':
                     labels[fn.func_code.co_names[num]] = index
                 elif globalName == 'goto':
-                    gotos[fn.func_code.co_names[num]] = index
+                    gotos[index] = fn.func_code.co_names[num]
                     
             name = None
             i += 2
@@ -57,9 +57,11 @@ def goto(fn):
         ilist[index:index+7] = [chr(dis.opmap['NOP'])]*7
 
     # change gotos to jumps
-    for label,index in gotos.items():
+    for index,label in gotos.items():
         if label not in labels:
             raise MissingLabelError("Missing label: %s"%label)
+        
+        ilist[index:index+7] = [chr(dis.opmap['NOP'])]*7
         
         target = labels[label] + 7   # skip NOPs
         ilist[index] = chr(dis.opmap['JUMP_ABSOLUTE'])
@@ -87,6 +89,26 @@ def goto(fn):
 if __name__ == '__main__':
     
     @goto
+    def test3():
+
+        s = 0
+        
+        goto .myOut1
+        
+        s = 1
+        
+        goto .myOut1
+        
+        s = 2
+
+        label .myOut1
+        
+        return s
+        
+    print test3()
+    assert(test3() == 0)
+    
+    @goto
     def test1(n):
 
         s = 0
@@ -99,5 +121,25 @@ if __name__ == '__main__':
         n -= 1
 
         goto .myLoop
-
+        
+    print test1(10)
     assert(test1(10) == 55)
+        
+    @goto
+    def test2():
+
+        s = 0
+        
+        goto .myOut
+        
+        s = 1
+
+        label .myOut
+        
+        return s
+    
+    
+    print test2()
+    assert(test2() == 0)
+    
+    
