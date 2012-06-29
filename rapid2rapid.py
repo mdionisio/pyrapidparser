@@ -86,7 +86,10 @@ class WriteRapid( rapid_ast.NodeVisitor ):
         self.visit(node.par2)
         
     def visit_LiteralATS(self, node):
-        self.write("%s"%(node.value,))
+        if isinstance(node.value, str):
+            self.write('"%s"'%(node.value,))
+        else:
+            self.write("%s"%(str(node.value),))
         
     def visit_ExpressionAST(self, node):        
         if not(node.expr is None):

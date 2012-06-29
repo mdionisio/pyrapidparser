@@ -52,7 +52,13 @@ MODULE MAINTASK
     ! This function return True if there is almost one line running
     !
     FUNC bool AThereIsSomethingRunning()
-        RETURN TRUE;
+        VAR num i;
+        FOR i FROM 1 TO nPLACELINE STEP 1 DO
+            IF r_SchemaType_Valid{i} THEN
+                RETURN TRUE;
+            ENDIF
+        ENDFOR
+        RETURN FALSE;
     ENDFUNC
     
     PROC ASetLoadSchema()
@@ -72,7 +78,10 @@ MODULE MAINTASK
     PROC ALoadSchema( num nsch \switch DisableOnError)
         UnLoad FilePath:="schema.mod";
         Load FilePath:="schema.mod";
-        !INIT_SCHEMA;
+        %"INIT_SCHEMA"%;
+        
+        r_SchemaType_Valid{nsch} := SchemaType_Valid;
+        
         !TPWrite "TEST INIT SCHEMA", \Bool:=SchemaType_Valid;
         UnLoad FilePath:="schema.mod";
         ! todo aggiungere gestione errore per UnLoad
