@@ -64,10 +64,15 @@ MODULE SYSTEMMODULE(SYSMODULE)
     ENDFUNC
     
     PROC UnLoad( string FilePath )
+        LOCAL VAR bool ret;
         TPWrite("UnLoad it is unsafe");
         !python:FilePath = pyrapid.Symbols().GetSymbol("FilePath").data.Get()
         !python:FilePath = FilePath.split('/')[-1].split('.')[0].upper()
-        !python:pyrapid.Symbols().UnLoadModule(FilePath)
+        !python:ret = pyrapid.Symbols().UnLoadModule(FilePath)
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( ret )
+        IF ret = FALSE THEN
+            RAISE ERR_UNLOAD ;
+        ENDIF
     ENDPROC
     
 

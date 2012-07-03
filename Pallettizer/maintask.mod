@@ -76,16 +76,30 @@ MODULE MAINTASK
     
     
     PROC ALoadSchema( num nsch \switch DisableOnError)
+        TPWrite "UNLOAD 1";
         UnLoad FilePath:="schema.mod";
+        TPWrite "LOAD 1";
         Load FilePath:="schema.mod";
+        TPWrite "INIT MODULE";
         %"INIT_SCHEMA"%;
         
         r_SchemaType_Valid{nsch} := SchemaType_Valid;
         
         !TPWrite "TEST INIT SCHEMA", \Bool:=SchemaType_Valid;
+        
+        TPWrite "UNLOAD 2";
         UnLoad FilePath:="schema.mod";
+        
+        TPWrite "END ALoadSchema";
         ! todo aggiungere gestione errore per UnLoad
         ! todo aggiungere gestione errore per Load
+        
+        ERROR
+            TPWrite "ERRORE IN ALOADSCHEMA";
+            IF ERRNO = ERR_UNLOAD  THEN
+                TPWrite "ERRORE UNLOAD";
+                TRYNEXT;
+            ENDIF
     ENDPROC
     
     PROC AResetAllSchemas()

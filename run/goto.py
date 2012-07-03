@@ -20,6 +20,7 @@ def goto(fn):
     """
     labels = {}
     gotos = {}
+    reflabel = {}
     globalName = None
     index = 0
     end = len(fn.func_code.co_code)
@@ -56,6 +57,7 @@ def goto(fn):
     for label,index in labels.items():
         ilist[index:index+7] = [chr(dis.opmap['NOP'])]*7
 
+        
     # change gotos to jumps
     for index,label in gotos.items():
         if label not in labels:
@@ -141,5 +143,6 @@ if __name__ == '__main__':
     
     print test2()
     assert(test2() == 0)
+    
     
     

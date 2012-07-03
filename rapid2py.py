@@ -27,6 +27,7 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         self.writemodule("import copy")
         self.writemodule("import sys")
         self.writemodule("from goto import goto")
+        self.writemodule("error_code = []")
         
     def close(self, etrypoint=None):
         if not(entrypoint is None):
@@ -463,6 +464,46 @@ class rapid_%s (pyrapid.rapid_struct):
         if bget_VariableAST:
             self.simple_writemodule( ".Get()" )
             
+    def visit_StatementAST(self, node, **kwargs):
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
+        self.writemodule("#StatementAST %s"%(self.function_name,))
+        self.writemodule("retry_stantment = True")
+        self.writemodule("while retry_stantment:")
+        with self.ModuleScope():
+            self.writemodule("retry_stantment = False")
+            self.writemodule("try:")
+            with self.ModuleScope():
+                self.visit(node.statement, **kwargs)
+            self.writemodule("except pyrapid.RapidException:")
+            with self.ModuleScope():
+                self.writemodule("if len(error_code)>0:")
+                with self.ModuleScope():
+                    self.writemodule("error_manager_call = error_code[-1]")
+                    self.writemodule("if not(error_manager_call is None):")
+                    with self.ModuleScope():
+                        self.writemodule("error_manager = error_manager_call({})")
+                        self.writemodule("if error_manager == 1:")  # retry
+                        with self.ModuleScope():
+                            self.writemodule("retry_stantment = error_manager")  # retry
+                            self.writemodule("print 'retry'")  # retry
+                        self.writemodule("elif error_manager == 2:")  # trynext
+                        with self.ModuleScope():
+                            self.writemodule("pass")  # trynext
+                            self.writemodule("print 'trynext'")  # trynext
+                        self.writemodule("else:")  # propagate exception
+                        with self.ModuleScope():
+                            self.writemodule("print 'propagate'")  # propagate
+                            self.writemodule("global error_code")
+                            self.writemodule("error_code = error_code[:-1]")
+                            self.writemodule("raise")  # propagate exception
+                    self.writemodule("else:")
+                    with self.ModuleScope():
+                        self.writemodule("print 'propagate'")  # propagate
+                        self.writemodule("global error_code")
+                        self.writemodule("error_code = error_code[:-1]")
+                        self.writemodule("raise")  # propagate exception
+            
     def visit_AssignmentStatementAST(self, node, **kwargs):
         #dest* is VariableAST
         #source*
@@ -478,7 +519,30 @@ class rapid_%s (pyrapid.rapid_struct):
     def visit_GotoStatementAST(self, node, **kwargs):
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
-        raise Exception("GOTO not yet supported")
+        labelname = "."+node.dest.name
+        self.writemodule("goto "+labelname)
+        
+    def visit_LabelAST(self, node, **kwargs):
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
+        labelname = "."+node.name.name
+        self.writemodule("label "+labelname)
+        
+    def visit_RaiseStatementAST(self, node, **kwargs):
+        #error_number
+        if not (node.coord is None):
+            self.writemodule("# Line %s"%(str(node.coord),))
+        if node.error_number is None:
+            self.writemodule("raise")
+        elif isinstance(node.error_number, rapid_ast.IdentifierAST):
+            #node.error_number.name has to be a valid symbol
+            #self.writemodule("raise")
+            name = node.error_number.name
+            self.writemodule('raise pyrapid.RapidException(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data.Get(),%s)'%(repr(name), repr(self.module_name), repr(self.function_name), repr(name),))
+        elif isinstance(node.error_number, int) or isinstance(node.error_number, float):
+            self.writemodule('raise pyrapid.RapidException(%d,"unknown")'%(node.error_number,))
+        
+        
                 
     def visit_ReturnStatementAST(self, node, **kwargs):
         if not (node.coord is None):
@@ -503,15 +567,15 @@ class rapid_%s (pyrapid.rapid_struct):
         
         self.writemodule("sys.exit(1)")
         
-    def visit_RetryStatementAST(self, node, **kwargs):
+    def visit_RetryStatementAST(self, node, error_statement, **kwargs):
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
-        raise Exception("Retry not yet supported")
+        self.writemodule("return 1")
         
-    def visit_TrynextStatementAST(self, node, **kwargs):
+    def visit_TrynextStatementAST(self, node, error_statement, **kwargs):
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
-        raise Exception("Try next not yet supported")
+        self.writemodule("return 2")
         
     def visit_ConnectStatementAST(self, node, **kwargs):
         if not (node.coord is None):
@@ -908,7 +972,7 @@ class rapid_%s (pyrapid.rapid_struct):
             if refsym is None:
                 raise Exception("procedure %s used in module %s function %s not defined"%(function_name, self.module_name, self.function_name))
             procedure_call = refsym.data
-            if refsym.type != pyrapid.Symbol.SYM_TYPE_PROCEDURE:
+            if refsym.type != pyrapid.Symbol.SYM_TYPE_FUNCTION:
                 raise Exception("symbol %s used in module %s function %s has to be a procedure"%(function_name, self.module_name, self.function_name))
             
             parameters_defined = refsym.parameters
@@ -916,7 +980,12 @@ class rapid_%s (pyrapid.rapid_struct):
             defined = []
             
             #compute parameter list
+            
+            #TODO gestione errore
+            #self.writemodule("global error_code")
+            #self.simple_writemodule("error_code.append(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).error_call)" % ( repr(function_name), repr(self.module_name), repr(self.function_name) ))
             self.simple_writemodule("pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data( {" % ( repr(function_name), repr(self.module_name), repr(self.function_name) ))
+            #self.simple_writemodule("error_code = error_code[:-1]")
             
             kwargs["parameters_defined"] = parameters_defined
             kwargs["parameters_index"] = parameters_index
@@ -989,7 +1058,10 @@ class rapid_%s (pyrapid.rapid_struct):
                     except ValueError:
                         raise Exception("argument %s is required"%(ik,))
             
+            self.writemodule("global error_code")
+            self.writemodule("error_code.append(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).error_call)" % ( repr(procedure_name), repr(self.module_name), repr(self.function_name) ))
             self.writemodule("pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(parameters_actual)" % ( repr(procedure_name), repr(self.module_name), repr(self.function_name) ))
+            self.writemodule("error_code = error_code[:-1]")
             self.writemodule("del parameters_actual")
             self.writemodule("# End Call procedure")
         
@@ -1016,14 +1088,40 @@ class rapid_%s (pyrapid.rapid_struct):
 
         def _rapid_proc_(local_args_scope):
             pass
+            
+        def _error_rapid_proc_(local_args_scope):
+            pass
+            
+        def _undo_rapid_proc_(local_args_scope):
+            pass
+            
+        if self.tmp_outineDeclarationATS_data is None:
+            pyrapid.Symbols().AddGlobalSym(self.function_name, pyrapid.Symbol.CreateProcedure(self.params, _rapid_proc_, _error_rapid_proc_, _undo_rapid_proc_), self.module_name)
+        else:
+            pyrapid.Symbols().AddModuleSym(self.module_name, self.function_name, pyrapid.Symbol.CreateProcedure(self.params, _rapid_proc_, _error_rapid_proc_, _undo_rapid_proc_))
 
         self.writemodule("@goto")
-        self.writemodule("def rapid_proc_%s (local_args_scope):" % (self.function_name,))
+        self.writemodule("def error_rapid_proc_%s (local_args_scope):" % (self.function_name,))
+        with self.ModuleScope():
+            #add parameter
+            
+            if not ( node.routine_error is None ):    
+                self.visit(node.routine_error, error_statement=True, **kwargs)
+                
+            self.writemodule("return 0")
         
-        if self.tmp_outineDeclarationATS_data is None:
-            pyrapid.Symbols().AddGlobalSym(self.function_name, pyrapid.Symbol.CreateProcedure(self.params, _rapid_proc_), self.module_name)
-        else:
-            pyrapid.Symbols().AddModuleSym(self.module_name, self.function_name, pyrapid.Symbol.CreateProcedure(self.params, _rapid_proc_))
+        self.writemodule("@goto")
+        self.writemodule("def undo_rapid_proc_%s (local_args_scope):" % (self.function_name,))
+        with self.ModuleScope():
+            #add parameter
+            self.writemodule("pass")
+            
+            if not ( node.routine_undo is None ):
+                self.visit(node.routine_undo, undo_statement=True, **kwargs)
+
+            
+        self.writemodule("@goto")
+        self.writemodule("def rapid_proc_%s (local_args_scope):" % (self.function_name,))
             
         with self.ModuleScope():
             
@@ -1052,35 +1150,20 @@ class rapid_%s (pyrapid.rapid_struct):
                         self.visit(i, **kwargs)
                     
                     self.writemodule("# backward stantment")
-                    self.writemodule("label .rapid_proc_backwrd_%s" % (self.function_name,))
-                    
-                    if not ( node.routine_backward is None ):
-                        self.visit(node.routine_backward, **kwargs)
+                    self.writemodule("if False:")
+                    with self.ModuleScope():
+                        self.writemodule("pass")
                         
-                    self.writemodule("goto .rapid_proc_end_%s" % (self.function_name,))
-                    
-                    self.writemodule("# error stantment")
-                    self.writemodule("label .rapid_proc_error_%s" % (self.function_name,))
-                    
-                    if not ( node.routine_error is None ):    
-                        self.visit(node.routine_error, **kwargs)
-                        
-                    self.writemodule("goto .rapid_proc_end_%s" % (self.function_name,))
-                    
-                    self.writemodule("# error undo")
-                    self.writemodule("label .rapid_proc_undo_%s" % (self.function_name,))
-                    
-                    if not ( node.routine_undo is None ):
-                        self.visit(node.routine_undo, **kwargs)
-                        
-                    self.writemodule("label .rapid_proc_end_%s" % (self.function_name,))
+                        if not ( node.routine_backward is None ):
+                            self.visit(node.routine_backward, **kwargs)
+                            
                     self.writemodule("# end stantment")
                     
         
         if self.tmp_outineDeclarationATS_data is None:
-            self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateProcedure(%s, rapid_proc_%s), %s)"%(repr(self.function_name), params, self.function_name, repr(self.module_name),))
+            self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateProcedure(%s, rapid_proc_%s, error_rapid_proc_%s, undo_rapid_proc_%s), %s)"%(repr(self.function_name), params, self.function_name, self.function_name, self.function_name, repr(self.module_name),))
         else:
-            self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, pyrapid.Symbol.CreateProcedure(%s, rapid_proc_%s))"%(repr(self.module_name), params, repr(self.function_name), self.function_name, ))
+            self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, pyrapid.Symbol.CreateProcedure(%s, rapid_proc_%s, error_rapid_proc_%s, undo_rapid_proc_%s))"%(repr(self.module_name), params, repr(self.function_name), self.function_name, self.function_name, self.function_name, ))
             
         self.writemodule("del rapid_proc_%s" % (self.function_name,))
         
@@ -1117,14 +1200,39 @@ class rapid_%s (pyrapid.rapid_struct):
 
         def _rapid_func_(local_args_scope):
             pass
+            
+        def _error_rapid_func_(local_args_scope):
+            pass
+            
+        def _undo_rapid_func_(local_args_scope):
+            pass
+            
+        if self.tmp_outineDeclarationATS_data is None:
+            pyrapid.Symbols().AddGlobalSym(self.function_name, pyrapid.Symbol.CreateFunction(self.params, returntype, _rapid_func_, _error_rapid_func_, _undo_rapid_func_), self.module_name)
+        else:
+            pyrapid.Symbols().AddModuleSym(self.module_name, self.function_name, pyrapid.Symbol.CreateFunction(self.params, returntype, _rapid_proc_, _error_rapid_func_, _undo_rapid_func_))
+        
+        self.writemodule("@goto")
+        self.writemodule("def error_rapid_func_%s (local_args_scope):" % (self.function_name,))
+        with self.ModuleScope():
+            #add parameter
+            
+            if not ( node.routine_error is None ):    
+                self.visit(node.routine_error, error_statement=True, **kwargs)
+                
+            self.writemodule("return 0")
+        
+        self.writemodule("@goto")
+        self.writemodule("def undo_rapid_func_%s (local_args_scope):" % (self.function_name,))
+        with self.ModuleScope():
+            #add parameter
+            self.writemodule("pass")
+            
+            if not ( node.routine_undo is None ):
+                self.visit(node.routine_undo, undo_statement=True, **kwargs)
         
         self.writemodule("@goto")
         self.writemodule("def rapid_func_%s (local_args_scope):" % (self.function_name))
-        
-        if self.tmp_outineDeclarationATS_data is None:
-            pyrapid.Symbols().AddGlobalSym(self.function_name, pyrapid.Symbol.CreateFunction(self.params, returntype, _rapid_func_), self.module_name)
-        else:
-            pyrapid.Symbols().AddModuleSym(self.module_name, self.function_name, pyrapid.Symbol.CreateFunction(self.params, returntype, _rapid_proc_))
             
         with self.ModuleScope():
             with pyrapid.Symbols().Scope(modulename=self.module_name, functionname=self.function_name, invalue={}):
@@ -1153,27 +1261,12 @@ class rapid_%s (pyrapid.rapid_struct):
                     for i in node.statement_list:
                         self.visit(i, **kwargs)
                             
-                    self.writemodule("# error stantment")
-                    self.writemodule("label .rapid_func_error_%s" % (self.function_name,))
-                    
-                    if not ( node.routine_error is None ):    
-                        self.visit(node.routine_error, **kwargs)
-                        
-                    self.writemodule("goto .rapid_func_end_%s" % (self.function_name,))
-                    
-                    self.writemodule("# error undo")
-                    self.writemodule("label .rapid_func_undo_%s" % (self.function_name,))
-                    
-                    if not ( node.routine_undo is None ):
-                        self.visit(node.routine_undo, **kwargs)
-                        
-                    self.writemodule("label .rapid_func_end_%s" % (self.function_name,))
                     self.writemodule("# end stantment")
-        
+            
         if self.tmp_outineDeclarationATS_data is None:
-            self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateFunction(%s, %s, rapid_func_%s), %s)"%(repr(self.function_name), params, sreturntype, self.function_name, repr(self.module_name),))
+            self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateFunction(%s, %s, rapid_func_%s, error_rapid_func_%s, undo_rapid_func_%s), %s)"%(repr(self.function_name), params, sreturntype, self.function_name, self.function_name, self.function_name, repr(self.module_name),))
         else:
-            self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, pyrapid.Symbol.CreateFunction(%s, %s, rapid_func_%s))"%(repr(self.module_name), params, sreturntype, repr(self.function_name), self.function_name, ))
+            self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, pyrapid.Symbol.CreateFunction(%s, %s, rapid_func_%s, error_rapid_func_%s, undo_rapid_func_%s))"%(repr(self.module_name), params, sreturntype, repr(self.function_name), self.function_name, self.function_name, self.function_name, ))
             
         self.writemodule("del rapid_func_%s" % (self.function_name,))
         

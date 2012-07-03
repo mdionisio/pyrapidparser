@@ -428,7 +428,7 @@ class RAPIDParser(PLYParser):
     def p_routine_error_3(self, p):
         """ routine_error         : ERROR statement_list
         """
-        p[0] = rapid_ast.RoutineErrorAST([], p[3], coord=self._coord(p.lineno(1)))   
+        p[0] = rapid_ast.RoutineErrorAST([], p[2], coord=self._coord(p.lineno(1)))   
         
     def p_error_number_list_1(self, p):
         """ error_number_list         : error_number

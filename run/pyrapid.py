@@ -3,6 +3,13 @@ import operator
 
 import Singleton
 
+class RapidException(Exception):
+    def __init__(self, code, desc):
+        Exception.__init__(self, desc)
+        self.code = code
+        Symbols().GetSymbol(symbolname='ERRNO').data.Set(code)
+        
+
 class Symbol:
     SYM_TYPE_VAR         = 1
     SYM_TYPE_CONST_VAR   = 2
@@ -28,12 +35,12 @@ class Symbol:
         return cls(cls.SYM_TYPE_DATATYPE, datatype)
         
     @staticmethod
-    def CreateFunction(parameters, returntype, call=None):
-        return SymFunction(parameters, returntype, call)
+    def CreateFunction(parameters, returntype, call=None, error_call=None, undo_call=None):
+        return SymFunction(parameters, returntype, call, error_call, undo_call)
         
     @staticmethod
-    def CreateProcedure(parameters, call=None):
-        return SymProcedure(parameters, call)
+    def CreateProcedure(parameters, call=None, error_call=None, undo_call=None):
+        return SymProcedure(parameters, call, error_call, undo_call)
         
     @staticmethod
     def CreateVar(vartype, varval=None):
@@ -72,11 +79,13 @@ class SymPers(Symbol):
         self.vartype = vartype
         
 class SymFunction(Symbol):
-    def __init__(self, parameters, returntype, call):
-        Symbol.__init__(self, Symbol.SYM_TYPE_PROCEDURE, call)
+    def __init__(self, parameters, returntype, call, error_call=None, undo_call=None):
+        Symbol.__init__(self, Symbol.SYM_TYPE_FUNCTION, call)
         self.parameters = parameters
         self.localsymbol = {}
         self.returntype = returntype
+        self.error_call = error_call
+        self.undo_call = undo_call
     
     def AddLocalSymbol(self, symbolname, data):
         if self.localsymbol.has_key(symbolname):
@@ -85,10 +94,12 @@ class SymFunction(Symbol):
             self.localsymbol[symbolname] = data
         
 class SymProcedure(Symbol):
-    def __init__(self, parameters, call):
+    def __init__(self, parameters, call, error_call=None, undo_call=None):
         Symbol.__init__(self, Symbol.SYM_TYPE_PROCEDURE, call)
         self.parameters = parameters
         self.localsymbol = {}
+        self.error_call = error_call
+        self.undo_call = undo_call
     
     def AddLocalSymbol(self, symbolname, data):
         if self.localsymbol.has_key(symbolname):
@@ -151,6 +162,8 @@ class Symbols(Singleton.Singleton):
             for i in self.module_global_symbol[modulename]:
                 self.global_symbol.pop(i)
             self.module_global_symbol.pop(modulename)
+            return True
+        return False
             
         
     def AddGlobalSym(self, symbolname, data, modulename=None):
@@ -556,6 +569,8 @@ class rapid_errnum :
             return self.val
             
 Symbols().AddGlobalSym("errnum", Symbol.CreateDataType(rapid_errnum))
+
+Symbols().AddGlobalSym("ERRNO", Symbol.CreateVar(rapid_errnum, rapid_errnum(-1)))
             
 Symbols().AddGlobalSym("ERR_ALRDYCNT", Symbol.CreateConst(rapid_errnum, rapid_errnum()))
 Symbols().AddGlobalSym("ERR_CNTNOTVAR", Symbol.CreateConst(rapid_errnum, rapid_errnum()))
