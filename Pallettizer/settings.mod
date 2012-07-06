@@ -1,4 +1,11 @@
 MODULE SETTINGS
+    RECORD prodtype
+        num X;
+        num Y;
+        num Z;
+        num Weight;
+        num Type;
+    ENDRECORD
     
     CONST num nQueueForSchema := 2;
     CONST num MAIN_QUEUE := 2;
@@ -15,6 +22,7 @@ MODULE SETTINGS
     
     
     !!! SCHEMAS
+    
     ! actionType Elements
     VAR string r_ActionType_Name{nPLACELINE, nQueueForSchema, MAX_STEP};
     
@@ -23,4 +31,7 @@ MODULE SETTINGS
     VAR bool r_SchemaType_Valid{nPLACELINE};
     VAR num r_SchemaType_NSteps{nPLACELINE, nQueueForSchema};
     VAR num r_SchemaType_RunSteps{nPLACELINE, nQueueForSchema};
+    VAR prodtype r_ProductType{nPLACELINE};
+    VAR num r_GripperType{nPLACELINE};
+    VAR num r_TakeLine{nPLACELINE};
 ENDMODULE

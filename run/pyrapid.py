@@ -284,11 +284,11 @@ class rapid_array :
         if self.size is None:
             if val is None:
                 self.size = size
-                self.val = [ self.elem_type() for i in range(reduce(operator.mul,self.size)) ]
+                self.val = [ self.elem_type() for i in range(reduce(operator.mul, self.size)) ]
             else:
                 self.size = size
                 val, psize =  rapid_array.unrollarray(val)
-                self.val = [ self.elem_type(val[i]) for i in range(reduce(operator.mul,self.size)) ]
+                self.val = [ self.elem_type(val[i]) for i in range(reduce(operator.mul, self.size)) ]
         else:
             raise Exception("size already defined")
             
@@ -314,6 +314,8 @@ class rapid_array :
     def toLinear(self, val):
         if isinstance(val, int):
             val = [ val ]
+        elif isinstance(val, float):
+            val = [ int(val) ]
             
         x = 0
         for i in range(len(self.size),0,-1):
@@ -321,12 +323,22 @@ class rapid_array :
             if len(localsize)==0:
                 tmp = val[i-1]
                 if isinstance(tmp, int):
-                    x += tmp
+                    x += tmp-1
+                elif isinstance(tmp, rapid_num):
+                    x += tmp.Get()-1
                 else:
-                    x += tmp.data.Get()
+                    x += tmp.data.Get()-1
             else:
-                x += (reduce(operator.mul,localsize) * val[i-1])
-        return (x-1)
+                if isinstance(val[i-1], int):
+                    x += (reduce(operator.mul,localsize) * (val[i-1]-1))
+                elif isinstance(val[i-1], float):
+                    x += (reduce(operator.mul,localsize) * int(val[i-1]-1))
+                elif isinstance(val[i-1], rapid_num):
+                    x += (reduce(operator.mul,localsize) * (val[i-1].Get()-1))
+                else:
+                    x += (reduce(operator.mul,localsize) * (val[i-1].data.Get()-1))
+                
+        return x
         
     def GetElem(self, elem):
         if isinstance(elem, int):

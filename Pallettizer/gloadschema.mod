@@ -5,8 +5,12 @@ MODULE GLOADSCHEMA
     
     
     ! schemaType Elements
-    VAR bool SchemaType_Valid;
-    VAR num SchemaType_NSteps{nQueueForSchema};
-    VAR num SchemaType_RunSteps{nQueueForSchema};
+    VAR bool SchemaType_Valid;      ! True if The Schema is valid
+    VAR num SchemaType_NSteps{nQueueForSchema};     ! Number of Step for cicle
+    VAR num SchemaType_RunSteps{nQueueForSchema};   ! if >0 Step from Start 
+    
+    VAR num TakeLine;
+    VAR prodtype ProductType;
+    VAR num GripperType;
     
 ENDMODULE

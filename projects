@@ -18,20 +18,21 @@ long_line_behaviour=1
 long_line_column=72
 
 [files]
-current_page=6
-FILE_NAME_0=6422;None;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/default/standard.sys;0;4
-FILE_NAME_1=26;Python;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/rapid_ast.py;0;4
+current_page=3
+FILE_NAME_0=3089;None;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/default/standard.sys;0;4
+FILE_NAME_1=544;Python;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/rapid_ast.py;0;4
 FILE_NAME_2=881;Python;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/ast_gen.py;0;4
-FILE_NAME_3=2007;None;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/Pallettizer/maintask.mod;0;4
+FILE_NAME_3=2248;None;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/Pallettizer/maintask.mod;0;4
 FILE_NAME_4=4647;Python;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/rapid2rapid.py;0;4
-FILE_NAME_5=2454;Python;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/run/pyrapid.py;0;4
-FILE_NAME_6=47604;Python;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/rapid2py.py;0;4
+FILE_NAME_5=19232;Python;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/run/pyrapid.py;0;4
+FILE_NAME_6=22876;Python;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/rapid2py.py;0;4
 FILE_NAME_7=61;None;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/Pallettizer/schema.mod;0;4
 FILE_NAME_8=0;None;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/Pallettizer/gloadschema.mod;0;4
 FILE_NAME_9=654;None;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/Pallettizer/settings.mod;0;4
-FILE_NAME_10=2058;Python;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/run/pallettizer.py;0;4
+FILE_NAME_10=102699;Python;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/run/pallettizer.py;0;4
 FILE_NAME_11=2958;Python;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/run/goto.py;0;4
-FILE_NAME_12=6114;Conf;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/_rapid_ast.cfg;0;4
+FILE_NAME_12=6489;Conf;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/_rapid_ast.cfg;0;4
+FILE_NAME_13=15489;Python;0;16;0;1;0;/home/mdionisio/Develop/pyrapidparser/rapid_parser.py;0;4
 
 [VTE]
 last_dir=/home/mdionisio

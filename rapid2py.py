@@ -409,8 +409,21 @@ class rapid_%s (pyrapid.rapid_struct):
         self.simple_writemodule("( ")
         self.visit(node.par1, **kwargs)
         self.simple_writemodule(" ")
+        
         if node.operator == "=":
             self.simple_writemodule("==")
+        elif node.operator == "DIV":
+            self.simple_writemodule("//")
+        elif node.operator == "MOD":
+            self.simple_writemodule("%")
+        elif node.operator == "<>":
+            self.simple_writemodule("!=")
+        elif node.operator == "OR":
+            self.simple_writemodule("or")
+        elif node.operator == "AND":
+            self.simple_writemodule("and")
+        elif node.operator == "XOR":
+            raise Exception("not yet supported XOR")
         else:
             self.simple_writemodule(node.operator)
         self.simple_writemodule(" ")
