@@ -423,7 +423,7 @@ class rapid_%s (pyrapid.rapid_struct):
         elif node.operator == "AND":
             self.simple_writemodule("and")
         elif node.operator == "XOR":
-            raise Exception("not yet supported XOR")
+            self.simple_writemodule("^")
         else:
             self.simple_writemodule(node.operator)
         self.simple_writemodule(" ")
