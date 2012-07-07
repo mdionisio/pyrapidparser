@@ -12,23 +12,24 @@ MODULE SCHEMA
         TakeLine := 1;
         
         SchemaType_NSteps{ORDER_QUEUE} := 2;
-        SchemaType_NSteps{MAIN_QUEUE} := 3;
+        SchemaType_NSteps{MAIN_QUEUE} := 4;
         
         SchemaType_RunSteps{ORDER_QUEUE} := 1;
         SchemaType_RunSteps{MAIN_QUEUE} := 1;
         
         !Possible action
         ! OrderProd <number of product> <disposition>
-        ! StopQueue
-        ! StartQueue
+        ! StopQueue <queue>
+        ! StartQueue <queue>
         ! TakeProduct x y z rot
         ! PlaceProduct x x1 y y1 z z1 rot
         
         ActionType_Name{ORDER_QUEUE,1} := "OrderProd";
-        ActionType_Name{ORDER_QUEUE,2} := "StopQueue";
+        ActionType_Name{ORDER_QUEUE,2} := "StopQueue 1";
         
-        ActionType_Name{MAIN_QUEUE,1} := "TakeProduct 0 0 0 0";
-        ActionType_Name{MAIN_QUEUE,2} := "StartQueue";
-        ActionType_Name{MAIN_QUEUE,3} := "PlaceProduct 10 1 20 2 30 3 90";
+        ActionType_Name{MAIN_QUEUE,1} := "StartQueue 1";
+        ActionType_Name{MAIN_QUEUE,2} := "TakeProduct 0 0 0 0";
+        ActionType_Name{MAIN_QUEUE,3} := "StartQueue 1";
+        ActionType_Name{MAIN_QUEUE,4} := "PlaceProduct 10 1 20 2 30 3 90";
     ENDPROC
 ENDMODULE

@@ -39,9 +39,62 @@ MODULE MAINTASK
         TPWrite "GO TO PARK";
     ENDPROC
     
+    FUNC bool IsStartQueue(string command, VAR num queue)
+        VAR num spacepos;
+        VAR string basecommand;
+        VAR string tmp;
+        CONST string command_to_find := "StartQueue";
+        
+        spacepos := StrFind(command, 1, " ");
+        IF spacepos = (StrLen(command_to_find)+1) THEN
+            basecommand := StrPart(command, 1, StrLen(command_to_find));
+            IF basecommand = command_to_find THEN
+                tmp := StrPart(command, spacepos+1, StrLen(command)-spacepos-1);
+                IF StrToVal(tmp, queue) THEN
+                    RETURN TRUE;
+                ENDIF
+            ENDIF
+        ENDIF
+        RETURN FALSE;
+    ENDFUNC
+    
+    FUNC bool IsStopQueue(string command, VAR num queue)
+        VAR num spacepos;
+        VAR string basecommand;
+        VAR string tmp;
+        CONST string command_to_find := "StopQueue";
+        
+        spacepos := StrFind(command, 1, " ");
+        IF spacepos = (StrLen(command_to_find)+1) THEN
+            basecommand := StrPart(command, 1, StrLen(command_to_find));
+            IF basecommand = command_to_find THEN
+                tmp := StrPart(command, spacepos+1, StrLen(command)-spacepos-1);
+                IF StrToVal(tmp, queue) THEN
+                    RETURN TRUE;
+                ENDIF
+            ENDIF
+        ENDIF
+        RETURN FALSE;
+    ENDFUNC
+    
     
     FUNC bool CommandCanBeExecuted(todoType command)
-        RETURN TRUE;
+        VAR string fullcommand;
+        
+        IF r_QueuePaused{command.nProdLine, command.nQueue} THEN
+            RETURN FALSE;
+        ELSE
+            fullcommand := r_ActionType_Name{command.nProdLine, command.nQueue, command.nStep};
+        
+            IF IsStartQueue(fullcommand, param_queue) THEN
+                RETURN TRUE;
+            ELSEIF IsStopQueue(fullcommand, param_queue) THEN
+                RETURN TRUE;
+            ELSE
+                TPWrite "command not yet supported and so can not be done: "+fullcommand ;
+                RETURN FALSE;
+            ENDIF
+        ENDIF
     ENDFUNC
     
     ! This function return the action that has to be done
@@ -102,9 +155,7 @@ MODULE MAINTASK
     PROC ALoadSchema( num nsch \switch Update)
         VAR num i;
         VAR num j;
-        TPWrite "UNLOAD 1";
         UnLoad FilePath:="schema.mod";
-        TPWrite "LOAD 1";
         Load FilePath:="schema.mod";
         TPWrite "INIT MODULE";
         %"INIT_SCHEMA"%;
@@ -131,10 +182,11 @@ MODULE MAINTASK
         
         !TPWrite "TEST INIT SCHEMA", \Bool:=SchemaType_Valid;
         
-        TPWrite "UNLOAD 2";
         UnLoad FilePath:="schema.mod";
         
-        TPWrite "END ALoadSchema";
+        r_QueuePaused{nsch, ORDER_QUEUE} := TRUE;
+        r_QueuePaused{nsch, MAIN_QUEUE} := FALSE;
+        
         ! todo aggiungere gestione errore per UnLoad
         ! todo aggiungere gestione errore per Load
         
@@ -163,6 +215,7 @@ MODULE MAINTASK
             r_SchemaType_Valid{i} := FALSE;
             
             FOR j FROM 1 TO nQueueForSchema STEP 1 DO
+                r_QueuePaused{i, j} := FALSE;
                 r_SchemaType_NSteps{i, j} := 0;
                 r_SchemaType_RunSteps{i, j} := 0;
                 FOR k FROM 1 TO MAX_STEP STEP 1 DO
@@ -190,6 +243,32 @@ MODULE MAINTASK
         
         TPWrite "END LOAD/RELOAD ALL SCHEMAS";
         
+    ENDPROC
+    
+    PROC AStartQueue(num nProdLine, num nQueue)
+        TPWrite "IsStartQueue on queue:", \Num:=nQueue ;
+        r_QueuePaused{nProdLine, nQueue} := FALSE;
+    ENDPROC
+    
+    PROC AStopQueue(num nProdLine, num nQueue)
+        TPWrite "IsStopQueue on queue:", \Num:=nQueue ;
+        r_QueuePaused{nProdLine, nQueue} := TRUE;
+    ENDPROC
+    
+    PROC AExecute(todoType command)
+        VAR string fullcommand;
+        VAR num param_queue;
+        
+        fullcommand := r_ActionType_Name{command.nProdLine, command.nQueue, command.nStep};
+        
+        IF IsStartQueue(fullcommand, param_queue) THEN
+            AStartQueue command.nProdLine, param_queue;
+        ELSEIF IsStopQueue(fullcommand, param_queue) THEN
+            AStopQueue command.nProdLine, param_queue;
+        ELSE
+            TPWrite "command not yet supported: "+fullcommand ;
+        ENDIF
+
     ENDPROC
     
     ! This is the task that make the real job
@@ -227,6 +306,8 @@ MODULE MAINTASK
                 bDoneSomething := TRUE;
                 
                 TPWrite "Do Step:"+r_ActionType_Name{ActionToDo.nProdLine, ActionToDo.nQueue, ActionToDo.nStep};
+                
+                AExecute ActionToDo;
                 
                 !go to next step
                 

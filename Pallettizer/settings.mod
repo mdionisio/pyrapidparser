@@ -34,4 +34,6 @@ MODULE SETTINGS
     VAR prodtype r_ProductType{nPLACELINE};
     VAR num r_GripperType{nPLACELINE};
     VAR num r_TakeLine{nPLACELINE};
+    
+    VAR bool r_QueuePaused{nPLACELINE, nQueueForSchema};
 ENDMODULE
