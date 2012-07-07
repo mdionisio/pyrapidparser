@@ -21,7 +21,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
             !python:                                    str(pyrapid.Symbols().GetSymbol("Orient").data.GetElem("q3").Get()), 
             !python:                                    str(pyrapid.Symbols().GetSymbol("Orient").data.GetElem("q4").Get())])
         ENDIF
-        !python:print( val )
+        !python:print( "'"+val+"'" )
     ENDPROC
     
     PROC ClkStart( INOUT clock Clock )
@@ -163,14 +163,67 @@ MODULE SYSTEMMODULE(SYSMODULE)
         VAR num ret;
         !TODO non gestito errore
         !python:import math
-        !python:base = pyrapid.Symbols().GetSymbol("Value").data.Get()
-        !python:exponent = pyrapid.Symbols().GetSymbol("Value").data.Get()
+        !python:base = pyrapid.Symbols().GetSymbol("Base").data.Get()
+        !python:exponent = pyrapid.Symbols().GetSymbol("Exponent").data.Get()
         !python:val = math.pow(base, exponent)
         !python:pyrapid.Symbols().GetSymbol("ret").data.Set( val )
         RETURN ret;
     ENDFUNC
     
+    FUNC num StrLen(string Str)
+        VAR num ret;
+        !python:Str = pyrapid.Symbols().GetSymbol("Str").data.Get()
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( len(Str) )
+        RETURN ret;
+    ENDFUNC
     
+    FUNC num StrFind (string Str, num ChPos, string Set \switch NotInSet)
+        VAR num ret;
+        !python:Str = pyrapid.Symbols().GetSymbol("Str").data.Get()
+        !python:ChPos = pyrapid.Symbols().GetSymbol("ChPos").data.Get()
+        !python:Set = pyrapid.Symbols().GetSymbol("Set").data.Get()
+        IF Present(NotInSet) THEN
+            !python:NotInSet=True
+        ELSE
+            !python:NotInSet=False
+        ENDIF
+        !python:ret = len(Str)+1
+        !python:for i in range(int(ChPos)-1,len(Str)):
+        !python:    if (Str[i] in Set) ^ NotInSet:
+        !python:        ret = i+1
+        !python:        break
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( ret )
+        RETURN ret;
+    ENDFUNC
+    
+    FUNC string StrPart (string Str, num ChPos, num Len)
+        VAR string ret;
+        !python:Str = pyrapid.Symbols().GetSymbol("Str").data.Get()
+        !python:ChPos = pyrapid.Symbols().GetSymbol("ChPos").data.Get()
+        !python:Len = pyrapid.Symbols().GetSymbol("Len").data.Get()
+        !python:ret = Str[(ChPos-1):(ChPos-1+Len)]
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( ret )
+        RETURN ret;
+    ENDFUNC 
+    
+    FUNC bool StrToVal (string Str, INOUT num Val)
+        VAR bool ret;
+        !python:Str = pyrapid.Symbols().GetSymbol("Str").data.Get()
+        !python:try:
+        !python:    Val = pyrapid.Symbols().GetSymbol("Val").data.Get()
+        !python:except:
+        !python:    Val = None
+        !python:try:
+        !python:    Val = float(Str)
+        !python:    ret = True
+        !python:    pyrapid.Symbols().GetSymbol("Val").data.Set( Val )
+        !python:except:
+        !python:    ret = False
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( ret )
+        RETURN ret;
+    ENDFUNC 
+
+
     
 
 

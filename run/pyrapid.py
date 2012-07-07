@@ -324,25 +324,29 @@ class rapid_array :
                 tmp = val[i-1]
                 if isinstance(tmp, int):
                     x += tmp-1
+                elif isinstance(val[i-1], float):
+                    x += int(tmp)-1
                 elif isinstance(tmp, rapid_num):
-                    x += tmp.Get()-1
+                    x += int(tmp.Get())-1
                 else:
-                    x += tmp.data.Get()-1
+                    x += int(tmp.data.Get())-1
             else:
                 if isinstance(val[i-1], int):
-                    x += (reduce(operator.mul,localsize) * (val[i-1]-1))
+                    x += int(reduce(operator.mul,localsize) * (val[i-1]-1))
                 elif isinstance(val[i-1], float):
-                    x += (reduce(operator.mul,localsize) * int(val[i-1]-1))
+                    x += int(reduce(operator.mul,localsize) * int(val[i-1]-1))
                 elif isinstance(val[i-1], rapid_num):
-                    x += (reduce(operator.mul,localsize) * (val[i-1].Get()-1))
+                    x += int(reduce(operator.mul,localsize) * (val[i-1].Get()-1))
                 else:
-                    x += (reduce(operator.mul,localsize) * (val[i-1].data.Get()-1))
+                    x += int(reduce(operator.mul,localsize) * (val[i-1].data.Get()-1))
                 
         return x
         
     def GetElem(self, elem):
         if isinstance(elem, int):
             ielem = elem;
+        elif isinstance(elem, float):
+            ielem = int(elem);
         elif isinstance(elem, list):
             ielem = elem;
         elif isinstance(elem, tuple):
@@ -355,6 +359,8 @@ class rapid_array :
         # add check type
         if isinstance(elem, int):
             ielem = elem;
+        elif isinstance(elem, float):
+            ielem = int(elem);
         elif isinstance(elem, list):
             ielem = elem;
         elif isinstance(elem, tuple):
