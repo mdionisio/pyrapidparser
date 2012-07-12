@@ -11,6 +11,8 @@ MODULE GLOADSCHEMA
     
     VAR num TakeLine;
     VAR prodtype ProductType;
+    VAR prodtype PalletType;
+    VAR prodtype SheetType;
     VAR num GripperType;
     
 ENDMODULE

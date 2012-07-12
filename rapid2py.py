@@ -22,6 +22,8 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         self.file_module_name = os.path.join(self.directory, out_filename)
         self.file_module = open(self.file_module_name, "w")
         self.writemodule( "#this file is an automatic traslation of rapid code")
+        self.writemodule( "import sys")
+        self.writemodule( "sys.path.append('..')")
         self.writemodule("import pyrapid")
         self.writemodule("from collections import OrderedDict")
         self.writemodule("import copy")
@@ -507,13 +509,11 @@ class rapid_%s (pyrapid.rapid_struct):
                         self.writemodule("else:")  # propagate exception
                         with self.ModuleScope():
                             self.writemodule("print 'propagate'")  # propagate
-                            self.writemodule("global error_code")
                             self.writemodule("error_code = error_code[:-1]")
                             self.writemodule("raise")  # propagate exception
                     self.writemodule("else:")
                     with self.ModuleScope():
                         self.writemodule("print 'propagate'")  # propagate
-                        self.writemodule("global error_code")
                         self.writemodule("error_code = error_code[:-1]")
                         self.writemodule("raise")  # propagate exception
             
@@ -995,7 +995,6 @@ class rapid_%s (pyrapid.rapid_struct):
             #compute parameter list
             
             #TODO gestione errore
-            #self.writemodule("global error_code")
             #self.simple_writemodule("error_code.append(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).error_call)" % ( repr(function_name), repr(self.module_name), repr(self.function_name) ))
             self.simple_writemodule("pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data( {" % ( repr(function_name), repr(self.module_name), repr(self.function_name) ))
             #self.simple_writemodule("error_code = error_code[:-1]")
@@ -1071,7 +1070,6 @@ class rapid_%s (pyrapid.rapid_struct):
                     except ValueError:
                         raise Exception("argument %s is required"%(ik,))
             
-            self.writemodule("global error_code")
             self.writemodule("error_code.append(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).error_call)" % ( repr(procedure_name), repr(self.module_name), repr(self.function_name) ))
             self.writemodule("pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(parameters_actual)" % ( repr(procedure_name), repr(self.module_name), repr(self.function_name) ))
             self.writemodule("error_code = error_code[:-1]")
@@ -1116,6 +1114,7 @@ class rapid_%s (pyrapid.rapid_struct):
         self.writemodule("@goto")
         self.writemodule("def error_rapid_proc_%s (local_args_scope):" % (self.function_name,))
         with self.ModuleScope():
+            self.writemodule("global error_code")
             #add parameter
             
             if not ( node.routine_error is None ):    
@@ -1127,7 +1126,7 @@ class rapid_%s (pyrapid.rapid_struct):
         self.writemodule("def undo_rapid_proc_%s (local_args_scope):" % (self.function_name,))
         with self.ModuleScope():
             #add parameter
-            self.writemodule("pass")
+            self.writemodule("global error_code")
             
             if not ( node.routine_undo is None ):
                 self.visit(node.routine_undo, undo_statement=True, **kwargs)
@@ -1137,6 +1136,7 @@ class rapid_%s (pyrapid.rapid_struct):
         self.writemodule("def rapid_proc_%s (local_args_scope):" % (self.function_name,))
             
         with self.ModuleScope():
+            self.writemodule("global error_code")
             
             with pyrapid.Symbols().Scope(modulename=self.module_name, functionname=self.function_name, invalue={}):
                 for ik,iv in self.params.iteritems():
@@ -1228,6 +1228,7 @@ class rapid_%s (pyrapid.rapid_struct):
         self.writemodule("@goto")
         self.writemodule("def error_rapid_func_%s (local_args_scope):" % (self.function_name,))
         with self.ModuleScope():
+            self.writemodule("global error_code")
             #add parameter
             
             if not ( node.routine_error is None ):    
@@ -1238,8 +1239,8 @@ class rapid_%s (pyrapid.rapid_struct):
         self.writemodule("@goto")
         self.writemodule("def undo_rapid_func_%s (local_args_scope):" % (self.function_name,))
         with self.ModuleScope():
+            self.writemodule("global error_code")
             #add parameter
-            self.writemodule("pass")
             
             if not ( node.routine_undo is None ):
                 self.visit(node.routine_undo, undo_statement=True, **kwargs)
@@ -1248,6 +1249,8 @@ class rapid_%s (pyrapid.rapid_struct):
         self.writemodule("def rapid_func_%s (local_args_scope):" % (self.function_name))
             
         with self.ModuleScope():
+            self.writemodule("global error_code")
+            
             with pyrapid.Symbols().Scope(modulename=self.module_name, functionname=self.function_name, invalue={}):
                 
                 for ik,iv in self.params.iteritems():
@@ -1351,7 +1354,7 @@ if __name__ == '__main__':
     
     if options.run:
         import subprocess
-        a=subprocess.Popen(["python", traslate.file_module_name], shell=False)
+        a=subprocess.Popen(["python", os.path.basename(traslate.file_module_name)], shell=False, cwd=os.path.dirname(traslate.file_module_name))
         a.wait()
         print "End"
         #

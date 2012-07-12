@@ -1,4 +1,4 @@
-from browse_rapid_ast import EvaluateRapidExpression, ensure_dir
+from browse_rapid_ast import ensure_dir
 import rapid_ast
 import rapid_parser
 import os

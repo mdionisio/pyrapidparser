@@ -39,6 +39,29 @@ MODULE MAINTASK
         TPWrite "GO TO PARK";
     ENDPROC
     
+    FUNC bool IsOrderProduct(string command, VAR num nprod, VAR num disposition)
+        VAR num spacepos;
+        VAR string basecommand;
+        VAR string tmp;
+        VAR num prod{2} := [0, 0];
+        CONST string command_to_find := "OrderProd";
+        
+        spacepos := StrFind(command, 1, " ");
+        
+        IF spacepos = (StrLen(command_to_find)+1) THEN
+            basecommand := StrPart(command, 1, StrLen(command_to_find));
+            IF basecommand = command_to_find THEN
+                tmp := StrPart(command, spacepos+1, StrLen(command)-spacepos-1);
+                IF StrToVal(tmp, prod) THEN
+                    nprod := prod{1};
+                    disposition := prod{2};
+                    RETURN TRUE;
+                ENDIF
+            ENDIF
+        ENDIF
+        RETURN FALSE;
+    ENDFUNC
+    
     FUNC bool IsStartQueue(string command, VAR num queue)
         VAR num spacepos;
         VAR string basecommand;
@@ -46,6 +69,7 @@ MODULE MAINTASK
         CONST string command_to_find := "StartQueue";
         
         spacepos := StrFind(command, 1, " ");
+        
         IF spacepos = (StrLen(command_to_find)+1) THEN
             basecommand := StrPart(command, 1, StrLen(command_to_find));
             IF basecommand = command_to_find THEN
@@ -78,17 +102,147 @@ MODULE MAINTASK
     ENDFUNC
     
     
+    
+    PROC ASetLoadSchema()
+        A_bForceLoadSchemas := TRUE;
+    ENDPROC
+    
+    PROC AResetLoadSchema()
+        A_bForceLoadSchemas := FALSE;
+    ENDPROC
+    
+    FUNC bool ASchemasHasToBeLoaded()
+        RETURN A_bForceLoadSchemas;
+    ENDFUNC
+    
+    
+    
+    PROC ALoadSchema( num nsch \switch Update)
+        VAR num i;
+        VAR num j;
+        
+        ! add backup schema
+        
+        UnLoad FilePath:="schema.mod";
+        Load FilePath:="schema.mod";
+        TPWrite "INIT MODULE";
+        %"INIT_SCHEMA"%;
+        
+        r_SchemaType_Valid{nsch} := SchemaType_Valid;
+        IF r_SchemaType_Valid{nsch}=TRUE THEN
+            TPWrite "RUNNING SCHEMA:",\Num:=nsch;
+            r_ProductType{nsch} := ProductType;
+            
+            r_GripperType{nsch} := GripperType;
+            
+            r_TakeLine{nsch} := TakeLine;
+            
+            FOR j FROM 1 TO nQueueForSchema STEP 1 DO
+                r_SchemaType_NSteps{nsch, j} := SchemaType_NSteps{j};
+                
+                r_SchemaType_RunSteps{nsch, j} := SchemaType_RunSteps{j};
+                
+                FOR i FROM 1 TO r_SchemaType_NSteps{nsch, j} STEP 1 DO
+                    r_ActionType_Name{nsch, j, i} := ActionType_Name{j, i};
+                ENDFOR
+            ENDFOR
+        ENDIF
+        
+        !TPWrite "TEST INIT SCHEMA", \Bool:=SchemaType_Valid;
+        
+        UnLoad FilePath:="schema.mod";
+        
+        r_QueuePaused{nsch, ORDER_QUEUE} := TRUE;
+        r_QueuePaused{nsch, MAIN_QUEUE} := FALSE;
+
+        !add undo wuth restore backup
+        
+        ERROR
+            TPWrite "ERRORE IN ALOADSCHEMA";
+            IF ERRNO = ERR_UNLOAD  THEN
+                TPWrite "ERRORE UNLOAD";
+                TRYNEXT;
+            ELSEIF (ERRNO = ERR_REFUNKPRC) OR (ERRNO = ERR_CALLPROC)  THEN
+                TPWrite "Errore loading schema";
+                SchemaType_Valid := False;
+                IF Present(Update) THEN
+                    RAISE;
+                ELSE
+                    TRYNEXT;
+                ENDIF
+            ENDIF
+
+    ENDPROC
+    
+    PROC AResetAllSchemas()
+        LOCAL VAR num i;
+        LOCAL VAR num j;
+        LOCAL VAR num k;
+        
+        TPWrite "RESET ALL SCHEMAS";
+        
+        FOR i FROM 1 TO nPLACELINE STEP 1 DO
+            TPWrite "Stop Schema ", \Num:=i;
+            r_SchemaType_Valid{i} := FALSE;
+            
+            FOR j FROM 1 TO nQueueForSchema STEP 1 DO
+                r_QueuePaused{i, j} := FALSE;
+                r_SchemaType_NSteps{i, j} := 0;
+                r_SchemaType_RunSteps{i, j} := 0;
+                FOR k FROM 1 TO MAX_STEP STEP 1 DO
+                    r_ActionType_Name{i, j, k} := "";
+                ENDFOR
+            ENDFOR
+            
+            r_ProductType{i} := [0, 0, 0, 0, 0];
+            r_PalletType{i} := [0, 0, 0, 0, 0];
+            r_SheetType{i} := [0, 0, 0, 0, 0];
+            r_GripperType{i} := 0;
+            r_TakeLine{i} := 0;
+            
+            ! todo delete schema
+        ENDFOR
+        ! todo gestione errore del delete schema
+    ENDPROC
+    
+    PROC ALoadSchemas()
+        LOCAL VAR num i;
+        
+        TPWrite "LOAD/RELOAD ALL SCHEMAS";
+        
+        FOR i FROM 1 TO nPLACELINE STEP 1 DO
+            ALoadSchema i;
+        ENDFOR
+        
+        TPWrite "END LOAD/RELOAD ALL SCHEMAS";
+        
+    ENDPROC
+    
+    PROC AStartQueue(num nProdLine, num nQueue)
+        TPWrite "IsStartQueue on queue:", \Num:=nQueue ;
+        r_QueuePaused{nProdLine, nQueue} := FALSE;
+    ENDPROC
+    
+    PROC AStopQueue(num nProdLine, num nQueue)
+        TPWrite "IsStopQueue on queue:", \Num:=nQueue ;
+        r_QueuePaused{nProdLine, nQueue} := TRUE;
+    ENDPROC
+    
     FUNC bool CommandCanBeExecuted(todoType command)
         VAR string fullcommand;
+        VAR num param_queue1;
+        VAR num param_queue2;
         
         IF r_QueuePaused{command.nProdLine, command.nQueue} THEN
             RETURN FALSE;
         ELSE
             fullcommand := r_ActionType_Name{command.nProdLine, command.nQueue, command.nStep};
         
-            IF IsStartQueue(fullcommand, param_queue) THEN
+            IF IsStartQueue(fullcommand, param_queue1) THEN
                 RETURN TRUE;
-            ELSEIF IsStopQueue(fullcommand, param_queue) THEN
+            ELSEIF IsStopQueue(fullcommand, param_queue1) THEN
+                RETURN TRUE;
+            ELSEIF IsOrderProduct(fullcommand, param_queue1, param_queue2) THEN
                 RETURN TRUE;
             ELSE
                 TPWrite "command not yet supported and so can not be done: "+fullcommand ;
@@ -96,6 +250,27 @@ MODULE MAINTASK
             ENDIF
         ENDIF
     ENDFUNC
+    
+    PROC AExecute(todoType command)
+        VAR string fullcommand;
+        VAR num param_queue1;
+        VAR num param_queue2;
+        
+        fullcommand := r_ActionType_Name{command.nProdLine, command.nQueue, command.nStep};
+        
+        IF IsStartQueue(fullcommand, param_queue1) THEN
+            AStartQueue command.nProdLine, param_queue1;
+        ELSEIF IsStopQueue(fullcommand, param_queue1) THEN
+            AStopQueue command.nProdLine, param_queue1;
+        ELSEIF IsOrderProduct(fullcommand, param_queue1, param_queue2) THEN
+            TPWrite "command: "+fullcommand ;
+            TPWrite "nprod:",\Num:=param_queue1;
+            TPWrite "disp:",\Num:=param_queue2;
+        ELSE
+            TPWrite "command not yet supported: "+fullcommand ;
+        ENDIF
+
+    ENDPROC
     
     ! This function return the action that has to be done
     !
@@ -137,139 +312,6 @@ MODULE MAINTASK
         ENDFOR
         RETURN FALSE;
     ENDFUNC
-    
-    PROC ASetLoadSchema()
-        A_bForceLoadSchemas := TRUE;
-    ENDPROC
-    
-    PROC AResetLoadSchema()
-        A_bForceLoadSchemas := FALSE;
-    ENDPROC
-    
-    FUNC bool ASchemasHasToBeLoaded()
-        RETURN A_bForceLoadSchemas;
-    ENDFUNC
-    
-    
-    
-    PROC ALoadSchema( num nsch \switch Update)
-        VAR num i;
-        VAR num j;
-        UnLoad FilePath:="schema.mod";
-        Load FilePath:="schema.mod";
-        TPWrite "INIT MODULE";
-        %"INIT_SCHEMA"%;
-        
-        r_SchemaType_Valid{nsch} := SchemaType_Valid;
-        IF r_SchemaType_Valid{nsch}=TRUE THEN
-            TPWrite "RUNNING SCHEMA:",\Num:=nsch;
-            r_ProductType{nsch} := ProductType;
-            
-            r_GripperType{nsch} := GripperType;
-            
-            r_TakeLine{nsch} := TakeLine;
-            
-            FOR j FROM 1 TO nQueueForSchema STEP 1 DO
-                r_SchemaType_NSteps{nsch, j} := SchemaType_NSteps{j};
-                
-                r_SchemaType_RunSteps{nsch, j} := SchemaType_RunSteps{j};
-                
-                FOR i FROM 1 TO r_SchemaType_NSteps{nsch, j} STEP 1 DO
-                    r_ActionType_Name{nsch, j, i} := ActionType_Name{j, i};
-                ENDFOR
-            ENDFOR
-        ENDIF
-        
-        !TPWrite "TEST INIT SCHEMA", \Bool:=SchemaType_Valid;
-        
-        UnLoad FilePath:="schema.mod";
-        
-        r_QueuePaused{nsch, ORDER_QUEUE} := TRUE;
-        r_QueuePaused{nsch, MAIN_QUEUE} := FALSE;
-        
-        ! todo aggiungere gestione errore per UnLoad
-        ! todo aggiungere gestione errore per Load
-        
-        ERROR
-            TPWrite "ERRORE IN ALOADSCHEMA";
-            IF ERRNO = ERR_UNLOAD  THEN
-                TPWrite "ERRORE UNLOAD";
-                TRYNEXT;
-            ELSEIF (ERRNO = ERR_REFUNKPRC) OR (ERRNO = ERR_CALLPROC)  THEN
-                TPWrite "Errore loading schema";
-                SchemaType_Valid := False;
-                TRYNEXT;
-            ENDIF
-
-    ENDPROC
-    
-    PROC AResetAllSchemas()
-        LOCAL VAR num i;
-        LOCAL VAR num j;
-        LOCAL VAR num k;
-        
-        TPWrite "RESET ALL SCHEMAS";
-        
-        FOR i FROM 1 TO nPLACELINE STEP 1 DO
-            TPWrite "Stop Schema ", \Num:=i;
-            r_SchemaType_Valid{i} := FALSE;
-            
-            FOR j FROM 1 TO nQueueForSchema STEP 1 DO
-                r_QueuePaused{i, j} := FALSE;
-                r_SchemaType_NSteps{i, j} := 0;
-                r_SchemaType_RunSteps{i, j} := 0;
-                FOR k FROM 1 TO MAX_STEP STEP 1 DO
-                    r_ActionType_Name{i, j, k} := "";
-                ENDFOR
-            ENDFOR
-            
-            r_ProductType{i} := [0, 0, 0, 0, 0];
-            r_GripperType{i} := 0;
-            r_TakeLine{i} := 0;
-            
-            ! todo delete schema
-        ENDFOR
-        ! todo gestione errore del delete schema
-    ENDPROC
-    
-    PROC ALoadSchemas()
-        LOCAL VAR num i;
-        
-        TPWrite "LOAD/RELOAD ALL SCHEMAS";
-        
-        FOR i FROM 1 TO nPLACELINE STEP 1 DO
-            ALoadSchema i;
-        ENDFOR
-        
-        TPWrite "END LOAD/RELOAD ALL SCHEMAS";
-        
-    ENDPROC
-    
-    PROC AStartQueue(num nProdLine, num nQueue)
-        TPWrite "IsStartQueue on queue:", \Num:=nQueue ;
-        r_QueuePaused{nProdLine, nQueue} := FALSE;
-    ENDPROC
-    
-    PROC AStopQueue(num nProdLine, num nQueue)
-        TPWrite "IsStopQueue on queue:", \Num:=nQueue ;
-        r_QueuePaused{nProdLine, nQueue} := TRUE;
-    ENDPROC
-    
-    PROC AExecute(todoType command)
-        VAR string fullcommand;
-        VAR num param_queue;
-        
-        fullcommand := r_ActionType_Name{command.nProdLine, command.nQueue, command.nStep};
-        
-        IF IsStartQueue(fullcommand, param_queue) THEN
-            AStartQueue command.nProdLine, param_queue;
-        ELSEIF IsStopQueue(fullcommand, param_queue) THEN
-            AStopQueue command.nProdLine, param_queue;
-        ELSE
-            TPWrite "command not yet supported: "+fullcommand ;
-        ENDIF
-
-    ENDPROC
     
     ! This is the task that make the real job
     !

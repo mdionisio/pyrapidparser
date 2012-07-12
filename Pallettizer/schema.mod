@@ -8,6 +8,20 @@ MODULE SCHEMA
         ProductType.Weight := 1000;
         ProductType.Type := 1;
         
+        
+        PalletType.X := 1200;
+        PalletType.Y := 800;
+        PalletType.Z := 150;
+        PalletType.Weight := 3000;
+        PalletType.Type := 1;
+        
+        SheetType.X := 1200;
+        SheetType.Y := 800;
+        SheetType.Z := 3;
+        SheetType.Weight := 100;
+        SheetType.Type := 1;
+        
+        
         GripperType := 1;
         TakeLine := 1;
         
@@ -24,12 +38,12 @@ MODULE SCHEMA
         ! TakeProduct x y z rot
         ! PlaceProduct x x1 y y1 z z1 rot
         
-        ActionType_Name{ORDER_QUEUE,1} := "OrderProd";
+        ActionType_Name{ORDER_QUEUE,1} := "OrderProd [ 3, 2 ]";
         ActionType_Name{ORDER_QUEUE,2} := "StopQueue 1";
         
         ActionType_Name{MAIN_QUEUE,1} := "StartQueue 1";
-        ActionType_Name{MAIN_QUEUE,2} := "TakeProduct 0 0 0 0";
+        ActionType_Name{MAIN_QUEUE,2} := "TakeProduct [ 0, 0, 0, 0 ]";
         ActionType_Name{MAIN_QUEUE,3} := "StartQueue 1";
-        ActionType_Name{MAIN_QUEUE,4} := "PlaceProduct 10 1 20 2 30 3 90";
+        ActionType_Name{MAIN_QUEUE,4} := "PlaceProduct [ 10, 1, 20, 2, 30, 3, 90]";
     ENDPROC
 ENDMODULE

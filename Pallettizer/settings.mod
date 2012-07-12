@@ -32,6 +32,8 @@ MODULE SETTINGS
     VAR num r_SchemaType_NSteps{nPLACELINE, nQueueForSchema};
     VAR num r_SchemaType_RunSteps{nPLACELINE, nQueueForSchema};
     VAR prodtype r_ProductType{nPLACELINE};
+    VAR prodtype r_PalletType{nPLACELINE};
+    VAR prodtype r_SheetType{nPLACELINE};
     VAR num r_GripperType{nPLACELINE};
     VAR num r_TakeLine{nPLACELINE};
     

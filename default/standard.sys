@@ -208,16 +208,24 @@ MODULE SYSTEMMODULE(SYSMODULE)
     
     FUNC bool StrToVal (string Str, INOUT num Val)
         VAR bool ret;
+        !python:from browse_rapid_ast import EvaluateRapidExpression
+        !python:import rapid_parser
         !python:Str = pyrapid.Symbols().GetSymbol("Str").data.Get()
         !python:try:
         !python:    Val = pyrapid.Symbols().GetSymbol("Val").data.Get()
         !python:except:
         !python:    Val = None
         !python:try:
-        !python:    Val = float(Str)
+        !python:    parser = rapid_parser.RAPIDParser(lex_optimize=True, yacc_debug=False, yacc_optimize=False, start_from='constant_expression')
+        !python:    parser_ast = parser.parse(Str, "tmp", debuglevel=0)
+        !python:    compute = EvaluateRapidExpression("sys", "sys")
+        !python:    compute.visit(parser_ast)
+        !python:    Val = compute.return_value
         !python:    ret = True
         !python:    pyrapid.Symbols().GetSymbol("Val").data.Set( Val )
         !python:except:
+        !python:    #import traceback
+        !python:    #print traceback.format_exc()
         !python:    ret = False
         !python:pyrapid.Symbols().GetSymbol("ret").data.Set( ret )
         RETURN ret;
