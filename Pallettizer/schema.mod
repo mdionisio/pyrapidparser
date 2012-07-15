@@ -26,7 +26,7 @@ MODULE SCHEMA
         TakeLine := 1;
         
         SchemaType_NSteps{ORDER_QUEUE} := 2;
-        SchemaType_NSteps{MAIN_QUEUE} := 4;
+        SchemaType_NSteps{MAIN_QUEUE} := 9;
         
         SchemaType_RunSteps{ORDER_QUEUE} := 1;
         SchemaType_RunSteps{MAIN_QUEUE} := 1;
@@ -36,14 +36,26 @@ MODULE SCHEMA
         ! StopQueue <queue>
         ! StartQueue <queue>
         ! TakeProduct x y z rot
-        ! PlaceProduct x x1 y y1 z z1 rot
+        ! PlaceProduct x x1 y y1 z z1 rot   aggiungere doppio rilascio
+        ! OrderPallet
+        ! TakePallet
+        ! PlacePallet
+        ! ExitPallet
+        ! TakeSheet
+        ! PlaceSheet
+        
         
         ActionType_Name{ORDER_QUEUE,1} := "OrderProd [ 3, 2 ]";
         ActionType_Name{ORDER_QUEUE,2} := "StopQueue 1";
         
-        ActionType_Name{MAIN_QUEUE,1} := "StartQueue 1";
-        ActionType_Name{MAIN_QUEUE,2} := "TakeProduct [ 0, 0, 0, 0 ]";
-        ActionType_Name{MAIN_QUEUE,3} := "StartQueue 1";
-        ActionType_Name{MAIN_QUEUE,4} := "PlaceProduct [ 10, 1, 20, 2, 30, 3, 90]";
+        ActionType_Name{MAIN_QUEUE,1} := "ExitPallet";
+        ActionType_Name{MAIN_QUEUE,2} := "OrderPallet";
+        ActionType_Name{MAIN_QUEUE,3} := "TakePallet";
+        ActionType_Name{MAIN_QUEUE,4} := "PlacePallet";
+        ActionType_Name{MAIN_QUEUE,5} := "StartQueue 1";
+        ActionType_Name{MAIN_QUEUE,6} := "TakeProduct [ 0, 0, 0, 0 ]";
+        ActionType_Name{MAIN_QUEUE,7} := "StartQueue 1";
+        ActionType_Name{MAIN_QUEUE,8} := "PlaceProduct [ 10, 1, 20, 2, 30, 3, 90]";
+        ActionType_Name{MAIN_QUEUE,9} := "ExitPallet";
     ENDPROC
 ENDMODULE

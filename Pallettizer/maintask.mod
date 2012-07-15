@@ -37,6 +37,20 @@ MODULE MAINTASK
     ! robot go in parking position and waith to arrive there
     PROC GoHome()
         TPWrite "GO TO PARK";
+        !todo
+        WaitTime Time:=1;
+    ENDPROC
+    
+    FUNC bool IsPalletExiting(num nProdLine)
+        RETURN r_PalletExiting{nProdLine};
+    ENDFUNC
+    
+    PROC SetPalletExiting(num nProdLine)
+        r_PalletExiting{nProdLine} := TRUE;
+    ENDPROC
+    
+    PROC ResetPalletExiting(num nProdLine)
+        r_PalletExiting{nProdLine} := FALSE;
     ENDPROC
     
     FUNC bool IsOrderProduct(string command, VAR num nprod, VAR num disposition)
@@ -101,6 +115,66 @@ MODULE MAINTASK
         RETURN FALSE;
     ENDFUNC
     
+    
+    FUNC bool IsOrderPallet(string command)
+        CONST string command_to_find := "OrderPallet";
+        
+        IF command = command_to_find THEN
+            RETURN TRUE;
+        ELSE
+            RETURN FALSE;
+        ENDIF
+    ENDFUNC
+    
+    FUNC bool IsTakePallet(string command)
+        CONST string command_to_find := "TakePallet";
+        
+        IF command = command_to_find THEN
+            RETURN TRUE;
+        ELSE
+            RETURN FALSE;
+        ENDIF
+    ENDFUNC
+    
+    FUNC bool IsPlacePallet(string command)
+        CONST string command_to_find := "PlacePallet";
+        
+        IF command = command_to_find THEN
+            RETURN TRUE;
+        ELSE
+            RETURN FALSE;
+        ENDIF
+    ENDFUNC
+    
+    FUNC bool IsExitPallet(string command)
+        CONST string command_to_find := "ExitPallet";
+        
+        IF command = command_to_find THEN
+            RETURN TRUE;
+        ELSE
+            RETURN FALSE;
+        ENDIF
+    ENDFUNC
+    
+    FUNC bool IsTakeSheet(string command)
+        CONST string command_to_find := "TakeSheet";
+        
+        IF command = command_to_find THEN
+            RETURN TRUE;
+        ELSE
+            RETURN FALSE;
+        ENDIF
+    ENDFUNC
+    
+    FUNC bool IsPlaceSheet(string command)
+        CONST string command_to_find := "PlaceSheet";
+        
+        IF command = command_to_find THEN
+            RETURN TRUE;
+        ELSE
+            RETURN FALSE;
+        ENDIF
+    ENDFUNC
     
     
     PROC ASetLoadSchema()
@@ -228,6 +302,49 @@ MODULE MAINTASK
         r_QueuePaused{nProdLine, nQueue} := TRUE;
     ENDPROC
     
+    PROC AOrderProduct(num nProdLine, num nProd, num Dispo)
+        TPWrite "ORDER PRODUCT";
+        TPWrite "LINE:",\Num:=nProdLine;
+        TPWrite "SRC LINE:",\Num:=r_TakeLine{nProdLine};
+        TPWrite "nprod:",\Num:=nProd;
+        TPWrite "disp:",\Num:=Dispo;
+    ENDPROC
+    
+    PROC AOrderPallet(num nProdLine)
+        TPWrite "ORDER PALLET";
+        TPWrite "LINE:",\Num:=nProdLine;
+    ENDPROC
+    
+    PROC ATakePallet(num nProdLine)
+        TPWrite "TAKE PALLET";
+        TPWrite "LINE:",\Num:=nProdLine;
+        !todo
+        WaitTime Time:=1;
+    ENDPROC
+    
+    PROC APlacePallet(num nProdLine)
+        TPWrite "PLACE PALLET";
+        TPWrite "LINE:",\Num:=nProdLine;
+        !todo
+        WaitTime Time:=1;
+    ENDPROC
+    
+    PROC AExitPallet(num nProdLine)
+        TPWrite "EXIT PALLET";
+        TPWrite "LINE:",\Num:=nProdLine;
+        SetPalletExiting nProdLine;
+    ENDPROC
+    
+    PROC ATakeSheet(num nProdLine)
+        TPWrite "TAKE Sheet";
+        TPWrite "LINE:",\Num:=nProdLine;
+    ENDPROC
+    
+    PROC APlaceSheet(num nProdLine)
+        TPWrite "PLACE Sheet";
+        TPWrite "LINE:",\Num:=nProdLine;
+    ENDPROC
+    
     FUNC bool CommandCanBeExecuted(todoType command)
         VAR string fullcommand;
         VAR num param_queue1;
@@ -244,11 +361,36 @@ MODULE MAINTASK
                 RETURN TRUE;
             ELSEIF IsOrderProduct(fullcommand, param_queue1, param_queue2) THEN
                 RETURN TRUE;
+            ELSEIF IsOrderPallet(fullcommand) THEN
+                IF IsPalletExiting(command.nProdLine) THEN
+                    RETURN FALSE;
+                ENDIF
+                !TODO NO PALLET PRESENT
+                RETURN TRUE;
+            ELSEIF IsTakePallet(fullcommand) THEN
+                IF IsPalletExiting(command.nProdLine) THEN
+                    RETURN FALSE;
+                ENDIF
+                !TODO NO PALLET PRESENT
+                RETURN TRUE;
+            ELSEIF IsPlacePallet(fullcommand) THEN
+                IF IsPalletExiting(command.nProdLine) THEN
+                    RETURN FALSE;
+                ENDIF
+                !TODO NO PALLET PRESENT
+                RETURN TRUE;
+            ELSEIF IsExitPallet(fullcommand) THEN
+                RETURN TRUE;
+            ELSEIF IsTakeSheet(fullcommand) THEN
+                RETURN TRUE;
+            ELSEIF IsPlaceSheet(fullcommand) THEN
+                RETURN TRUE;
             ELSE
                 TPWrite "command not yet supported and so can not be done: "+fullcommand ;
                 RETURN FALSE;
             ENDIF
         ENDIF
+        RETURN FALSE;
     ENDFUNC
     
     PROC AExecute(todoType command)
@@ -263,9 +405,19 @@ MODULE MAINTASK
         ELSEIF IsStopQueue(fullcommand, param_queue1) THEN
             AStopQueue command.nProdLine, param_queue1;
         ELSEIF IsOrderProduct(fullcommand, param_queue1, param_queue2) THEN
-            TPWrite "command: "+fullcommand ;
-            TPWrite "nprod:",\Num:=param_queue1;
-            TPWrite "disp:",\Num:=param_queue2;
+            AOrderProduct command.nProdLine, param_queue1, param_queue2;
+        ELSEIF IsOrderPallet(fullcommand) THEN
+            AOrderPallet command.nProdLine;
+        ELSEIF IsTakePallet(fullcommand) THEN
+            ATakePallet command.nProdLine;
+        ELSEIF IsPlacePallet(fullcommand) THEN
+            APlacePallet command.nProdLine;
+        ELSEIF IsExitPallet(fullcommand) THEN
+            AExitPallet command.nProdLine;
+        ELSEIF IsTakeSheet(fullcommand) THEN
+            ATakeSheet command.nProdLine;
+        ELSEIF IsPlaceSheet(fullcommand) THEN
+            APlaceSheet command.nProdLine;
         ELSE
             TPWrite "command not yet supported: "+fullcommand ;
         ENDIF
@@ -313,6 +465,13 @@ MODULE MAINTASK
         RETURN FALSE;
     ENDFUNC
     
+    PROC GlobalReset()
+        VAR num i;
+        FOR i FROM 1 TO nPLACELINE STEP 1 DO
+            r_PalletExiting{i} := FALSE;
+        ENDFOR
+    ENDPROC
+    
     ! This is the task that make the real job
     !
     PROC MAIN_AUTOMATIC()
@@ -326,6 +485,8 @@ MODULE MAINTASK
         ClkStart cTimeDoNothing;
         
         TPWrite "START AUTOMATIC TASK";
+        
+        GlobalReset;
         
         GoHome;                     ! go to park
         ASetLoadSchema;        ! set to load schema when it will be possible

@@ -38,4 +38,7 @@ MODULE SETTINGS
     VAR num r_TakeLine{nPLACELINE};
     
     VAR bool r_QueuePaused{nPLACELINE, nQueueForSchema};
+    
+    
+    VAR bool r_PalletExiting{nPLACELINE};
 ENDMODULE
