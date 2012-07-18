@@ -14,6 +14,31 @@ MODULE MAINTASK
         num nQueue;
         num nStep;
     ENDRECORD
+    
+    LOCAL RECORD TakeProdType
+        num x;
+        num y;
+        num z;
+        num rot;
+    ENDRECORD
+    
+    LOCAL RECORD PlateProdType
+        num type;
+        num x1;
+        num acc_x1;
+        num y1;
+        num acc_y1;
+        num z1;
+        num acc_z1;
+        num rot1;
+        num x2;
+        num acc_x2;
+        num y2;
+        num acc_y2;
+        num z2;
+        num acc_z2;
+        num rot2;
+    ENDRECORD
 
 
     !  GLOBAL VARIABLE
@@ -52,6 +77,76 @@ MODULE MAINTASK
     PROC ResetPalletExiting(num nProdLine)
         r_PalletExiting{nProdLine} := FALSE;
     ENDPROC
+    
+    FUNC bool IsTakeProduct(string command, VAR num x, VAR num y, VAR num z, VAR num rot)
+        VAR num spacepos;
+        VAR string basecommand;
+        VAR string tmp;
+        VAR PlateProdType prod := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        CONST string command_to_find := "PlaceProduct";
+        
+        spacepos := StrFind(command, 1, " ");
+        
+        IF spacepos = (StrLen(command_to_find)+1) THEN
+            basecommand := StrPart(command, 1, StrLen(command_to_find));
+            IF basecommand = command_to_find THEN
+                tmp := StrPart(command, spacepos+1, StrLen(command)-spacepos-1);
+                IF StrToVal(tmp, prod) THEN
+                    x := prod.x;
+                    y := prod.y;
+                    z := prod.z;
+                    rot := prod.rot;
+                    
+                    
+                    RETURN TRUE;
+                ENDIF
+            ENDIF
+        ENDIF
+        RETURN FALSE;
+    ENDFUNC
+    
+    FUNC bool IsPlaceProduct(string command, VAR num index, VAR num x{*}, VAR num y{*}, VAR num z{*}, VAR num rot{*}, VAR num acc_x{*}, VAR num acc_y{*}, VAR num acc_z{*})
+        VAR num spacepos;
+        VAR string basecommand;
+        VAR string tmp;
+        VAR TakeProdType prod := [0, 0, 0, 0];
+        CONST string command_to_find := "TakeProduct";
+        
+        spacepos := StrFind(command, 1, " ");
+        
+        IF spacepos = (StrLen(command_to_find)+1) THEN
+            basecommand := StrPart(command, 1, StrLen(command_to_find));
+            IF basecommand = command_to_find THEN
+                tmp := StrPart(command, spacepos+1, StrLen(command)-spacepos-1);
+                IF StrToVal(tmp, prod) THEN
+                    index := prod.type;
+                    x{1} := prod.x1;
+                    x{2} := prod.x2;
+                    
+                    y{1} := prod.y1;
+                    y{2} := prod.y2;
+                    
+                    z{1} := prod.z1;
+                    z{2} := prod.z2;
+                    
+                    rot{1} := prod.rot1;
+                    rot{2} := prod.rot2;
+                    
+                    acc_x{1} := prod.acc_x1;
+                    acc_x{2} := prod.acc_x2;
+                    
+                    acc_y{1} := prod.acc_y1;
+                    acc_y{2} := prod.acc_y2;
+                    
+                    acc_z{1} := prod.acc_z1;
+                    acc_z{2} := prod.acc_z2;
+                    
+                    RETURN TRUE;
+                ENDIF
+            ENDIF
+        ENDIF
+        RETURN FALSE;
+    ENDFUNC
     
     FUNC bool IsOrderProduct(string command, VAR num nprod, VAR num disposition)
         VAR num spacepos;
@@ -345,10 +440,63 @@ MODULE MAINTASK
         TPWrite "LINE:",\Num:=nProdLine;
     ENDPROC
     
+    
+    PROC ATakeProd(num nProdLine, num x, num y, num z, num rot)
+        TPWrite "PLACE TAKE Prod";
+        TPWrite "LINE:",\Num:=nProdLine;
+        TPWrite "X:",\Num:=x;
+        TPWrite "Y:",\Num:=y;
+        TPWrite "Z:",\Num:=z;
+        TPWrite "rot:",\Num:=rot;
+    ENDPROC
+    
+    PROC APlaceSingleProd(num nProdLine, num x, num y, num z, num rot, num acc_x, num acc_y, num acc_z)
+        TPWrite "PLACE Single Prod";
+        TPWrite "LINE:",\Num:=nProdLine;
+        TPWrite "X:",\Num:=x;
+        TPWrite "Y:",\Num:=y;
+        TPWrite "Z:",\Num:=z;
+        TPWrite "rot:",\Num:=rot;
+        TPWrite "acc X:",\Num:=acc_x;
+        TPWrite "acc Y:",\Num:=acc_y;
+        TPWrite "acc Z:",\Num:=acc_z;
+    ENDPROC
+    
+    PROC APlaceDoubleProd(num nProdLine, num x{*}, num y{*}, num z{*}, num rot{*}, num acc_x{*}, num acc_y{*}, num acc_z{*})
+        TPWrite "PLACE Double Prod";
+        TPWrite "LINE:",\Num:=nProdLine;
+        TPWrite "X:",\Num:=x{1};
+        TPWrite "Y:",\Num:=y{1};
+        TPWrite "Z:",\Num:=z{1};
+        TPWrite "rot:",\Num:=rot{1};
+        TPWrite "acc X:",\Num:=acc_x{1};
+        TPWrite "acc Y:",\Num:=acc_y{1};
+        TPWrite "acc Z:",\Num:=acc_z{1};
+        
+        TPWrite "X:",\Num:=x{2};
+        TPWrite "Y:",\Num:=y{2};
+        TPWrite "Z:",\Num:=z{2};
+        TPWrite "rot:",\Num:=rot{2};
+        TPWrite "acc X:",\Num:=acc_x{2};
+        TPWrite "acc Y:",\Num:=acc_y{2};
+        TPWrite "acc Z:",\Num:=acc_z{2};
+    ENDPROC
+    
+    
     FUNC bool CommandCanBeExecuted(todoType command)
         VAR string fullcommand;
         VAR num param_queue1;
         VAR num param_queue2;
+        VAR num param_queue3;
+        VAR num param_queue4;
+        
+        VAR num v_param_queue1{2};
+        VAR num v_param_queue2{2};
+        VAR num v_param_queue3{2};
+        VAR num v_param_queue4{2};
+        VAR num v_param_queue5{2};
+        VAR num v_param_queue6{2};
+        VAR num v_param_queue7{2};
         
         IF r_QueuePaused{command.nProdLine, command.nQueue} THEN
             RETURN FALSE;
@@ -385,6 +533,10 @@ MODULE MAINTASK
                 RETURN TRUE;
             ELSEIF IsPlaceSheet(fullcommand) THEN
                 RETURN TRUE;
+            ELSEIF IsTakeProduct(fullcommand, param_queue1, param_queue2, param_queue3, param_queue4) THEN
+                RETURN TRUE;
+            ELSEIF IsPlaceProduct(fullcommand, param_queue1, v_param_queue1, v_param_queue2, v_param_queue3, v_param_queue4, v_param_queue5, v_param_queue6, v_param_queue7) THEN
+                RETURN TRUE;
             ELSE
                 TPWrite "command not yet supported and so can not be done: "+fullcommand ;
                 RETURN FALSE;
@@ -397,6 +549,16 @@ MODULE MAINTASK
         VAR string fullcommand;
         VAR num param_queue1;
         VAR num param_queue2;
+        VAR num param_queue3;
+        VAR num param_queue4;
+        
+        VAR num v_param_queue1{2};
+        VAR num v_param_queue2{2};
+        VAR num v_param_queue3{2};
+        VAR num v_param_queue4{2};
+        VAR num v_param_queue5{2};
+        VAR num v_param_queue6{2};
+        VAR num v_param_queue7{2};
         
         fullcommand := r_ActionType_Name{command.nProdLine, command.nQueue, command.nStep};
         
@@ -418,6 +580,16 @@ MODULE MAINTASK
             ATakeSheet command.nProdLine;
         ELSEIF IsPlaceSheet(fullcommand) THEN
             APlaceSheet command.nProdLine;
+        ELSEIF IsTakeProduct(fullcommand, param_queue1, param_queue2, param_queue3, param_queue4) THEN
+            ATakeProd command.nProdLine, param_queue1, param_queue2, param_queue3, param_queue4;
+        ELSEIF IsPlaceProduct(fullcommand, param_queue1, v_param_queue1, v_param_queue2, v_param_queue3, v_param_queue4, v_param_queue5, v_param_queue6, v_param_queue7) THEN
+            IF param_queue1=1 THEN
+                APlaceSingleProd command.nProdLine, v_param_queue1{1}, v_param_queue2{1}, v_param_queue3{1}, v_param_queue4{1}, v_param_queue5{1}, v_param_queue6{1}, v_param_queue7{1};
+            ELSEIF param_queue1=2 THEN
+                APlaceDoubleProd command.nProdLine, v_param_queue1, v_param_queue2, v_param_queue3, v_param_queue4, v_param_queue5, v_param_queue6, v_param_queue7;
+            ELSE
+                TPWrite "ERRORE: "+fullcommand ;
+            ENDIF
         ELSE
             TPWrite "command not yet supported: "+fullcommand ;
         ENDIF
