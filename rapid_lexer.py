@@ -32,11 +32,6 @@ class RAPIDLexer(object):
         """
         self.error_func = error_func
         self.filename = ''
-        
-        # Allow either "# line" or "# <num>" to support GCC's
-        # cpp output
-        #
-        self.line_pattern = re.compile('([ \t]*line\W)|([ \t]*\d+)')
 
     def build(self, **kwargs):
         """ Builds the lexer from the specification. Must be
@@ -312,6 +307,7 @@ class RAPIDLexer(object):
     
     @TOKEN(comment)
     def t_COMMENT(self, t):
+        t.lexer.lineno += t.value.count("\n")
         t.value = t.value[1:].replace('\n','').replace('\D','')
         return t
         #return None

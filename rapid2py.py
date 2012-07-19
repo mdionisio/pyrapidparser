@@ -501,20 +501,18 @@ class rapid_%s (pyrapid.rapid_struct):
                         self.writemodule("if error_manager == 1:")  # retry
                         with self.ModuleScope():
                             self.writemodule("retry_stantment = error_manager")  # retry
-                            self.writemodule("print 'retry'")  # retry
                         self.writemodule("elif error_manager == 2:")  # trynext
                         with self.ModuleScope():
                             self.writemodule("pass")  # trynext
-                            self.writemodule("print 'trynext'")  # trynext
                         self.writemodule("else:")  # propagate exception
                         with self.ModuleScope():
-                            self.writemodule("print 'propagate'")  # propagate
                             self.writemodule("error_code = error_code[:-1]")
+                            #execute undo
                             self.writemodule("raise")  # propagate exception
                     self.writemodule("else:")
                     with self.ModuleScope():
-                        self.writemodule("print 'propagate'")  # propagate
                         self.writemodule("error_code = error_code[:-1]")
+                        #execute undo
                         self.writemodule("raise")  # propagate exception
             
     def visit_AssignmentStatementAST(self, node, **kwargs):

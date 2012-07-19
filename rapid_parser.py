@@ -1367,8 +1367,9 @@ class RAPIDParser(PLYParser):
     def p_error(self, p):
         if p:
             self._parse_error(
-                'before: %s' % p.value, 
+                'before: "%s" near charapter %d' % (p.value, self.rapidlex._find_tok_column(p)), 
                 self._coord(p.lineno))
+            
         else:
             self._parse_error('At end of input', '')
 
