@@ -1035,7 +1035,9 @@ class rapid_%s (pyrapid.rapid_struct):
             #
             
         #SPECIAL PROCEDURE
-        if False:
+        if procedure_name=="WaitUntil":
+            #TODO
+            #WaitUntil \InPos Cond \MaxTime \TimeFlag
             pass
         else:
             #add possibility to make python conversion without have the procudere prototype

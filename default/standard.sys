@@ -2,17 +2,25 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! SOCKET !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
-    FUNC socketstatus SocketGetStatus( socketdev socket )
+    FUNC socketstatus SocketGetStatus( socketdev Socket )
         LOCAL VAR socketstatus ret;
         !python:import socket
-        !python:psocket = pyrapid.Symbols().GetSymbol("socket").data.Get()
+        !python:lstate, lsocket = pyrapid.Symbols().GetSymbol("Socket").data.Get()
+        !pyrapid.Symbols().GetSymbol("ret").data.Set(lstate)
         RETURN ret;
     ENDFUNC
     
     PROC SocketCreate( VAR socketdev Socket )
+        !python:import socket
+        !python:SOCKET_CREATED = pyrapid.Symbols().GetSymbol("SOCKET_CREATED").data.Get()
+        !python:s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        !python:pyrapid.Symbols().GetSymbol("Socket").data.Set( (SOCKET_CREATED, s) )
     ENDPROC
     
     PROC SocketClose( VAR socketdev Socket )
+        !python:import socket
+        !python:SOCKET_CLOSED = pyrapid.Symbols().GetSymbol("SOCKET_CLOSED").data.Get()
+        !python:pyrapid.Symbols().GetSymbol("Socket").data.Set( (SOCKET_CLOSED, None) )
     ENDPROC
     
     PROC SocketAccept(VAR socketdev Socket, VAR socketdev ClientSocket  \string ClientAddress \num Time)
@@ -31,21 +39,32 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !handler will be called, if there is one, with the error code ERR_SOCK_TIMEOUT.
         !If there is no error handler, the execution will be stopped.
         !If parameter Time is not used, the waiting time is 60 s.
+        !
+        !Exception: ERR_SOCK_TIMEOUT
+        !
     ENDPROC
     
     PROC SocketBind(VAR socketdev Socket, string LocalAddress, num LocalPort)
     ENDPROC
     
     PROC SocketConnect(VAR socketdev Socket, string Address, num Port \num Time)
+        !Exception: ERR_SOCK_CLOSED 
+        !Exception: ERR_SOCK_ISCON 
+        !Exception: ERR_SOCK_CONNREF 
+        !Exception: ERR_SOCK_TIMEOUT 
     ENDPROC
     
     PROC SocketListen(VAR socketdev Socket)
     ENDPROC
     
     PROC SocketReceive(VAR socketdev Socket \ VAR string Str | VAR rawbytes RawData | VAR byte Data{*} \ num Time)
+        !Exception: ERR_SOCK_CLOSED 
+        !Exception: ERR_SOCK_TIMEOUT 
     ENDPROC
     
     PROC SocketSend(VAR socketdev Socket \ string Str | VAR rawbytes RawData | byte Data{*} \num NoOfBytes)
+        !Exception: ERR_SOCK_CLOSED 
+        !The size of the data to send is limited to 1024 bytes.
     ENDPROC
     
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
