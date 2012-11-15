@@ -1000,7 +1000,33 @@ Symbols().AddGlobalSym("z100", Symbol.CreateConst(rapid_zonedata, rapid_zonedata
 Symbols().AddGlobalSym("z150", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 150, 225, 225, 23.0, 225, 23.0])))
 Symbols().AddGlobalSym("z200", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 200, 300, 300, 30.0, 300, 30.0])))
 
+import socket
 
+class rapid_socketdev :
+    def __init__(self, val=None):
+        self.val = None
+        if not (val is None):
+            self.Set(val)
+        
+    def Set(self, val):
+        if isinstance(val, socket.socket):
+            self.val = val
+        elif isinstance(val, rapid_socketdev):
+            self.val = val.val
+        else:
+            raise Exception("type unsupported")
+        
+    def Get(self):
+        if self.val is None:
+            raise Exception("variable never assigned")
+        else:
+            return self.val
+
+Symbols().AddGlobalSym("socketdev", Symbol.CreateDataType(rapid_socketdev))
+
+Symbols().AddGlobalSym("socketstatus", Symbol.CreateDataType(rapid_num))
+
+Symbols().AddGlobalSym("rawbytes", Symbol.CreateDataType(rapid_string))
 
 
 

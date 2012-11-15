@@ -1,4 +1,55 @@
 MODULE SYSTEMMODULE(SYSMODULE)
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! SOCKET !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    FUNC socketstatus SocketGetStatus( socketdev socket )
+        LOCAL VAR socketstatus ret;
+        !python:import socket
+        !python:psocket = pyrapid.Symbols().GetSymbol("socket").data.Get()
+        RETURN ret;
+    ENDFUNC
+    
+    PROC SocketCreate( VAR socketdev Socket )
+    ENDPROC
+    
+    PROC SocketClose( VAR socketdev Socket )
+    ENDPROC
+    
+    PROC SocketAccept(VAR socketdev Socket, VAR socketdev ClientSocket  \string ClientAddress \num Time)
+        !Socket
+        !The server socket that are waiting for incoming connections. The socket must
+        !already be created, bounded and ready for listen.
+        !ClientSocket
+        !The returned new client socket, that will be updated with the accepted incoming
+        !connection request.
+        !ClientAddress
+        !The variable that will be updated with the IP-address of the accepted incoming
+        !connection request.
+        !Time
+        !The maximum amount of time [s] that program execution waits for incoming
+        !connections. If this time runs out before any incoming connection, the error 
+        !handler will be called, if there is one, with the error code ERR_SOCK_TIMEOUT.
+        !If there is no error handler, the execution will be stopped.
+        !If parameter Time is not used, the waiting time is 60 s.
+    ENDPROC
+    
+    PROC SocketBind(VAR socketdev Socket, string LocalAddress, num LocalPort)
+    ENDPROC
+    
+    PROC SocketConnect(VAR socketdev Socket, string Address, num Port \num Time)
+    ENDPROC
+    
+    PROC SocketListen(VAR socketdev Socket)
+    ENDPROC
+    
+    PROC SocketReceive(VAR socketdev Socket \ VAR string Str | VAR rawbytes RawData | VAR byte Data{*} \ num Time)
+    ENDPROC
+    
+    PROC SocketSend(VAR socketdev Socket \ string Str | VAR rawbytes RawData | byte Data{*} \num NoOfBytes)
+    ENDPROC
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
     PROC WaitTime(switch InPos, num Time)
         !python:import time
         !python:time.sleep(pyrapid.Symbols().GetSymbol("Time").data.Get())

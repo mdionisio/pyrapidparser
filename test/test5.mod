@@ -4,7 +4,9 @@ RECORD pippo
  num numero;
  string string;
 ENDRECORD
+
 ALIAS num another_num;
 LOCAL ALIAS num another_num1;
-VAR num pippo;
+VAR num pippo1;
+
 ENDMODULE
