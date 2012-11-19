@@ -153,15 +153,25 @@ class RAPIDParser(PLYParser):
     ###
     
     
+    #def p_module_declaration_1(self, p):
+    #    """ module_declaration    : MODULE identifier type_definition_list data_declaration_list routine_definition_list ENDMODULE
+    #    """
+    #    p[0] = rapid_ast.ModuleAST(p[2], [], p[3], p[4],p[5], coord=self._coord(p.lineno(1)))
+        
+    #def p_module_declaration_2(self, p):
+    #    """ module_declaration    : MODULE identifier LPAREN module_attributelist RPAREN type_definition_list data_declaration_list routine_definition_list  ENDMODULE
+    #    """
+    #    p[0] = rapid_ast.ModuleAST(p[2], p[4], p[6], p[7], p[8], coord=self._coord(p.lineno(1)))
+
     def p_module_declaration_1(self, p):
-        """ module_declaration    : MODULE identifier type_definition_list data_declaration_list routine_definition_list ENDMODULE
+        """ module_declaration    : MODULE identifier definitions_list  ENDMODULE
         """
-        p[0] = rapid_ast.ModuleAST(p[2], [], p[3], p[4],p[5], coord=self._coord(p.lineno(1)))
+        p[0] = rapid_ast.ModuleAST(p[2], [ ], p[3][0], p[3][1], p[3][2], coord=self._coord(p.lineno(1)))
         
     def p_module_declaration_2(self, p):
-        """ module_declaration    : MODULE identifier LPAREN module_attributelist RPAREN type_definition_list data_declaration_list routine_definition_list  ENDMODULE
+        """ module_declaration    : MODULE identifier LPAREN module_attributelist RPAREN definitions_list  ENDMODULE
         """
-        p[0] = rapid_ast.ModuleAST(p[2], p[4], p[6], p[7], p[8], coord=self._coord(p.lineno(1)))
+        p[0] = rapid_ast.ModuleAST(p[2], p[4], p[6][0], p[6][1], p[6][2], coord=self._coord(p.lineno(1)))
     
     def p_module_attributelist_1(self, p):
         """ module_attributelist    : module_attribute
@@ -184,10 +194,50 @@ class RAPIDParser(PLYParser):
         """
         p[0] = rapid_ast.ModuleAttributeAST(p[1], coord=self._coord(p.lineno(1)) )
         
-    def p_type_definition_list_1(self, p):
-        """ type_definition_list         : 
+    def p_definitions_list_1(self, p):
+        """ definitions_list         : 
         """
-        p[0] = []
+        p[0] = [ [], [], [] ]
+        
+    def p_definitions_list_2(self, p):
+        """ definitions_list         : type_definition_list
+        """
+        p[0] = [ p[1], [], [] ]
+        
+    def p_definitions_list_3(self, p):
+        """ definitions_list         : data_declaration_list
+        """
+        p[0] = [ [], p[1], [] ]
+        
+    def p_definitions_list_4(self, p):
+        """ definitions_list         : routine_definition_list
+        """
+        p[0] = [ [], [], p[1] ]
+        
+    def p_definitions_list_5(self, p):
+        """ definitions_list         : type_definition_list data_declaration_list
+        """
+        p[0] = [ p[1], p[2], [] ]
+        
+    def p_definitions_list_6(self, p):
+        """ definitions_list         : type_definition_list routine_definition_list
+        """
+        p[0] = [ p[1], [], p[2] ]
+        
+    def p_definitions_list_7(self, p):
+        """ definitions_list         : data_declaration_list routine_definition_list
+        """
+        p[0] = [ [], p[1], p[2] ]
+        
+    def p_definitions_list_8(self, p):
+        """ definitions_list         : type_definition_list data_declaration_list routine_definition_list
+        """
+        p[0] = [ p[1], p[2], p[3] ]
+        
+    def p_type_definition_list_1(self, p):
+        """ type_definition_list         : type_definition
+        """
+        p[0] = [ p[1] ]
         
     def p_type_definition_list_2(self, p):
         """ type_definition_list         : type_definition_list type_definition
@@ -197,9 +247,9 @@ class RAPIDParser(PLYParser):
         p[0] = attriblist
                 
     def p_data_declaration_list_1(self, p):
-        """ data_declaration_list         : 
+        """ data_declaration_list         : data_declaration
         """
-        p[0] = [ ]
+        p[0] = [ p[1] ]
         
     def p_data_declaration_list_2(self, p):
         """ data_declaration_list         : data_declaration_list data_declaration
@@ -210,9 +260,9 @@ class RAPIDParser(PLYParser):
         
         
     def p_routine_definition_list_1(self, p):
-        """ routine_definition_list         :
+        """ routine_definition_list         : routine_declaration
         """
-        p[0] = []
+        p[0] = [ p[1] ]
             
     def p_routine_definition_list_2(self, p):
         """ routine_definition_list         : routine_definition_list routine_declaration
@@ -400,11 +450,16 @@ class RAPIDParser(PLYParser):
     ###  Procedure declarations.    par:5.3
     ###
         
-    def p_procedure_declaration(self, p):
+    def p_procedure_declaration_1(self, p):
+        """ procedure_declaration         : PROC identifier LPAREN parameter_list RPAREN statement_list routine_backward routine_error routine_undo ENDPROC
+        """
+        p[0] = rapid_ast.ProcedureDeclarationAST(p[2], p[4], [], p[6], p[7], p[8], p[9], coord=self._coord(p.lineno(1)))       
+
+    def p_procedure_declaration_2(self, p):
         """ procedure_declaration         : PROC identifier LPAREN parameter_list RPAREN data_declaration_list statement_list routine_backward routine_error routine_undo ENDPROC
         """
         p[0] = rapid_ast.ProcedureDeclarationAST(p[2], p[4], p[6], p[7], p[8], p[9], p[10], coord=self._coord(p.lineno(1)))       
-                        
+
     def p_routine_backward_1(self, p):
         """ routine_backward         : 
         """
@@ -459,12 +514,23 @@ class RAPIDParser(PLYParser):
         """
         p[0] = rapid_ast.RoutineUndoAST(p[2], coord=self._coord(p.lineno(1)))
     
-    def p_function_declaration(self, p):
+    def p_function_declaration_1(self, p):
+        """ function_declaration         : FUNC identifier identifier LPAREN parameter_list RPAREN statement_list routine_error routine_undo ENDFUNC
+        """  
+        p[0] = rapid_ast.FunctionDeclarationAST(p[2], p[3], p[5], [], p[7], p[8], p[9], coord=self._coord(p.lineno(1)))
+
+    def p_function_declaration_2(self, p):
         """ function_declaration         : FUNC identifier identifier LPAREN parameter_list RPAREN data_declaration_list statement_list routine_error routine_undo ENDFUNC
         """  
         p[0] = rapid_ast.FunctionDeclarationAST(p[2], p[3], p[5], p[7], p[8], p[9], p[10], coord=self._coord(p.lineno(1)))
+
+
+    def p_trap_declaration_1(self, p):
+        """ trap_declaration         : TRAP identifier statement_list routine_error routine_undo ENDTRAP
+        """   
+        p[0] = rapid_ast.TrapDeclarationAST(p[2], [], p[3], p[4], p[5], coord=self._coord(p.lineno(1)))
         
-    def p_trap_declaration(self, p):
+    def p_trap_declaration_2(self, p):
         """ trap_declaration         : TRAP identifier data_declaration_list statement_list routine_error routine_undo ENDTRAP
         """   
         p[0] = rapid_ast.TrapDeclarationAST(p[2], p[3], p[4], p[5], p[6], coord=self._coord(p.lineno(1)))
