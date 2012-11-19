@@ -15,6 +15,7 @@ from plyparser import PLYParser, Coord, ParseError
 
 
 class RAPIDParser(PLYParser):    
+
     def __init__(
             self, 
             lex_optimize=True,
@@ -110,7 +111,7 @@ class RAPIDParser(PLYParser):
     ##
     ## Grammar productions
     ##
-        
+
         
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revB_en_library.pdf
@@ -248,7 +249,7 @@ class RAPIDParser(PLYParser):
                                                     | LOCAL function_declaration
                                                     | LOCAL trap_declaration
         """
-        p[0] =  rapid_ast.RoutineDeclarationATS("LOCAL", p[1], coord=self._coord(p.lineno(1)))
+        p[0] =  rapid_ast.RoutineDeclarationATS("LOCAL", p[2], coord=self._coord(p.lineno(1)))
         
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
@@ -910,7 +911,7 @@ class RAPIDParser(PLYParser):
         """ data_declaration         : TASK persistent_declaration
                                              |  TASK variable_declaration
         """
-        p[0] = rapid_ast.DataDefATS( "TASK", p[1], coord=self._coord(p.lineno(1)))
+        p[0] = rapid_ast.DataDefATS( "TASK", p[2], coord=self._coord(p.lineno(1)))
         
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revB_en_library.pdf

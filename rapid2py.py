@@ -492,6 +492,7 @@ class rapid_%s (pyrapid.rapid_struct):
                 self.visit(node.statement, **kwargs)
             self.writemodule("except pyrapid.RapidException:")
             with self.ModuleScope():
+                self.writemodule("global error_code")
                 self.writemodule("if len(error_code)>0:")
                 with self.ModuleScope():
                     self.writemodule("error_manager_call = error_code[-1]")
@@ -1070,6 +1071,7 @@ class rapid_%s (pyrapid.rapid_struct):
                     except ValueError:
                         raise Exception("argument %s is required"%(ik,))
             
+            self.writemodule("global error_code")
             self.writemodule("error_code.append(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).error_call)" % ( repr(procedure_name), repr(self.module_name), repr(self.function_name) ))
             self.writemodule("pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(parameters_actual)" % ( repr(procedure_name), repr(self.module_name), repr(self.function_name) ))
             self.writemodule("error_code = error_code[:-1]")
@@ -1111,7 +1113,6 @@ class rapid_%s (pyrapid.rapid_struct):
         else:
             pyrapid.Symbols().AddModuleSym(self.module_name, self.function_name, pyrapid.Symbol.CreateProcedure(self.params, _rapid_proc_, _error_rapid_proc_, _undo_rapid_proc_))
 
-        self.writemodule("@goto")
         self.writemodule("def error_rapid_proc_%s (local_args_scope):" % (self.function_name,))
         with self.ModuleScope():
             self.writemodule("global error_code")
@@ -1122,7 +1123,6 @@ class rapid_%s (pyrapid.rapid_struct):
                 
             self.writemodule("return 0")
         
-        self.writemodule("@goto")
         self.writemodule("def undo_rapid_proc_%s (local_args_scope):" % (self.function_name,))
         with self.ModuleScope():
             #add parameter
@@ -1132,7 +1132,6 @@ class rapid_%s (pyrapid.rapid_struct):
                 self.visit(node.routine_undo, undo_statement=True, **kwargs)
 
             
-        self.writemodule("@goto")
         self.writemodule("def rapid_proc_%s (local_args_scope):" % (self.function_name,))
             
         with self.ModuleScope():
@@ -1144,10 +1143,13 @@ class rapid_%s (pyrapid.rapid_struct):
                     if vartype=="switch":
                         getvar = pyrapid.Symbol.CreateNone()
                     else:
-                        if psize==0:
-                            getvar = pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data())
-                        else:
-                            getvar = pyrapid.Symbol.CreateVar(pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data) )
+                        try:
+                            if psize==0:
+                                getvar = pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data())
+                            else:
+                                getvar = pyrapid.Symbol.CreateVar(pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data) )
+                        except:
+                            raise Exception("error progrably not defined symbol %s (module %s, function %s)"%(ptype, self.module_name, self.function_name))
                     pyrapid.Symbols().AddScopeSym(ik, getvar)
                 self.writemodule( "with pyrapid.Symbols().Scope(modulename=%s, functionname=%s, invalue=local_args_scope):"%(repr(self.module_name), repr(self.function_name)))
                 with self.ModuleScope():
@@ -1225,7 +1227,6 @@ class rapid_%s (pyrapid.rapid_struct):
         else:
             pyrapid.Symbols().AddModuleSym(self.module_name, self.function_name, pyrapid.Symbol.CreateFunction(self.params, returntype, _rapid_proc_, _error_rapid_func_, _undo_rapid_func_))
         
-        self.writemodule("@goto")
         self.writemodule("def error_rapid_func_%s (local_args_scope):" % (self.function_name,))
         with self.ModuleScope():
             self.writemodule("global error_code")
@@ -1236,7 +1237,6 @@ class rapid_%s (pyrapid.rapid_struct):
                 
             self.writemodule("return 0")
         
-        self.writemodule("@goto")
         self.writemodule("def undo_rapid_func_%s (local_args_scope):" % (self.function_name,))
         with self.ModuleScope():
             self.writemodule("global error_code")
@@ -1245,7 +1245,6 @@ class rapid_%s (pyrapid.rapid_struct):
             if not ( node.routine_undo is None ):
                 self.visit(node.routine_undo, undo_statement=True, **kwargs)
         
-        self.writemodule("@goto")
         self.writemodule("def rapid_func_%s (local_args_scope):" % (self.function_name))
             
         with self.ModuleScope():

@@ -221,8 +221,9 @@ class WriteRapid( rapid_ast.NodeVisitor ):
         if node.size is None:
             pass
         elif node.size == 0:
-            self.write(node.parameter_type)
-            self.write(" ")
+            if node.parameter_type!="NORMAL":
+                self.write(node.parameter_type)
+                self.write(" ")
             self.visit(node.type)
             self.write(" ")
             self.visit(node.name)

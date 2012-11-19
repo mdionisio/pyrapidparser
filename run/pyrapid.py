@@ -1000,9 +1000,19 @@ Symbols().AddGlobalSym("z100", Symbol.CreateConst(rapid_zonedata, rapid_zonedata
 Symbols().AddGlobalSym("z150", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 150, 225, 225, 23.0, 225, 23.0])))
 Symbols().AddGlobalSym("z200", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 200, 300, 300, 30.0, 300, 30.0])))
 
+
+Symbols().AddGlobalSym("socketstatus", Symbol.CreateDataType(rapid_num))
+
+Symbols().AddGlobalSym("SOCKET_CREATED", Symbol.CreateConst(rapid_num, rapid_num(1)))
+Symbols().AddGlobalSym("SOCKET_CONNECTED", Symbol.CreateConst(rapid_num, rapid_num(2)))
+Symbols().AddGlobalSym("SOCKET_BOUND", Symbol.CreateConst(rapid_num, rapid_num(3)))
+Symbols().AddGlobalSym("SOCKET_LISTENING", Symbol.CreateConst(rapid_num, rapid_num(4)))
+Symbols().AddGlobalSym("SOCKET_CLOSED", Symbol.CreateConst(rapid_num, rapid_num(5)))
+
+
 class rapid_socketdev :
     def __init__(self, val=None):
-        self.val = None
+        self.val = ( Symbols().GetSymbol("SOCKET_CLOSED").data.Get(), None)
         if not (val is None):
             self.Set(val)
         
@@ -1022,13 +1032,6 @@ class rapid_socketdev :
 
 Symbols().AddGlobalSym("socketdev", Symbol.CreateDataType(rapid_socketdev))
 
-Symbols().AddGlobalSym("socketstatus", Symbol.CreateDataType(rapid_num))
-
-Symbols().AddGlobalSym("SOCKET_CREATED", Symbol.CreateConst(rapid_num, rapid_num(1)))
-Symbols().AddGlobalSym("SOCKET_CONNECTED", Symbol.CreateConst(rapid_num, rapid_num(2)))
-Symbols().AddGlobalSym("SOCKET_BOUND", Symbol.CreateConst(rapid_num, rapid_num(3)))
-Symbols().AddGlobalSym("SOCKET_LISTENING", Symbol.CreateConst(rapid_num, rapid_num(4)))
-Symbols().AddGlobalSym("SOCKET_CLOSED", Symbol.CreateConst(rapid_num, rapid_num(5)))
 
 Symbols().AddGlobalSym("WAIT_MAX", Symbol.CreateConst(rapid_num, rapid_num(-1)))
 

@@ -262,6 +262,10 @@ class RAPIDLexer(object):
     def t_NEWLINE(self, t):
         r'\n+'
         t.lexer.lineno += t.value.count("\n")
+        
+    #def t_SKEEP(self, t):
+    #    r'\r+'
+    #    return None
 
     # Operators
     t_PLUS              = r'\+'
@@ -298,7 +302,7 @@ class RAPIDLexer(object):
     t_PERIOD            = r'\.'
     t_SEMI              = r';'
     t_COLON             = r':'
-    t_PERCENT             = r'%'
+    t_PERCENT             = r'%'   
 
     @TOKEN(string_literal)
     def t_STRING_LITERAL(self, t):

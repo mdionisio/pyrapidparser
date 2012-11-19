@@ -553,6 +553,8 @@ class EvaluateRapidExpression( rapid_ast.NodeVisitor ):
         parse.visit( node.par1 )
         if node.operator == "NOT":
             self.return_value = not parse.GetReturn()
+        elif node.operator == "-":
+            self.return_value = - parse.GetReturn()
         else:
             raise Exception("operator not supported '%s'"%(node.operator))
             

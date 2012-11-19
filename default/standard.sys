@@ -1,12 +1,20 @@
 MODULE SYSTEMMODULE(SYSMODULE)
 
+    FUNC string GetSysInfo( \switch SerialNo | switch SWVersion | switch RobotType | switch CtrlId | switch LanIp | switch CtrlLang)
+        LOCAL VAR string ret;
+        IF Present(LanIp) THEN
+            !python:pyrapid.Symbols().GetSymbol("ret").data.Set("0.0.0.0")
+        ENDIF
+        RETURN ret;
+    ENDFUNC
+
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! SOCKET !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
     FUNC socketstatus SocketGetStatus( socketdev Socket )
         LOCAL VAR socketstatus ret;
         !python:import socket
         !python:lstate, lsocket = pyrapid.Symbols().GetSymbol("Socket").data.Get()
-        !pyrapid.Symbols().GetSymbol("ret").data.Set(lstate)
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set(lstate)
         RETURN ret;
     ENDFUNC
     
@@ -20,6 +28,8 @@ MODULE SYSTEMMODULE(SYSMODULE)
     PROC SocketClose( VAR socketdev Socket )
         !python:import socket
         !python:SOCKET_CLOSED = pyrapid.Symbols().GetSymbol("SOCKET_CLOSED").data.Get()
+        !python: state,s = pyrapid.Symbols().GetSymbol("Socket").data.Get()
+        !python: s.close()
         !python:pyrapid.Symbols().GetSymbol("Socket").data.Set( (SOCKET_CLOSED, None) )
     ENDPROC
     
@@ -57,12 +67,12 @@ MODULE SYSTEMMODULE(SYSMODULE)
     PROC SocketListen(VAR socketdev Socket)
     ENDPROC
     
-    PROC SocketReceive(VAR socketdev Socket \ VAR string Str | VAR rawbytes RawData | VAR byte Data{*} \ num Time)
+    PROC SocketReceive(VAR socketdev Socket \ VAR string Str | VAR rawbytes RawData | VAR byte Data{*} \num Time)
         !Exception: ERR_SOCK_CLOSED 
         !Exception: ERR_SOCK_TIMEOUT 
     ENDPROC
     
-    PROC SocketSend(VAR socketdev Socket \ string Str | VAR rawbytes RawData | byte Data{*} \num NoOfBytes)
+    PROC SocketSend(VAR socketdev Socket \string Str | VAR rawbytes RawData | byte Data{*} \num NoOfBytes)
         !Exception: ERR_SOCK_CLOSED 
         !The size of the data to send is limited to 1024 bytes.
     ENDPROC
