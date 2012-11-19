@@ -1,3 +1,4 @@
+#!/usr/bin/python
 from browse_rapid_ast import EvaluateRapidExpression, ensure_dir
 import rapid_ast
 import os
@@ -1039,7 +1040,21 @@ class rapid_%s (pyrapid.rapid_struct):
         if procedure_name=="WaitUntil":
             #TODO
             #WaitUntil \InPos Cond \MaxTime \TimeFlag
-            pass
+            self.writemodule("import time")
+            self.simple_writeindent()
+            self.simple_writemodule("while ( ")
+            
+            for i in range(len(node.arguments)):
+                argn = node.arguments[i].argumentname
+                argv = node.arguments[i].argumentvalue
+                if argn!="InPos":
+                    self.visit(argv, **kwargs)
+                    break
+            
+            self.simple_writemodule("): ")
+            self.simple_writemodule()
+            with self.ModuleScope():
+                self.writemodule("time.sleep(0.1)")
         else:
             #add possibility to make python conversion without have the procudere prototype
             #this is usefull in case of expression has procedure
