@@ -137,7 +137,7 @@ class RAPIDParser(PLYParser):
     def p_module_declaration_list_1(self, p):
         """ module_declaration_list    : 
         """
-        p[0] = rapid_ast.ModulesAST([ ])
+        p[0] = rapid_ast.ModulesAST( [ ] )
         
     def p_module_declaration_list_2(self, p):
         """ module_declaration_list    :  module_declaration_list module_declaration
@@ -152,17 +152,6 @@ class RAPIDParser(PLYParser):
     ###  Task Modules.    par:9.1
     ###
     
-    
-    #def p_module_declaration_1(self, p):
-    #    """ module_declaration    : MODULE identifier type_definition_list data_declaration_list routine_definition_list ENDMODULE
-    #    """
-    #    p[0] = rapid_ast.ModuleAST(p[2], [], p[3], p[4],p[5], coord=self._coord(p.lineno(1)))
-        
-    #def p_module_declaration_2(self, p):
-    #    """ module_declaration    : MODULE identifier LPAREN module_attributelist RPAREN type_definition_list data_declaration_list routine_definition_list  ENDMODULE
-    #    """
-    #    p[0] = rapid_ast.ModuleAST(p[2], p[4], p[6], p[7], p[8], coord=self._coord(p.lineno(1)))
-
     def p_module_declaration_1(self, p):
         """ module_declaration    : MODULE identifier definitions_list  ENDMODULE
         """

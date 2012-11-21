@@ -1,3 +1,4 @@
+#!/usr/bin/python
 from browse_rapid_ast import ensure_dir
 import rapid_ast
 import rapid_parser
