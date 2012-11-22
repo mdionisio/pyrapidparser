@@ -8,6 +8,13 @@ import copy
 import rapid_parser
 from collections import OrderedDict
 
+
+import inspect
+
+def lineno():
+    """Returns the current line number in our program."""
+    return inspect.currentframe().f_back.f_lineno
+
 class TraslateRapidToPython( rapid_ast.NodeVisitor ):
     
     def __init__(self, out_filename="rapid_program.py", out_folder="run"):
@@ -36,7 +43,14 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         if not(entrypoint is None):
             self.writemodule("if __name__ == '__main__':" )
             self.pushModuleScope()
-            self.writemodule("pyrapid.Symbols().GetSymbol(%s).data({})"%(repr(entrypoint),))
+            modulename = None
+            entrypoint_list = etrypoint.split('.')
+            if len(entrypoint_list)==2:
+                modulename = entrypoint_list[0]
+                procname = entrypoint_list[1]
+            else:
+                procname = etrypoint
+            self.writemodule("pyrapid.Symbols().GetSymbol(%s, modulename=%s).data({})"%(repr(procname), repr(modulename)))
             self.popModuleScope()
         if not (self.file_module is None):
             self.file_module.close()
@@ -1191,9 +1205,11 @@ class rapid_%s (pyrapid.rapid_struct):
                     
         
         if self.tmp_outineDeclarationATS_data is None:
+            self.writemodule("# rapid2py.py line:%d"%( lineno(), ))
             self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateProcedure(%s, rapid_proc_%s, error_rapid_proc_%s, undo_rapid_proc_%s), %s)"%(repr(self.function_name), params, self.function_name, self.function_name, self.function_name, repr(self.module_name),))
         else:
-            self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, pyrapid.Symbol.CreateProcedure(%s, rapid_proc_%s, error_rapid_proc_%s, undo_rapid_proc_%s))"%(repr(self.module_name), params, repr(self.function_name), self.function_name, self.function_name, self.function_name, ))
+            self.writemodule("# rapid2py.py line:%d"%( lineno(), ))
+            self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, pyrapid.Symbol.CreateProcedure(%s, rapid_proc_%s, error_rapid_proc_%s, undo_rapid_proc_%s))"%(repr(self.module_name), repr(self.function_name), params, self.function_name, self.function_name, self.function_name, ))
             
         self.writemodule("del rapid_proc_%s" % (self.function_name,))
         
