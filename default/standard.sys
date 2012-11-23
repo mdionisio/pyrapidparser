@@ -52,20 +52,39 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !
         !Exception: ERR_SOCK_TIMEOUT
         !
+        !python:import socket
         !python:Socket = pyrapid.Symbols().GetSymbol("Socket").data
         !python:ClientSocket = pyrapid.Symbols().GetSymbol("ClientSocket").data
-        !python:ClientAddress = None
-        IF Present(ClientAddress) THEN
-            !python:ClientAddress = pyrapid.Symbols().GetSymbol("ClientAddress").data
-        ENDIF
+        
+        !python:s = Socket.Get()[1]
+        !python:s.settimeout(None)
         !python:Time = None
         IF Present(Time) THEN
             !python:Time = pyrapid.Symbols().GetSymbol("Time").data.Get()
+            !python:s.settimeout(Time)
+        ENDIF
+        !python:sc, address = s.accept()
+        !python:SOCKET_CONNECTED = pyrapid.Symbols().GetSymbol("SOCKET_CONNECTED").data.Get()
+        !python:ClientSocket.Set( (SOCKET_CONNECTED, sc) )
+        
+        !python:ClientAddress = None
+        IF Present(ClientAddress) THEN
+            !python:ClientAddress = pyrapid.Symbols().GetSymbol("ClientAddress").data
+            !python:ClientAddress.Set(address[0])
         ENDIF
         
     ENDPROC
     
     PROC SocketBind(VAR socketdev Socket, string LocalAddress, num LocalPort)
+        !python:import socket
+        !python:Socket = pyrapid.Symbols().GetSymbol("Socket").data
+        !python:LocalAddress = pyrapid.Symbols().GetSymbol("LocalAddress").data.Get()
+        !python:LocalPort = pyrapid.Symbols().GetSymbol("LocalPort").data.Get()
+        !python:s = Socket.Get()[1]
+        !python:s.settimeout(None)
+        !python:s.bind( (LocalAddress, LocalPort) )
+        !python:SOCKET_BOUND = pyrapid.Symbols().GetSymbol("SOCKET_BOUND").data.Get()
+        !python:Socket.Set( (SOCKET_BOUND, s) )
     ENDPROC
     
     PROC SocketConnect(VAR socketdev Socket, string Address, num Port \num Time)
@@ -73,6 +92,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !Exception: ERR_SOCK_ISCON 
         !Exception: ERR_SOCK_CONNREF 
         !Exception: ERR_SOCK_TIMEOUT 
+        !python:import socket
         !python:Socket = pyrapid.Symbols().GetSymbol("Socket").data
         !python:Address = pyrapid.Symbols().GetSymbol("Address").data.Get()
         !python:Port = pyrapid.Symbols().GetSymbol("Port").data.Get()
@@ -84,11 +104,18 @@ MODULE SYSTEMMODULE(SYSMODULE)
     ENDPROC
     
     PROC SocketListen(VAR socketdev Socket)
+        !python:import socket
+        !python:Socket = pyrapid.Symbols().GetSymbol("Socket").data
+        !python:s = Socket.Get()[1]
+        !python:s.listen( 1 )
+        !python:SOCKET_LISTENING = pyrapid.Symbols().GetSymbol("SOCKET_LISTENING").data.Get()
+        !python:Socket.Set( (SOCKET_LISTENING, s) )
     ENDPROC
     
     PROC SocketReceive(VAR socketdev Socket \ VAR string Str | VAR rawbytes RawData | VAR byte Data{*} \num Time)
         !Exception: ERR_SOCK_CLOSED 
         !Exception: ERR_SOCK_TIMEOUT 
+        !python:import socket
         !python:Socket = pyrapid.Symbols().GetSymbol("Socket").data
         !python:s = Socket.Get()[1]
         !python:data = s.recv(1024)
@@ -100,6 +127,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
     PROC SocketSend(VAR socketdev Socket \string Str | VAR rawbytes RawData | byte Data{*} \num NoOfBytes)
         !Exception: ERR_SOCK_CLOSED 
         !The size of the data to send is limited to 1024 bytes.
+        !python:import socket
         !python:Socket = pyrapid.Symbols().GetSymbol("Socket").data
         !python:s = Socket.Get()[1]
         IF Present(Str) THEN
