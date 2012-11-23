@@ -9,6 +9,8 @@ MODULE test
         SocketReceive socket1, \Str:=received_string;
         SocketClose socket1;
         TPWrite received_string;
+        ERROR
+            TPWrite "Error";
         
     ENDPROC
     

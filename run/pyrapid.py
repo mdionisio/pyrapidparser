@@ -656,6 +656,12 @@ Symbols().AddGlobalSym("ERR_UNLOAD", Symbol.CreateConst(rapid_errnum, rapid_errn
 Symbols().AddGlobalSym("ERR_WAIT_MAXTIME", Symbol.CreateConst(rapid_errnum, rapid_errnum()))
 Symbols().AddGlobalSym("ERR_WHLSEARCH", Symbol.CreateConst(rapid_errnum, rapid_errnum()))
 
+Symbols().AddGlobalSym("ERR_SOCK_CLOSED", Symbol.CreateConst(rapid_errnum, rapid_errnum()))
+Symbols().AddGlobalSym("ERR_SOCK_ISCON", Symbol.CreateConst(rapid_errnum, rapid_errnum()))
+Symbols().AddGlobalSym("ERR_SOCK_CONNREF", Symbol.CreateConst(rapid_errnum, rapid_errnum()))
+Symbols().AddGlobalSym("ERR_SOCK_TIMEOUT", Symbol.CreateConst(rapid_errnum, rapid_errnum()))
+
+
 
 class rapid_extjoint (rapid_struct):
     def __init__(self, val=None):

@@ -36,20 +36,19 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         self.writemodule("from collections import OrderedDict")
         self.writemodule("import copy")
         self.writemodule("import sys")
-        self.writemodule("from goto import goto")
-        self.writemodule("error_code = []")
+
         
-    def close(self, etrypoint=None):
+    def close(self, entrypoint=None):
         if not(entrypoint is None):
             self.writemodule("if __name__ == '__main__':" )
             self.pushModuleScope()
             modulename = None
-            entrypoint_list = etrypoint.split('.')
+            entrypoint_list = entrypoint.split('.')
             if len(entrypoint_list)==2:
                 modulename = entrypoint_list[0]
                 procname = entrypoint_list[1]
             else:
-                procname = etrypoint
+                procname = entrypoint
             self.writemodule("pyrapid.Symbols().GetSymbol(%s, modulename=%s).data({})"%(repr(procname), repr(modulename)))
             self.popModuleScope()
         if not (self.file_module is None):
@@ -505,31 +504,26 @@ class rapid_%s (pyrapid.rapid_struct):
             self.writemodule("try:")
             with self.ModuleScope():
                 self.visit(node.statement, **kwargs)
-            self.writemodule("except pyrapid.RapidException:")
+            self.writemodule("except pyrapid.RapidException, ex:")
             with self.ModuleScope():
-                self.writemodule("global error_code")
-                self.writemodule("if len(error_code)>0:")
+                self.writemodule("error_manager_call = pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s).error_call" % ( repr(self.function_name), repr(self.module_name) ))
+                self.writemodule("if not(error_manager_call is None):")
                 with self.ModuleScope():
-                    self.writemodule("error_manager_call = error_code[-1]")
-                    self.writemodule("if not(error_manager_call is None):")
+                    self.writemodule("error_manager = error_manager_call({})")
+                    self.writemodule("if error_manager == 1:")  # retry
                     with self.ModuleScope():
-                        self.writemodule("error_manager = error_manager_call({})")
-                        self.writemodule("if error_manager == 1:")  # retry
-                        with self.ModuleScope():
-                            self.writemodule("retry_stantment = error_manager")  # retry
-                        self.writemodule("elif error_manager == 2:")  # trynext
-                        with self.ModuleScope():
-                            self.writemodule("pass")  # trynext
-                        self.writemodule("else:")  # propagate exception
-                        with self.ModuleScope():
-                            self.writemodule("error_code = error_code[:-1]")
-                            #execute undo
-                            self.writemodule("raise")  # propagate exception
-                    self.writemodule("else:")
+                        self.writemodule("retry_stantment = error_manager")  # retry
+                    self.writemodule("elif error_manager == 2:")  # trynext
                     with self.ModuleScope():
-                        self.writemodule("error_code = error_code[:-1]")
+                        self.writemodule("pass")  # trynext
+                    self.writemodule("else:")  # propagate exception
+                    with self.ModuleScope():
                         #execute undo
                         self.writemodule("raise")  # propagate exception
+                self.writemodule("else:")
+                with self.ModuleScope():
+                    #todo execute undo
+                    self.writemodule("raise")  # propagate exception
             
     def visit_AssignmentStatementAST(self, node, **kwargs):
         #dest* is VariableAST
@@ -1009,9 +1003,7 @@ class rapid_%s (pyrapid.rapid_struct):
             #compute parameter list
             
             #TODO gestione errore
-            #self.simple_writemodule("error_code.append(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).error_call)" % ( repr(function_name), repr(self.module_name), repr(self.function_name) ))
             self.simple_writemodule("pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data( {" % ( repr(function_name), repr(self.module_name), repr(self.function_name) ))
-            #self.simple_writemodule("error_code = error_code[:-1]")
             
             kwargs["parameters_defined"] = parameters_defined
             kwargs["parameters_index"] = parameters_index
@@ -1100,10 +1092,8 @@ class rapid_%s (pyrapid.rapid_struct):
                     except ValueError:
                         raise Exception("argument %s is required"%(ik,))
             
-            self.writemodule("global error_code")
-            self.writemodule("error_code.append(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).error_call)" % ( repr(procedure_name), repr(self.module_name), repr(self.function_name) ))
             self.writemodule("pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(parameters_actual)" % ( repr(procedure_name), repr(self.module_name), repr(self.function_name) ))
-            self.writemodule("error_code = error_code[:-1]")
+            
             self.writemodule("del parameters_actual")
             self.writemodule("# End Call procedure")
         
@@ -1144,7 +1134,6 @@ class rapid_%s (pyrapid.rapid_struct):
 
         self.writemodule("def error_rapid_proc_%s (local_args_scope):" % (self.function_name,))
         with self.ModuleScope():
-            self.writemodule("global error_code")
             #add parameter
             
             if not ( node.routine_error is None ):    
@@ -1155,7 +1144,7 @@ class rapid_%s (pyrapid.rapid_struct):
         self.writemodule("def undo_rapid_proc_%s (local_args_scope):" % (self.function_name,))
         with self.ModuleScope():
             #add parameter
-            self.writemodule("global error_code")
+            self.writemodule("pass")
             
             if not ( node.routine_undo is None ):
                 self.visit(node.routine_undo, undo_statement=True, **kwargs)
@@ -1164,7 +1153,6 @@ class rapid_%s (pyrapid.rapid_struct):
         self.writemodule("def rapid_proc_%s (local_args_scope):" % (self.function_name,))
             
         with self.ModuleScope():
-            self.writemodule("global error_code")
             
             with pyrapid.Symbols().Scope(modulename=self.module_name, functionname=self.function_name, invalue={}):
                 for ik,iv in self.params.iteritems():
@@ -1260,7 +1248,6 @@ class rapid_%s (pyrapid.rapid_struct):
         
         self.writemodule("def error_rapid_func_%s (local_args_scope):" % (self.function_name,))
         with self.ModuleScope():
-            self.writemodule("global error_code")
             #add parameter
             
             if not ( node.routine_error is None ):    
@@ -1270,16 +1257,16 @@ class rapid_%s (pyrapid.rapid_struct):
         
         self.writemodule("def undo_rapid_func_%s (local_args_scope):" % (self.function_name,))
         with self.ModuleScope():
-            self.writemodule("global error_code")
             #add parameter
+            self.writemodule("pass")
             
             if not ( node.routine_undo is None ):
                 self.visit(node.routine_undo, undo_statement=True, **kwargs)
+            
         
         self.writemodule("def rapid_func_%s (local_args_scope):" % (self.function_name))
             
         with self.ModuleScope():
-            self.writemodule("global error_code")
             
             with pyrapid.Symbols().Scope(modulename=self.module_name, functionname=self.function_name, invalue={}):
                 

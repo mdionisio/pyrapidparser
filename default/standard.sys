@@ -92,14 +92,38 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !Exception: ERR_SOCK_ISCON 
         !Exception: ERR_SOCK_CONNREF 
         !Exception: ERR_SOCK_TIMEOUT 
+        
+        IF SocketGetStatus(Socket) = SOCKET_CONNECTED THEN
+            RAISE ERR_SOCK_ISCON;
+        ENDIF
+        IF SocketGetStatus(Socket) = SOCKET_CLOSED THEN
+            RAISE ERR_SOCK_CLOSED;
+        ENDIF
         !python:import socket
+        !python:SOCKET_CONNECTED = pyrapid.Symbols().GetSymbol("SOCKET_CONNECTED").data.Get()
+        
         !python:Socket = pyrapid.Symbols().GetSymbol("Socket").data
         !python:Address = pyrapid.Symbols().GetSymbol("Address").data.Get()
         !python:Port = pyrapid.Symbols().GetSymbol("Port").data.Get()
         !python:s = Socket.Get()[1]
-        !python:s.settimeout(None)
-        !python:s.connect( (Address, Port) )
-        !python:SOCKET_CONNECTED = pyrapid.Symbols().GetSymbol("SOCKET_CONNECTED").data.Get()
+        !python:if s is None:
+        !python:        ERR_SOCK_CLOSED = pyrapid.Symbols().GetSymbol("ERR_SOCK_CLOSED").data.Get()
+        !python:        raise pyrapid.RapidException(ERR_SOCK_CLOSED, "strang error")
+        IF Present(Time) THEN
+            !python:Time = pyrapid.Symbols().GetSymbol("Time").data.Get()
+            !python:s.settimeout(Time)
+        ELSE
+            !python:s.settimeout(None)
+        ENDIF
+        !python:try:
+        !python:        s.connect( (Address, Port) )
+        !python:except socket.error:
+        !python:        ERR_SOCK_CONNREF = pyrapid.Symbols().GetSymbol("ERR_SOCK_CONNREF").data.Get()
+        !python:        raise pyrapid.RapidException(ERR_SOCK_CONNREF, "connection refused")
+        !python:except socket.timeout:
+        !python:        ERR_SOCK_TIMEOUT = pyrapid.Symbols().GetSymbol("ERR_SOCK_TIMEOUT").data.Get()
+        !python:        raise pyrapid.RapidException(ERR_SOCK_TIMEOUT, "connection timeout")
+        
         !python:Socket.Set( (SOCKET_CONNECTED, s) )
     ENDPROC
     
