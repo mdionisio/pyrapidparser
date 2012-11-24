@@ -134,7 +134,7 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
             self.writemodule("# Line %s"%(str(node.coord),))
         const_python_start = "python:"
         if node.comment.startswith(const_python_start):
-            self.writemodule( "# from python comment ...")
+            #self.writemodule( "# from python comment ...")
             self.writemodule( node.comment[len(const_python_start):])
         else:
             self.writemodule( "# ## COMMENT:" + node.comment +" ##")
@@ -487,47 +487,51 @@ class rapid_%s (pyrapid.rapid_struct):
         if bget_VariableAST:
             self.simple_writemodule( ".Get()" )
             
-    def visit_StatementAST(self, node, **kwargs):
+    def visit_StatementAST(self, node, error_statement=False, undo_statement=False, **kwargs):
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
         self.writemodule("#StatementAST %s"%(self.function_name,))
-        self.writemodule("retry_stantment = True")
-        self.writemodule("while retry_stantment:")
-        with self.ModuleScope():
-            self.writemodule("retry_stantment = False")
-            self.writemodule("try:")
+        if error_statement or undo_statement:
+            self.visit(node.statement,  **kwargs)
+        else:
+            self.writemodule("retry_stantment = True")
+            self.writemodule("while retry_stantment:")
             with self.ModuleScope():
-                self.visit(node.statement, **kwargs)
-            self.writemodule("except pyrapid.RapidException, ex:")
-            with self.ModuleScope():
-                self.writemodule("error_manager_call = pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s).error_call" % ( repr(self.function_name), repr(self.module_name) ))
-                self.writemodule("if not(error_manager_call is None):")
+                self.writemodule("retry_stantment = False")
+                self.writemodule("try:")
                 with self.ModuleScope():
-                    self.writemodule("error_manager = error_manager_call({})")
-                    self.writemodule("if error_manager == 1:")  # retry
+                    self.visit(node.statement, **kwargs)
+                self.writemodule("except pyrapid.RapidException, ex:")
+                with self.ModuleScope():
+                    self.writemodule("error_manager_call = pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s).error_call" % ( repr(self.function_name), repr(self.module_name) ))
+                    self.writemodule("if not(error_manager_call is None):")
                     with self.ModuleScope():
-                        self.writemodule("retry_stantment = error_manager")  # retry
-                    self.writemodule("elif error_manager == 2:")  # trynext
-                    with self.ModuleScope():
-                        self.writemodule("pass")  # trynext
-                    self.writemodule("else:")  # propagate exception
+                        self.writemodule("error_manager = error_manager_call(ex)")
+                        self.writemodule("if error_manager == 1:")  # retry
+                        with self.ModuleScope():
+                            self.writemodule("retry_stantment = error_manager")  # retry
+                        self.writemodule("elif error_manager == 2:")  # trynext
+                        with self.ModuleScope():
+                            self.writemodule("pass")  # trynext
+                        self.writemodule("else:")  # propagate exception
+                        with self.ModuleScope():
+                            #execute undo
+                            self.writemodule("undo_manager_call = pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s).undo_call" % ( repr(self.function_name), repr(self.module_name) ))
+                            self.writemodule("if not(undo_manager_call is None):")
+                            with self.ModuleScope():
+                                self.writemodule("undo_manager_call()")
+                            #self.writemodule("raise")
+                            self.writemodule("raise pyrapid.RapidException(ex.code, ex.message+' %s(%%d) -'%%(pyrapid.lineno(),))"%(self.function_name,))  # propagate exception
+                    self.writemodule("else:")
                     with self.ModuleScope():
                         #execute undo
-                        self.writemodule("undo_manager_call = pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s).undo_call" % ( repr(self.function_name), repr(self.module_name) ))
+                        self.writemodule("undo_manager_call = pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s).undo_call" % ( self.function_name, repr(self.module_name) ))
                         self.writemodule("if not(undo_manager_call is None):")
                         with self.ModuleScope():
-                            self.writemodule("undo_manager_call({})")
+                            self.writemodule("undo_manager_call()")
                         #self.writemodule("raise")
-                        self.writemodule("raise pyrapid.RapidException(ex.code, ex.message+' %s(%d) -')"%(self.function_name,pyrapid.lineno(),))  # propagate exception
-                self.writemodule("else:")
-                with self.ModuleScope():
-                    #execute undo
-                    self.writemodule("undo_manager_call = pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s).undo_call" % ( self.function_name, repr(self.module_name) ))
-                    self.writemodule("if not(undo_manager_call is None):")
-                    with self.ModuleScope():
-                        self.writemodule("undo_manager_call({})")
-                    #self.writemodule("raise")
-                    self.writemodule("raise pyrapid.RapidException(ex.code, ex.message+' %s(%d) -')"%(self.function_name,pyrapid.lineno(),))  # propagate exception
+                        self.writemodule("raise pyrapid.RapidException(ex.code, ex.message+' %s(%%d) -'%%(pyrapid.lineno(),))"%(self.function_name,))  # propagate exception
+                    self.writemodule("pyrapid.Symbols().GetSymbol(symbolname='ERRNO').data.Set(-1)")
             
     def visit_AssignmentStatementAST(self, node, **kwargs):
         #dest* is VariableAST
@@ -558,7 +562,8 @@ class rapid_%s (pyrapid.rapid_struct):
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
         if node.error_number is None:
-            self.writemodule("raise")
+            self.writemodule("return 3")
+            #self.writemodule("raise")
         elif isinstance(node.error_number, rapid_ast.IdentifierAST):
             #node.error_number.name has to be a valid symbol
             #self.writemodule("raise")
@@ -1124,10 +1129,10 @@ class rapid_%s (pyrapid.rapid_struct):
         def _rapid_proc_(local_args_scope):
             pass
             
-        def _error_rapid_proc_(local_args_scope):
+        def _error_rapid_proc_(local_exception):
             pass
             
-        def _undo_rapid_proc_(local_args_scope):
+        def _undo_rapid_proc_():
             pass
             
         if self.tmp_outineDeclarationATS_data is None:
@@ -1135,7 +1140,7 @@ class rapid_%s (pyrapid.rapid_struct):
         else:
             pyrapid.Symbols().AddModuleSym(self.module_name, self.function_name, pyrapid.Symbol.CreateProcedure(self.params, _rapid_proc_, _error_rapid_proc_, _undo_rapid_proc_))
 
-        self.writemodule("def error_rapid_proc_%s (local_args_scope):" % (self.function_name,))
+        self.writemodule("def error_rapid_proc_%s (local_exception):" % (self.function_name,))
         with self.ModuleScope():
             #add parameter
             
@@ -1144,7 +1149,7 @@ class rapid_%s (pyrapid.rapid_struct):
                 
             self.writemodule("return 0")
         
-        self.writemodule("def undo_rapid_proc_%s (local_args_scope):" % (self.function_name,))
+        self.writemodule("def undo_rapid_proc_%s ():" % (self.function_name,))
         with self.ModuleScope():
             #add parameter
             self.writemodule("pass")
@@ -1238,10 +1243,10 @@ class rapid_%s (pyrapid.rapid_struct):
         def _rapid_func_(local_args_scope):
             pass
             
-        def _error_rapid_func_(local_args_scope):
+        def _error_rapid_func_(local_exception):
             pass
             
-        def _undo_rapid_func_(local_args_scope):
+        def _undo_rapid_func_():
             pass
             
         if self.tmp_outineDeclarationATS_data is None:
@@ -1249,7 +1254,7 @@ class rapid_%s (pyrapid.rapid_struct):
         else:
             pyrapid.Symbols().AddModuleSym(self.module_name, self.function_name, pyrapid.Symbol.CreateFunction(self.params, returntype, _rapid_proc_, _error_rapid_func_, _undo_rapid_func_))
         
-        self.writemodule("def error_rapid_func_%s (local_args_scope):" % (self.function_name,))
+        self.writemodule("def error_rapid_func_%s (local_exception):" % (self.function_name,))
         with self.ModuleScope():
             #add parameter
             
@@ -1258,7 +1263,7 @@ class rapid_%s (pyrapid.rapid_struct):
                 
             self.writemodule("return 0")
         
-        self.writemodule("def undo_rapid_func_%s (local_args_scope):" % (self.function_name,))
+        self.writemodule("def undo_rapid_func_%s ():" % (self.function_name,))
         with self.ModuleScope():
             #add parameter
             self.writemodule("pass")

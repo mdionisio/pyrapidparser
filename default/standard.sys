@@ -63,7 +63,13 @@ MODULE SYSTEMMODULE(SYSMODULE)
             !python:Time = pyrapid.Symbols().GetSymbol("Time").data.Get()
             !python:s.settimeout(Time)
         ENDIF
-        !python:sc, address = s.accept()
+        
+        !python:try:
+        !python:        sc, address = s.accept()
+        !python:except socket.timeout:
+        !python:        ERR_SOCK_TIMEOUT = pyrapid.Symbols().GetSymbol("ERR_SOCK_TIMEOUT").data.Get()
+        !python:        raise pyrapid.RapidException(ERR_SOCK_TIMEOUT, "accept timeout: SocketAccept(%d) -"%(pyrapid.lineno(),))
+        
         !python:SOCKET_CONNECTED = pyrapid.Symbols().GetSymbol("SOCKET_CONNECTED").data.Get()
         !python:ClientSocket.Set( (SOCKET_CONNECTED, sc) )
         
