@@ -3,6 +3,12 @@ import operator
 
 import Singleton
 
+import inspect
+
+def lineno():
+    """Returns the current line number in our program."""
+    return inspect.currentframe().f_back.f_lineno
+
 class RapidException(Exception):
     def __init__(self, code, desc):
         Exception.__init__(self, desc)

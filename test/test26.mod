@@ -11,7 +11,8 @@ MODULE test
         TPWrite received_string;
         ERROR
             TPWrite "Error";
-        
+        UNDO
+            TPWrite "Undo";
     ENDPROC
     
 ENDMODULE

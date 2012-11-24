@@ -108,7 +108,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:s = Socket.Get()[1]
         !python:if s is None:
         !python:        ERR_SOCK_CLOSED = pyrapid.Symbols().GetSymbol("ERR_SOCK_CLOSED").data.Get()
-        !python:        raise pyrapid.RapidException(ERR_SOCK_CLOSED, "strang error")
+        !python:        raise pyrapid.RapidException(ERR_SOCK_CLOSED, "strang error: SocketConnect(%d) -"%(pyrapid.lineno(),))
         IF Present(Time) THEN
             !python:Time = pyrapid.Symbols().GetSymbol("Time").data.Get()
             !python:s.settimeout(Time)
@@ -119,10 +119,10 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:        s.connect( (Address, Port) )
         !python:except socket.error:
         !python:        ERR_SOCK_CONNREF = pyrapid.Symbols().GetSymbol("ERR_SOCK_CONNREF").data.Get()
-        !python:        raise pyrapid.RapidException(ERR_SOCK_CONNREF, "connection refused")
+        !python:        raise pyrapid.RapidException(ERR_SOCK_CONNREF, "connection refused: SocketConnect(%d) -"%(pyrapid.lineno(),))
         !python:except socket.timeout:
         !python:        ERR_SOCK_TIMEOUT = pyrapid.Symbols().GetSymbol("ERR_SOCK_TIMEOUT").data.Get()
-        !python:        raise pyrapid.RapidException(ERR_SOCK_TIMEOUT, "connection timeout")
+        !python:        raise pyrapid.RapidException(ERR_SOCK_TIMEOUT, "connection timeout: SocketConnect(%d) -"%(pyrapid.lineno(),))
         
         !python:Socket.Set( (SOCKET_CONNECTED, s) )
     ENDPROC
@@ -142,7 +142,22 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:import socket
         !python:Socket = pyrapid.Symbols().GetSymbol("Socket").data
         !python:s = Socket.Get()[1]
-        !python:data = s.recv(1024)
+        IF Present(Time) THEN
+            !python:Time = pyrapid.Symbols().GetSymbol("Time").data.Get()
+            !python:s.settimeout(Time)
+        ELSE
+            !python:s.settimeout(None)
+        ENDIF
+        !python:try:
+        !python:    data = s.recv(1024)
+        !python:except socket.error:
+        !python:        ERR_SOCK_CLOSED = pyrapid.Symbols().GetSymbol("ERR_SOCK_CLOSED").data.Get()
+        !python:        #SOCKET_CLOSED = pyrapid.Symbols().GetSymbol("SOCKET_CLOSED").data.Get()
+        !python:        #Socket.Set((SOCKET_CLOSED, None))
+        !python:        raise pyrapid.RapidException(ERR_SOCK_CLOSED, "socket error: SocketReceive(%d) -"%(pyrapid.lineno(),))
+        !python:except socket.timeout:
+        !python:        ERR_SOCK_TIMEOUT = pyrapid.Symbols().GetSymbol("ERR_SOCK_TIMEOUT").data.Get()
+        !python:        raise pyrapid.RapidException(ERR_SOCK_TIMEOUT, "socket read timeout: SocketReceive(%d) -"%(pyrapid.lineno(),))
         IF Present(Str) THEN
             !python:pyrapid.Symbols().GetSymbol("Str").data.Set(data)
         ENDIF
@@ -157,7 +172,13 @@ MODULE SYSTEMMODULE(SYSMODULE)
         IF Present(Str) THEN
             !python:data =  pyrapid.Symbols().GetSymbol("Str").data.Get()
         ENDIF
-        !python:s.send(data)
+        !python:try:
+        !python:        s.send(data)
+        !python:except socket.error:
+        !python:        ERR_SOCK_CLOSED = pyrapid.Symbols().GetSymbol("ERR_SOCK_CLOSED").data.Get()
+        !python:        #SOCKET_CLOSED = pyrapid.Symbols().GetSymbol("SOCKET_CLOSED").data.Get()
+        !python:        #Socket.Set((SOCKET_CLOSED, None))
+        !python:        raise pyrapid.RapidException(ERR_SOCK_CLOSED, "socket error: SocketSend(%d) -"%(pyrapid.lineno(),))
     ENDPROC
     
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

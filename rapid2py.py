@@ -9,12 +9,6 @@ import rapid_parser
 from collections import OrderedDict
 
 
-import inspect
-
-def lineno():
-    """Returns the current line number in our program."""
-    return inspect.currentframe().f_back.f_lineno
-
 class TraslateRapidToPython( rapid_ast.NodeVisitor ):
     
     def __init__(self, out_filename="rapid_program.py", out_folder="run"):
@@ -519,11 +513,21 @@ class rapid_%s (pyrapid.rapid_struct):
                     self.writemodule("else:")  # propagate exception
                     with self.ModuleScope():
                         #execute undo
-                        self.writemodule("raise")  # propagate exception
+                        self.writemodule("undo_manager_call = pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s).undo_call" % ( repr(self.function_name), repr(self.module_name) ))
+                        self.writemodule("if not(undo_manager_call is None):")
+                        with self.ModuleScope():
+                            self.writemodule("undo_manager_call({})")
+                        #self.writemodule("raise")
+                        self.writemodule("raise pyrapid.RapidException(ex.code, ex.message+' %s(%d) -')"%(self.function_name,pyrapid.lineno(),))  # propagate exception
                 self.writemodule("else:")
                 with self.ModuleScope():
-                    #todo execute undo
-                    self.writemodule("raise")  # propagate exception
+                    #execute undo
+                    self.writemodule("undo_manager_call = pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s).undo_call" % ( self.function_name, repr(self.module_name) ))
+                    self.writemodule("if not(undo_manager_call is None):")
+                    with self.ModuleScope():
+                        self.writemodule("undo_manager_call({})")
+                    #self.writemodule("raise")
+                    self.writemodule("raise pyrapid.RapidException(ex.code, ex.message+' %s(%d) -')"%(self.function_name,pyrapid.lineno(),))  # propagate exception
             
     def visit_AssignmentStatementAST(self, node, **kwargs):
         #dest* is VariableAST
@@ -1002,7 +1006,6 @@ class rapid_%s (pyrapid.rapid_struct):
             
             #compute parameter list
             
-            #TODO gestione errore
             self.simple_writemodule("pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data( {" % ( repr(function_name), repr(self.module_name), repr(self.function_name) ))
             
             kwargs["parameters_defined"] = parameters_defined
@@ -1193,10 +1196,10 @@ class rapid_%s (pyrapid.rapid_struct):
                     
         
         if self.tmp_outineDeclarationATS_data is None:
-            self.writemodule("# rapid2py.py line:%d"%( lineno(), ))
+            self.writemodule("# rapid2py.py line:%d"%( pyrapid.lineno(), ))
             self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateProcedure(%s, rapid_proc_%s, error_rapid_proc_%s, undo_rapid_proc_%s), %s)"%(repr(self.function_name), params, self.function_name, self.function_name, self.function_name, repr(self.module_name),))
         else:
-            self.writemodule("# rapid2py.py line:%d"%( lineno(), ))
+            self.writemodule("# rapid2py.py line:%d"%( pyrapid.lineno(), ))
             self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, pyrapid.Symbol.CreateProcedure(%s, rapid_proc_%s, error_rapid_proc_%s, undo_rapid_proc_%s))"%(repr(self.module_name), repr(self.function_name), params, self.function_name, self.function_name, self.function_name, ))
             
         self.writemodule("del rapid_proc_%s" % (self.function_name,))
