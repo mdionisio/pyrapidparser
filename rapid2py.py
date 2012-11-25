@@ -982,20 +982,6 @@ class rapid_%s (pyrapid.rapid_struct):
         elif function_name=="IsPers":
             if len(node.arguments)!=1:
                 raise Exception("IsPers function accept one parameter")
-        elif function_name=="ValToStr":
-            #not pefectly compliant with rapid
-            if len(node.arguments)!=1:
-                raise Exception("ValToStr function accept 1 parameter")
-            parameters_defined = OrderedDict()
-            parameters_defined["Val"] = ("Required", "NORMAL", 'anytype', 0, [])
-            parameters_index = [0]
-            defined = []
-            self.simple_writemodule("str({")
-            kwargs["parameters_defined"] = parameters_defined
-            kwargs["parameters_index"] = parameters_index
-            kwargs["defined"] = defined
-            self.visit(node.arguments[0], **kwargs)
-            self.simple_writemodule("}['Val'].data.Get())")
         else:
             # NORMAL FUNCTION #
             refsym = pyrapid.Symbols().GetSymbol(symbolname=function_name, modulename=self.module_name, functionname=self.function_name)

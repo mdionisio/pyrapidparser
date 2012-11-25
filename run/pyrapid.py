@@ -1049,6 +1049,16 @@ Symbols().AddGlobalSym("WAIT_MAX", Symbol.CreateConst(rapid_num, rapid_num(-1)))
 
 Symbols().AddGlobalSym("rawbytes", Symbol.CreateDataType(rapid_string))
 
+Symbols().AddGlobalSym("USINT", Symbol.CreateConst(rapid_num, rapid_num(1)))
+Symbols().AddGlobalSym("UINT", Symbol.CreateConst(rapid_num, rapid_num(2)))
+Symbols().AddGlobalSym("UDINT", Symbol.CreateConst(rapid_num, rapid_num(4)))
+Symbols().AddGlobalSym("ULINT", Symbol.CreateConst(rapid_num, rapid_num(8)))
+Symbols().AddGlobalSym("SINT", Symbol.CreateConst(rapid_num, rapid_num(-1)))
+Symbols().AddGlobalSym("INT", Symbol.CreateConst(rapid_num, rapid_num(-2)))
+Symbols().AddGlobalSym("DINT", Symbol.CreateConst(rapid_num, rapid_num(-4)))
+Symbols().AddGlobalSym("LINT", Symbol.CreateConst(rapid_num, rapid_num(-8)))
+
+
 
 
 

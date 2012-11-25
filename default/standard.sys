@@ -1,5 +1,8 @@
 MODULE SYSTEMMODULE(SYSMODULE)
 
+    ! from: 3HAC16581-1_revK_en
+    !
+    
     PROC ClearRawBytes (VAR rawbytes RawData \num FromIndex)
         !python:FromIndex = 1
         IF Present(FromIndex) THEN
@@ -13,7 +16,9 @@ MODULE SYSTEMMODULE(SYSMODULE)
     PROC CopyRawBytes (rawbytes FromRawData, num FromIndex, VAR rawbytes ToRawData, num ToIndex \num NoOfBytes)
     ENDPROC
     
-    ! PackRawBytes any Value, VAR rawbytes RawData \switch Network, num StartIndex \switch Hex1 | \switch IntX | \switch Float4 | \switch ASCII
+    PROC PackRawBytes (anytype Value, VAR rawbytes RawData \switch Network, num StartIndex \switch Hex1 | num IntX | switch Float4 | switch ASCII)
+    ENDPROC
+    
     ! UnPackRawBytes RawData [\Network] StartIndex Value [\Hex1] | [\IntX] | [\Float4] | [\ASCII]
     ! PackDNHeader Service Path RawData
     ! RawBytesLen (RawData)
@@ -413,9 +418,16 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:ret = Str[(ChPos-1):(ChPos-1+Len)]
         !python:pyrapid.Symbols().GetSymbol("ret").data.Set( ret )
         RETURN ret;
-    ENDFUNC 
+    ENDFUNC
+
+    FUNC string ValToStr (anytype Val)
+        VAR string ret;
+        !python:Val = pyrapid.Symbols().GetSymbol("Val").data.Get()
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( str(Val) )
+        RETURN ret;
+    ENDFUNC
     
-    FUNC bool StrToVal (string Str, INOUT num Val)
+    FUNC bool StrToVal (string Str, INOUT anytype Val)
         VAR bool ret;
         !python:from browse_rapid_ast import EvaluateRapidExpression
         !python:import rapid_parser
