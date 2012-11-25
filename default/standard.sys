@@ -1,5 +1,24 @@
 MODULE SYSTEMMODULE(SYSMODULE)
 
+    PROC ClearRawBytes (VAR rawbytes RawData \num FromIndex)
+        !python:FromIndex = 1
+        IF Present(FromIndex) THEN
+            !python:FromIndex = pyrapid.Symbols().GetSymbol("FromIndex").data.Get()
+        ENDIF
+        !python:FromIndex -= 1 
+        !python:RawData = pyrapid.Symbols().GetSymbol("RawData").data
+        !python:RawData.Set( RawData.Get()[:FromIndex] )
+    ENDPROC
+    
+    PROC CopyRawBytes (rawbytes FromRawData, num FromIndex, VAR rawbytes ToRawData, num ToIndex \num NoOfBytes)
+    ENDPROC
+    
+    ! PackRawBytes any Value, VAR rawbytes RawData \switch Network, num StartIndex \switch Hex1 | \switch IntX | \switch Float4 | \switch ASCII
+    ! UnPackRawBytes RawData [\Network] StartIndex Value [\Hex1] | [\IntX] | [\Float4] | [\ASCII]
+    ! PackDNHeader Service Path RawData
+    ! RawBytesLen (RawData)
+    
+
     FUNC string GetSysInfo( \switch SerialNo | switch SWVersion | switch RobotType | switch CtrlId | switch LanIp | switch CtrlLang)
         LOCAL VAR string ret;
         IF Present(LanIp) THEN
