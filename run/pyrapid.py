@@ -1047,7 +1047,27 @@ Symbols().AddGlobalSym("socketdev", Symbol.CreateDataType(rapid_socketdev))
 
 Symbols().AddGlobalSym("WAIT_MAX", Symbol.CreateConst(rapid_num, rapid_num(-1)))
 
-Symbols().AddGlobalSym("rawbytes", Symbol.CreateDataType(rapid_string))
+class rapid_rawbytes :
+    def __init__(self, val=None):
+        self.val = ""
+        if not (val is None):
+            self.Set(val)
+        
+    def Set(self, val):
+        if isinstance(val, str):
+            self.val = val
+        elif isinstance(val, rapid_string):
+            self.val = val.val
+        else:
+            raise Exception("type unsupported")
+        
+    def Get(self):
+        if self.val is None:
+            raise Exception("variable never assigned")
+        else:
+            return self.val
+
+Symbols().AddGlobalSym("rawbytes", Symbol.CreateDataType(rapid_rawbytes))
 
 Symbols().AddGlobalSym("USINT", Symbol.CreateConst(rapid_num, rapid_num(1)))
 Symbols().AddGlobalSym("UINT", Symbol.CreateConst(rapid_num, rapid_num(2)))

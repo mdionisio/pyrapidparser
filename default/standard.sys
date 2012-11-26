@@ -16,12 +16,136 @@ MODULE SYSTEMMODULE(SYSMODULE)
     PROC CopyRawBytes (rawbytes FromRawData, num FromIndex, VAR rawbytes ToRawData, num ToIndex \num NoOfBytes)
     ENDPROC
     
-    PROC PackRawBytes (anytype Value, VAR rawbytes RawData \switch Network, num StartIndex \switch Hex1 | num IntX | switch Float4 | switch ASCII)
+    PROC PackRawBytes (anytype Value, VAR rawbytes RawData, num StartIndex \switch Network \switch Hex1 | num IntX | switch Float4 | switch ASCII)
+        !python:RawData = pyrapid.Symbols().GetSymbol("RawData").data.Get()
+        !python:Value = pyrapid.Symbols().GetSymbol("Value").data
+        !python:StartIndex = pyrapid.Symbols().GetSymbol("StartIndex").data.Get()
+        !python:StartIndex -= 1
+        !python:import struct
+        !python:endian = '<'
+        !\Network   -> BigEndian
+        IF Present(Network) THEN
+            !python:endian = '>'
+        ENDIF
+        IF Present(Hex1) THEN
+            !python:if isinstance(Value, pyrapid.rapid_byte):
+            !python:    Value = Value.Get()
+            !python:    struct.pack_into(endian+"B", RawData, StartIndex, Value)
+            !python:else:
+            !python:    raise Exception('type not valid')
+        ELSEIF Present(IntX) THEN
+            !python:IntX = pyrapid.Symbols().GetSymbol("IntX").data.Get()
+            
+            !python:USINT = pyrapid.Symbols().GetSymbol("USINT").data.Get()
+            !python:UINT = pyrapid.Symbols().GetSymbol("UINT").data.Get()
+            !python:UDINT = pyrapid.Symbols().GetSymbol("UDINT").data.Get()
+            !python:ULINT = pyrapid.Symbols().GetSymbol("ULINT").data.Get()
+            !python:SINT = pyrapid.Symbols().GetSymbol("SINT").data.Get()
+            !python:INT = pyrapid.Symbols().GetSymbol("INT").data.Get()
+            !python:DINT = pyrapid.Symbols().GetSymbol("DINT").data.Get()
+            !python:LINT = pyrapid.Symbols().GetSymbol("LINT").data.Get()
+            
+            !python:Value = long( Value.Get() )
+            
+            !python:if IntX==USINT:
+            !python:    struct.pack_into(endian+"B", RawData, StartIndex, Value)
+            !python:elif IntX==UINT:
+            !python:    struct.pack_into(endian+"H", RawData, StartIndex, Value)
+            !python:elif IntX==UDINT:
+            !python:    struct.pack_into(endian+"I", RawData, StartIndex, Value)
+            !python:elif IntX==ULINT:
+            !python:    struct.pack_into(endian+"Q", RawData, StartIndex, Value)
+            !python:elif IntX==SINT:
+            !python:    struct.pack_into(endian+"b", RawData, StartIndex, Value)
+            !python:elif IntX==INT:
+            !python:    struct.pack_into(endian+"h", RawData, StartIndex, Value)
+            !python:elif IntX==DINT:
+            !python:    struct.pack_into(endian+"i", RawData, StartIndex, Value)
+            !python:elif IntX==LINT:
+            !python:    struct.pack_into(endian+"q", RawData, StartIndex, Value)
+            
+        ELSEIF Present(Float4) THEN
+            !python:Value = float(Value.Get())
+            !python:struct.pack_into(endian+"f", RawData, StartIndex, Value)
+        ELSEIF Present(ASCII) THEN
+            !python:if isinstance(Value, pyrapid.rapid_byte):
+            !python:    Value = Value.Get()
+            !python:    struct.pack_into(endian+"b", RawData, StartIndex, Value)
+            !python:else:
+            !python:    Value = Value.Get()
+            !python:    len_Value = len(Value)
+            !python:    struct.pack_into(endian+"%ds"%(len_Value,), RawData, StartIndex, Value)
+        ENDIF
+        
+        !python:pyrapid.Symbols().GetSymbol("RawData").data.Set(RawData)
+        
     ENDPROC
     
-    ! UnPackRawBytes RawData [\Network] StartIndex Value [\Hex1] | [\IntX] | [\Float4] | [\ASCII]
+    PROC UnPackRawBytes (VAR rawbytes RawData, num StartIndex, VAR anytype Value \switch Network \switch Hex1 | num IntX | switch Float4 | num ASCII)
+        !python:RawData = pyrapid.Symbols().GetSymbol("RawData").data.Get()
+        !python:StartIndex = pyrapid.Symbols().GetSymbol("StartIndex").data.Get()
+        !python:StartIndex -= 1
+        !python:import struct
+        !python:endian = '<'
+        !\Network   -> BigEndian
+        IF Present(Network) THEN
+            !python:endian = '>'
+        ENDIF
+        IF Present(Hex1) THEN
+            !python:if isinstance(Value, pyrapid.rapid_byte):
+            !python:    Value, = struct.unpack_from(endian+"B", RawData, offset=StartIndex)
+            !python:else:
+            !python:    raise Exception('type not valid')
+        ELSEIF Present(IntX) THEN
+            !python:IntX = pyrapid.Symbols().GetSymbol("IntX").data.Get()
+            
+            !python:USINT = pyrapid.Symbols().GetSymbol("USINT").data.Get()
+            !python:UINT = pyrapid.Symbols().GetSymbol("UINT").data.Get()
+            !python:UDINT = pyrapid.Symbols().GetSymbol("UDINT").data.Get()
+            !python:ULINT = pyrapid.Symbols().GetSymbol("ULINT").data.Get()
+            !python:SINT = pyrapid.Symbols().GetSymbol("SINT").data.Get()
+            !python:INT = pyrapid.Symbols().GetSymbol("INT").data.Get()
+            !python:DINT = pyrapid.Symbols().GetSymbol("DINT").data.Get()
+            !python:LINT = pyrapid.Symbols().GetSymbol("LINT").data.Get()
+            
+            !python:if IntX==USINT:
+            !python:    Value, = struct.unpack_from(endian+"B", RawData, offset=StartIndex)
+            !python:elif IntX==UINT:
+            !python:    Value, = struct.unpack_from(endian+"H", RawData, offset=StartIndex)
+            !python:elif IntX==UDINT:
+            !python:    Value, = struct.unpack_from(endian+"I", RawData, offset=StartIndex)
+            !python:elif IntX==ULINT:
+            !python:    Value, = struct.unpack_from(endian+"Q", RawData, offset=StartIndex)
+            !python:elif IntX==SINT:
+            !python:    Value, = struct.unpack_from(endian+"b", RawData, offset=StartIndex)
+            !python:elif IntX==INT:
+            !python:    Value, = struct.unpack_from(endian+"h", RawData, offset=StartIndex)
+            !python:elif IntX==DINT:
+            !python:    Value, = struct.unpack_from(endian+"i", RawData, offset=StartIndex)
+            !python:elif IntX==LINT:
+            !python:    Value, = struct.unpack_from(endian+"q", RawData, offset=StartIndex)
+            
+        ELSEIF Present(Float4) THEN
+            !python:Value, = struct.unpack_from(endian+"f", RawData, offset=StartIndex)
+        ELSEIF Present(ASCII) THEN
+            !python:if isinstance(Value, pyrapid.rapid_byte):
+            !python:    Value, = struct.unpack_from(endian+"b", RawData, offset=StartIndex)
+            !python:else:
+            !python:    ASCII = pyrapid.Symbols().GetSymbol("ASCII").data.Get()
+            !python:    Value, = struct.unpack_from(endian+"%ds"%(ASCII,), RawData, offset=StartIndex)
+        ENDIF
+        
+        !python:pyrapid.Symbols().GetSymbol("Value").data.Set(Value)
+    ENDPROC 
+    
     ! PackDNHeader Service Path RawData
     ! RawBytesLen (RawData)
+    FUNC num RawBytesLen(VAR rawbytes RawData)
+        LOCAL VAR num ret;
+        !python:RawData = pyrapid.Symbols().GetSymbol("RawData").data.Get()
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set(len(RawData))
+        RETURN ret;
+    ENDFUNC
     
 
     FUNC string GetSysInfo( \switch SerialNo | switch SWVersion | switch RobotType | switch CtrlId | switch LanIp | switch CtrlLang)

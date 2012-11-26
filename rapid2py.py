@@ -809,7 +809,7 @@ class rapid_%s (pyrapid.rapid_struct):
             elif (parameters_defined[argumentname][1]=="VAR") or (parameters_defined[argumentname][1]=="PERS") or (parameters_defined[argumentname][1]=="INOUT"):
                 self.visit(node.argumentvalue, parameters_defined=parameters_defined, parameters_index=parameters_index, defined=defined, bget_VariableAST=False, bsym_VariableAST=False, **kwargs)
             else:
-                raise Exception("Only NORMAL, VAR, PERS, and INOUT are supported is the imput is a variable")
+                raise Exception("Only NORMAL, VAR, PERS, and INOUT are supported is the input is a variable")
         else:
             if parameters_defined[argumentname][0] == "switch":
                 self.simple_writemodule("pyrapid.Symbol.CreateNone()")
@@ -896,7 +896,7 @@ class rapid_%s (pyrapid.rapid_struct):
             elif (parameters_defined[argumentname][1]=="VAR") or (parameters_defined[argumentname][1]=="PERS") or (parameters_defined[argumentname][1]=="INOUT"):
                 self.visit(node.argumentvalue, parameters_defined=parameters_defined, parameters_index=parameters_index, defined=defined, bget_VariableAST=False, bsym_VariableAST=False, **kwargs)
             else:
-                raise Exception("Only NORMAL, VAR, PERS, and INOUT are supported is the imput is a variable")
+                raise Exception("Only NORMAL, VAR, PERS, and INOUT are supported is the input is a variable (module name %s, function name %s, argument name %s)"%(self.module_name, self.function_name, argumentname,))
         else:
             if parameters_defined[argumentname][0] == "switch":
                 self.simple_writemodule("pyrapid.Symbol.CreateNone()")
