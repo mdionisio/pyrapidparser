@@ -30,7 +30,8 @@ MODULE SYSTEMMODULE(SYSMODULE)
         IF Present(Hex1) THEN
             !python:if isinstance(Value, pyrapid.rapid_byte):
             !python:    Value = Value.Get()
-            !python:    struct.pack_into(endian+"B", RawData, StartIndex, Value)
+            !python:    app=struct.pack(endian+"B", Value)
+            !python:    RawData =RawData[:StartIndex]+app+RawData[StartIndex+len(app):]
             !python:else:
             !python:    raise Exception('type not valid')
         ELSEIF Present(IntX) THEN
@@ -48,34 +49,39 @@ MODULE SYSTEMMODULE(SYSMODULE)
             !python:Value = long( Value.Get() )
             
             !python:if IntX==USINT:
-            !python:    struct.pack_into(endian+"B", RawData, StartIndex, Value)
+            !python:    app=struct.pack(endian+"B", Value)
             !python:elif IntX==UINT:
-            !python:    struct.pack_into(endian+"H", RawData, StartIndex, Value)
+            !python:    app=struct.pack(endian+"H", Value)
             !python:elif IntX==UDINT:
-            !python:    struct.pack_into(endian+"I", RawData, StartIndex, Value)
+            !python:    app=struct.pack(endian+"I", Value)
             !python:elif IntX==ULINT:
-            !python:    struct.pack_into(endian+"Q", RawData, StartIndex, Value)
+            !python:    app=struct.pack(endian+"Q", Value)
             !python:elif IntX==SINT:
-            !python:    struct.pack_into(endian+"b", RawData, StartIndex, Value)
+            !python:    app=struct.pack(endian+"b", Value)
             !python:elif IntX==INT:
-            !python:    struct.pack_into(endian+"h", RawData, StartIndex, Value)
+            !python:    app=struct.pack(endian+"h", Value)
             !python:elif IntX==DINT:
-            !python:    struct.pack_into(endian+"i", RawData, StartIndex, Value)
+            !python:    app=struct.pack(endian+"i", Value)
             !python:elif IntX==LINT:
-            !python:    struct.pack_into(endian+"q", RawData, StartIndex, Value)
+            !python:    app=struct.pack(endian+"q", Value)
+            !python:RawData =RawData[:StartIndex]+app+RawData[StartIndex+len(app):]
             
         ELSEIF Present(Float4) THEN
             !python:Value = float(Value.Get())
-            !python:struct.pack_into(endian+"f", RawData, StartIndex, Value)
+            !python:app=struct.pack(endian+"f", Value)
+            !python:RawData =RawData[:StartIndex]+app+RawData[StartIndex+len(app):]
+
         ELSEIF Present(ASCII) THEN
             !python:if isinstance(Value, pyrapid.rapid_byte):
             !python:    Value = Value.Get()
-            !python:    struct.pack_into(endian+"b", RawData, StartIndex, Value)
+            !python:    app=struct.pack(endian+"b", Value)
+            !python:    RawData =RawData[:StartIndex]+app+RawData[StartIndex+len(app):]
             !python:else:
             !python:    Value = Value.Get()
             !python:    len_Value = len(Value)
-            !python:    struct.pack_into(endian+"%ds"%(len_Value,), RawData, StartIndex, Value)
-        ENDIF
+            !python:    app=struct.pack(endian+"%ds"%(len_Value,), Value)
+            !python:    RawData =RawData[:StartIndex]+app+RawData[StartIndex+len(app):]
+       ENDIF
         
         !python:pyrapid.Symbols().GetSymbol("RawData").data.Set(RawData)
         
@@ -93,7 +99,8 @@ MODULE SYSTEMMODULE(SYSMODULE)
         ENDIF
         IF Present(Hex1) THEN
             !python:if isinstance(Value, pyrapid.rapid_byte):
-            !python:    Value, = struct.unpack_from(endian+"B", RawData, offset=StartIndex)
+            !python:    RawData = RawData[StartIndex:StartIndex+struct.calcsize(endian+"B")]
+            !python:    Value, = struct.unpack(endian+"B", RawData)
             !python:else:
             !python:    raise Exception('type not valid')
         ELSEIF Present(IntX) THEN
@@ -109,30 +116,41 @@ MODULE SYSTEMMODULE(SYSMODULE)
             !python:LINT = pyrapid.Symbols().GetSymbol("LINT").data.Get()
             
             !python:if IntX==USINT:
-            !python:    Value, = struct.unpack_from(endian+"B", RawData, offset=StartIndex)
+            !python:    RawData = RawData[StartIndex:StartIndex+struct.calcsize(endian+"B")]
+            !python:    Value, = struct.unpack(endian+"B", RawData)
             !python:elif IntX==UINT:
-            !python:    Value, = struct.unpack_from(endian+"H", RawData, offset=StartIndex)
+            !python:    RawData = RawData[StartIndex:StartIndex+struct.calcsize(endian+"H")]
+            !python:    Value, = struct.unpack(endian+"H", RawData)
             !python:elif IntX==UDINT:
-            !python:    Value, = struct.unpack_from(endian+"I", RawData, offset=StartIndex)
+            !python:    RawData = RawData[StartIndex:StartIndex+struct.calcsize(endian+"I")]
+            !python:    Value, = struct.unpack_from(endian+"I", RawData)
             !python:elif IntX==ULINT:
-            !python:    Value, = struct.unpack_from(endian+"Q", RawData, offset=StartIndex)
+            !python:    RawData = RawData[StartIndex:StartIndex+struct.calcsize(endian+"Q")]
+            !python:    Value, = struct.unpack_from(endian+"Q", RawData)
             !python:elif IntX==SINT:
-            !python:    Value, = struct.unpack_from(endian+"b", RawData, offset=StartIndex)
+            !python:    RawData = RawData[StartIndex:StartIndex+struct.calcsize(endian+"b")]
+            !python:    Value, = struct.unpack(endian+"b", RawData)
             !python:elif IntX==INT:
-            !python:    Value, = struct.unpack_from(endian+"h", RawData, offset=StartIndex)
+            !python:    RawData = RawData[StartIndex:StartIndex+struct.calcsize(endian+"h")]
+            !python:    Value, = struct.unpack(endian+"h", RawData)
             !python:elif IntX==DINT:
-            !python:    Value, = struct.unpack_from(endian+"i", RawData, offset=StartIndex)
+            !python:    RawData = RawData[StartIndex:StartIndex+struct.calcsize(endian+"i")]
+            !python:    Value, = struct.unpack(endian+"i", RawData)
             !python:elif IntX==LINT:
-            !python:    Value, = struct.unpack_from(endian+"q", RawData, offset=StartIndex)
+            !python:    RawData = RawData[StartIndex:StartIndex+struct.calcsize(endian+"q")]
+            !python:    Value, = struct.unpack(endian+"q", RawData)
             
         ELSEIF Present(Float4) THEN
-            !python:Value, = struct.unpack_from(endian+"f", RawData, offset=StartIndex)
+            !python:RawData = RawData[StartIndex:StartIndex+struct.calcsize(endian+"f")]
+            !python:Value, = struct.unpack(endian+"f", RawData)
         ELSEIF Present(ASCII) THEN
-            !python:if isinstance(Value, pyrapid.rapid_byte):
-            !python:    Value, = struct.unpack_from(endian+"b", RawData, offset=StartIndex)
+            !python:if isinstance(pyrapid.Symbols().GetSymbol("Value").data, pyrapid.rapid_byte):
+            !python:    RawData = RawData[StartIndex:StartIndex+struct.calcsize(endian+"b")]
+            !python:    Value, = struct.unpack(endian+"b", RawData)
             !python:else:
             !python:    ASCII = pyrapid.Symbols().GetSymbol("ASCII").data.Get()
-            !python:    Value, = struct.unpack_from(endian+"%ds"%(ASCII,), RawData, offset=StartIndex)
+            !python:    RawData = RawData[StartIndex:StartIndex+struct.calcsize(endian+"%ds"%(ASCII,))]
+            !python:    Value, = struct.unpack(endian+"%ds"%(ASCII,), RawData)
         ENDIF
         
         !python:pyrapid.Symbols().GetSymbol("Value").data.Set(Value)
