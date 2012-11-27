@@ -1441,7 +1441,7 @@ if __name__ == "__main__":
     
     text = ""
     if len(sys.argv)==2:
-        with open(sys.argv[1],'r') as f:
+        with open(sys.argv[1],'rU') as f:
             text = f.read()
     
     ## set debuglevel to 2 for debugging

@@ -522,7 +522,7 @@ if __name__ == '__main__':
     filename = ""
     if not (options.infiles is None):
         filename = options.infiles
-        with open(filename,"r") as f:
+        with open(filename,"rU") as f:
             text = f.read()
     
     parser = rapid_parser.RAPIDParser(lex_optimize=True, yacc_debug=False, yacc_optimize=False, start_from='module_declaration_list')

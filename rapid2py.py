@@ -758,11 +758,15 @@ class rapid_%s (pyrapid.rapid_struct):
         
         if node.argumentname is None:
             if isinstance(parameters_index, int):
-                try:
-                    argumentname = parameters_defined.keys()[parameters_index]
-                except:
-                    raise Exception("too much parameters")
-                parameters_index += 1
+                while True:
+                    try:
+                        argumentname = parameters_defined.keys()[parameters_index]
+                    except:
+                        raise Exception("too much parameters")
+                    parameters_index += 1
+                    if isinstance(node.argumentvalue, rapid_ast.VariableAST) and parameters_defined[argumentname][0] == "switch":
+                        continue
+                    break
             else:
                 raise Exception("positional parameter after a named one")
         else:
@@ -806,10 +810,10 @@ class rapid_%s (pyrapid.rapid_struct):
                     self.visit( node.argumentvalue, parameters_defined=parameters_defined, parameters_index=parameters_index, defined=defined, **kwargs )
                     self.simple_writemodule("))")
                     
-            elif (parameters_defined[argumentname][1]=="VAR") or (parameters_defined[argumentname][1]=="PERS") or (parameters_defined[argumentname][1]=="INOUT"):
+            elif parameters_defined[argumentname][1] in ("VAR", "PERS", "INOUT"):
                 self.visit(node.argumentvalue, parameters_defined=parameters_defined, parameters_index=parameters_index, defined=defined, bget_VariableAST=False, bsym_VariableAST=False, **kwargs)
             else:
-                raise Exception("Only NORMAL, VAR, PERS, and INOUT are supported is the input is a variable")
+                raise Exception("Only NORMAL, VAR, PERS, and INOUT are supported (%s) if the input is a variable (module name %s, function name %s, argument name %s)"%(str(parameters_defined[argumentname]), self.module_name, self.function_name, argumentname,))
         else:
             if parameters_defined[argumentname][0] == "switch":
                 self.simple_writemodule("pyrapid.Symbol.CreateNone()")
@@ -845,11 +849,15 @@ class rapid_%s (pyrapid.rapid_struct):
         
         if node.argumentname is None:
             if isinstance(parameters_index, int):
-                try:
-                    argumentname = parameters_defined.keys()[parameters_index]
-                except:
-                    raise Exception("too much parameters")
-                parameters_index += 1
+                while True:
+                    try:
+                        argumentname = parameters_defined.keys()[parameters_index]
+                    except:
+                        raise Exception("too much parameters")
+                    parameters_index += 1
+                    if isinstance(node.argumentvalue, rapid_ast.VariableAST) and parameters_defined[argumentname][0] == "switch":
+                        continue
+                    break
             else:
                 raise Exception("positional parameter after a named one")
         else:
@@ -871,8 +879,7 @@ class rapid_%s (pyrapid.rapid_struct):
             raise Exception("%s is not a valid parameter"%(argumentname))
             
         defined.append(argumentname)
-        self.simple_writeindent()
-        self.simple_writemodule( "parameters_actual[%s] = " % (repr(argumentname),))
+        
         if isinstance(node.argumentvalue, rapid_ast.VariableAST):
             #todo add check type
             #take the type of the symbol parameters_defined[argumentname] and compare it with
@@ -881,10 +888,11 @@ class rapid_%s (pyrapid.rapid_struct):
             #varsize = parameters_defined[argumentname][2]
             #
             if parameters_defined[argumentname][1]=="NORMAL":
-                
                 #todo make type compare
                 vartype = parameters_defined[argumentname][2]
                 varinstance_size = parameters_defined[argumentname][3]
+                self.simple_writeindent()
+                self.simple_writemodule( "parameters_actual[%s] = " % (repr(argumentname),))
                 if varinstance_size==0:
                     self.simple_writemodule("pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(" % ( repr(vartype), repr(self.module_name), repr(self.function_name) ))
                     self.visit( node.argumentvalue, parameters_defined=parameters_defined, parameters_index=parameters_index, defined=defined, **kwargs )
@@ -893,16 +901,25 @@ class rapid_%s (pyrapid.rapid_struct):
                     self.simple_writemodule("pyrapid.Symbol.CreateVar( pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data, " % ( repr(vartype), repr(self.module_name), repr(self.function_name) ) )
                     self.visit( node.argumentvalue, parameters_defined=parameters_defined, parameters_index=parameters_index, defined=defined, **kwargs )
                     self.simple_writemodule("))")
-            elif (parameters_defined[argumentname][1]=="VAR") or (parameters_defined[argumentname][1]=="PERS") or (parameters_defined[argumentname][1]=="INOUT"):
+                self.simple_writemodule( )
+            elif parameters_defined[argumentname][1] in ( "VAR", "PERS", "INOUT"):
+                self.simple_writeindent()
+                self.simple_writemodule( "parameters_actual[%s] = " % (repr(argumentname),))
                 self.visit(node.argumentvalue, parameters_defined=parameters_defined, parameters_index=parameters_index, defined=defined, bget_VariableAST=False, bsym_VariableAST=False, **kwargs)
+                self.simple_writemodule( )
             else:
-                raise Exception("Only NORMAL, VAR, PERS, and INOUT are supported is the input is a variable (module name %s, function name %s, argument name %s)"%(self.module_name, self.function_name, argumentname,))
+                raise Exception("Only NORMAL, VAR, PERS, and INOUT are supported (%s) if the input is a variable (module name %s, function name %s, argument name %s)"%(str(parameters_defined[argumentname]), self.module_name, self.function_name, argumentname,))
         else:
             if parameters_defined[argumentname][0] == "switch":
+                self.simple_writeindent()
+                self.simple_writemodule( "parameters_actual[%s] = " % (repr(argumentname),))
                 self.simple_writemodule("pyrapid.Symbol.CreateNone()")
+                self.simple_writemodule( )
             elif (parameters_defined[argumentname][1]=="NORMAL") or (parameters_defined[argumentname][1]=="INOUT"):
                 vartype = parameters_defined[argumentname][2]
                 varinstance_size = parameters_defined[argumentname][3]
+                self.simple_writeindent()
+                self.simple_writemodule( "parameters_actual[%s] = " % (repr(argumentname),))
                 if varinstance_size==0:
                     self.simple_writemodule("pyrapid.Symbol.CreateVar(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(" % ( repr(vartype), repr(self.module_name), repr(self.function_name) ))
                     self.visit( node.argumentvalue, parameters_defined=parameters_defined, parameters_index=parameters_index, defined=defined, **kwargs )
@@ -911,10 +928,9 @@ class rapid_%s (pyrapid.rapid_struct):
                     self.simple_writemodule("pyrapid.Symbol.CreateVar( pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data, " % ( repr(vartype), repr(self.module_name), repr(self.function_name) ) )
                     self.visit( node.argumentvalue, parameters_defined=parameters_defined, parameters_index=parameters_index, defined=defined, **kwargs )
                     self.simple_writemodule("))")
+                self.simple_writemodule( )
             else:
                 raise Exception("only NORMAL or INOUT are supported if the input is an expression, received=%s"%(parameters_defined[argumentname][1],))
-            
-        self.simple_writemodule( )
         
         in_parameters_index.append(parameters_index)
         
@@ -1084,7 +1100,7 @@ class rapid_%s (pyrapid.rapid_struct):
                     try:
                         defined.index(ik)
                     except ValueError:
-                        raise Exception("argument %s is required"%(ik,))
+                        raise Exception("argument %s is required (%s,%s)"%(ik,str(parameters_defined),str(defined)))
             
             self.writemodule("pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(parameters_actual)" % ( repr(procedure_name), repr(self.module_name), repr(self.function_name) ))
             
@@ -1342,7 +1358,7 @@ if __name__ == '__main__':
                 ltext.append( (i, f.read()) )
             
     for i in options.infiles:
-        with open(i,"r") as f:
+        with open(i,"rU") as f:
             ltext.append( (i, f.read()) )
     
     attriblist = []

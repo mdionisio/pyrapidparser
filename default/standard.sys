@@ -16,7 +16,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
     PROC CopyRawBytes (rawbytes FromRawData, num FromIndex, VAR rawbytes ToRawData, num ToIndex \num NoOfBytes)
     ENDPROC
     
-    PROC PackRawBytes (anytype Value, VAR rawbytes RawData, num StartIndex \switch Network \switch Hex1 | num IntX | switch Float4 | switch ASCII)
+    PROC PackRawBytes (anytype Value, VAR rawbytes RawData \switch Network, num StartIndex \switch Hex1 | num IntX | switch Float4 | switch ASCII)
         !python:RawData = pyrapid.Symbols().GetSymbol("RawData").data.Get()
         !python:Value = pyrapid.Symbols().GetSymbol("Value").data
         !python:StartIndex = pyrapid.Symbols().GetSymbol("StartIndex").data.Get()
@@ -87,7 +87,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
         
     ENDPROC
     
-    PROC UnPackRawBytes (VAR rawbytes RawData, num StartIndex, VAR anytype Value \switch Network \switch Hex1 | num IntX | switch Float4 | num ASCII)
+    PROC UnPackRawBytes (VAR rawbytes RawData \switch Network, num StartIndex, VAR anytype Value \switch Hex1 | num IntX | switch Float4 | num ASCII)
         !python:RawData = pyrapid.Symbols().GetSymbol("RawData").data.Get()
         !python:StartIndex = pyrapid.Symbols().GetSymbol("StartIndex").data.Get()
         !python:StartIndex -= 1
