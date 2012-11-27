@@ -3,6 +3,17 @@ MODULE SYSTEMMODULE(SYSMODULE)
     ! from: 3HAC16581-1_revK_en
     !
     
+    !ErrWrite
+    !SkipWarn
+    !ExitCycle
+    !CJointT
+    !StopMove; 
+    !ClearPath
+    !StartMove
+    !Incr
+    !WaitTestAndSet
+    !IsStopMoveAct
+    
     PROC ClearRawBytes (VAR rawbytes RawData \num FromIndex)
         !python:FromIndex = 1
         IF Present(FromIndex) THEN
@@ -223,12 +234,13 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:ClientSocket = pyrapid.Symbols().GetSymbol("ClientSocket").data
         
         !python:s = Socket.Get()[1]
-        !python:s.settimeout(None)
         !python:Time = None
         IF Present(Time) THEN
-            !python:Time = pyrapid.Symbols().GetSymbol("Time").data.Get()
-            !python:s.settimeout(Time)
+            IF Time<>WAIT_MAX THEN
+                !python:Time = pyrapid.Symbols().GetSymbol("Time").data.Get()
+            ENDIF
         ENDIF
+        !python:s.settimeout(Time)
         
         !python:try:
         !python:        sc, address = s.accept()
@@ -281,12 +293,15 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:if s is None:
         !python:        ERR_SOCK_CLOSED = pyrapid.Symbols().GetSymbol("ERR_SOCK_CLOSED").data.Get()
         !python:        raise pyrapid.RapidException(ERR_SOCK_CLOSED, "strang error: SocketConnect(%d) -"%(pyrapid.lineno(),))
+        
+        !python:Time = None
         IF Present(Time) THEN
-            !python:Time = pyrapid.Symbols().GetSymbol("Time").data.Get()
-            !python:s.settimeout(Time)
-        ELSE
-            !python:s.settimeout(None)
+            IF Time<>WAIT_MAX THEN
+                !python:Time = pyrapid.Symbols().GetSymbol("Time").data.Get()
+            ENDIF
         ENDIF
+        !python:s.settimeout(Time)
+        
         !python:try:
         !python:        s.connect( (Address, Port) )
         !python:except socket.error:
@@ -314,12 +329,15 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:import socket
         !python:Socket = pyrapid.Symbols().GetSymbol("Socket").data
         !python:s = Socket.Get()[1]
+        
+        !python:Time = None
         IF Present(Time) THEN
-            !python:Time = pyrapid.Symbols().GetSymbol("Time").data.Get()
-            !python:s.settimeout(Time)
-        ELSE
-            !python:s.settimeout(None)
+            IF Time<>WAIT_MAX THEN
+                !python:Time = pyrapid.Symbols().GetSymbol("Time").data.Get()
+            ENDIF
         ENDIF
+        !python:s.settimeout(Time)
+        
         !python:try:
         !python:    data = s.recv(1024)
         !python:except socket.error:
@@ -355,7 +373,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
     
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
-    PROC WaitTime(switch InPos, num Time)
+    PROC WaitTime(\switch InPos, num Time)
         !python:import time
         !python:time.sleep(pyrapid.Symbols().GetSymbol("Time").data.Get())
     ENDPROC
