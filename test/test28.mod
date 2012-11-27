@@ -15,9 +15,9 @@ MODULE test
         VAR num pos4:=1;
         
         ClearRawBytes raw_data;
-        PackRawBytes integer, raw_data, pos1, \IntX :=DINT;
+        PackRawBytes integer, raw_data \Network, pos1, \IntX :=DINT;
         pos2 :=  RawBytesLen(raw_data)+1;
-        UnPackRawBytes raw_data, pos1, integer_out, \IntX := DINT;
+        UnPackRawBytes raw_data, \Network, pos1, integer_out, \IntX := DINT;
         
         PackRawBytes float, raw_data, pos2, \Float4;
         pos3 :=  RawBytesLen(raw_data)+1;

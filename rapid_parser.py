@@ -637,11 +637,19 @@ class RAPIDParser(PLYParser):
         p[0] = [ p[1] ]
         
     def p_procedure_argument_list_2(self, p):
-        """ procedure_argument_list         :  procedure_argument COMMA procedure_argument_list
+        """ procedure_argument_list         :  procedure_argument_list COMMA procedure_argument
         """
-        attriblist = p[3]
-        attriblist.insert(0, p[1])
-        p[0] = attriblist    
+        attriblist = p[1]
+        attriblist.append(p[3])
+        p[0] = attriblist
+        
+    def p_procedure_argument_list_3(self, p):
+        """ procedure_argument_list         :  procedure_argument_list optional_procedure_argument
+                                                                | procedure_argument_list conditional_procedure_argument
+        """
+        attriblist = p[1]
+        attriblist.append(p[2])
+        p[0] = attriblist
             
     def p_procedure_argument_1(self, p):
         """ procedure_argument         :  required_procedure_argument
@@ -1213,11 +1221,19 @@ class RAPIDParser(PLYParser):
         p[0] = [ p[1] ]
             
     def p_function_argument_list_2(self, p):
-        """ function_argument_list         :  function_argument COMMA function_argument_list
+        """ function_argument_list         :  function_argument_list COMMA function_argument
         """
-        attriblist = p[3]
-        attriblist.insert(0, p[1])
+        attriblist = p[1]
+        attriblist.append(p[3])
         p[0] = attriblist    
+        
+    def p_function_argument_list_3(self, p):
+        """ function_argument_list         :  function_argument_list optional_function_argument
+                                                            | function_argument_list conditional_function_argument
+        """
+        attriblist = p[1]
+        attriblist.append(p[2])
+        p[0] = attriblist
             
     def p_function_argument(self, p):
         """ function_argument         :  required_function_argument
