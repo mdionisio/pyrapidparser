@@ -3,16 +3,55 @@ MODULE SYSTEMMODULE(SYSMODULE)
     ! from: 3HAC16581-1_revK_en
     !
     
-    !ErrWrite
-    !SkipWarn
-    !ExitCycle
     !CJointT
     !StopMove; 
     !ClearPath
     !StartMove
-    !Incr
     !WaitTestAndSet
-    !IsStopMoveAct
+    
+    FUNC bool IsStopMoveAct(\switch FromMoveTask | switch FromNonMoveTask)
+        !to be implemented
+        !
+        RETURN TRUE;
+    ENDFUNC
+    
+    PROC SkipWarn()
+    ENDPROC
+    
+    PROC ExitCycle()
+        !python:import sys
+        !python:print "Exit for ExitCycle"
+        !python:sys.exit(0)
+    ENDPROC
+    
+    PROC ErrWrite ( \switch W | switch I, string Header, string Reason, \string RL2, \string RL3, \string RL4)
+        !python:Header = pyrapid.Symbols().GetSymbol("Header").data.Get()
+        !python:Reason = pyrapid.Symbols().GetSymbol("Reason").data.Get()
+        IF Present(W) THEN
+            !python:print( "Warning" )
+        ENDIF
+        IF Present(I) THEN
+            !python:print( "Information" )
+        ENDIF
+        !python:print( "Header: %s, Reason: %s"%(Header, Reason) )
+        
+        IF Present(RL2) THEN
+            !python:RL2 = pyrapid.Symbols().GetSymbol("RL2").data.Get()
+            !python:print( RL2 )
+        ENDIF
+        
+        IF Present(RL3) THEN
+            !python:RL3 = pyrapid.Symbols().GetSymbol("RL3").data.Get()
+            !python:print( RL3 )
+        ENDIF
+        
+        IF Present(RL4) THEN
+            !python:RL4 = pyrapid.Symbols().GetSymbol("RL4").data.Get()
+            !python:print( RL4 )
+        ENDIF
+            
+    ENDPROC
+    
     
     PROC ClearRawBytes (VAR rawbytes RawData \num FromIndex)
         !python:FromIndex = 1
@@ -485,6 +524,43 @@ MODULE SYSTEMMODULE(SYSMODULE)
     PROC Add (INOUT num Name, num AddDvalue)
         Name := Name + AddDvalue;
     ENDPROC
+    
+    !PROC Incr( \INOUT num Name | INOUT num Dname )
+    !    IF Present(Name) THEN
+    !        Name := Name + 1;
+    !    ENDIF
+    !    IF Present(Dname) THEN
+    !        Dname := Dname + 1;
+    !    ENDIF
+    !ENDPROC
+    
+    !PROC Decr( \INOUT num Name | INOUT num Dname )
+    !    IF Present(Name) THEN
+    !        Name := Name - 1;
+    !    ENDIF
+    !    IF Present(Dname) THEN
+    !        Dname := Dname - 1;
+    !    ENDIF
+    !ENDPROC
+    
+    !PROC Add( \INOUT num Name | INOUT num Dname, \num AddValue, | \num AddDvalue)
+    !    IF Present(Name) THEN
+    !        IF Present(AddValue) THEN
+    !            Name := Name + AddValue;
+    !        ENDIF
+    !        IF Present(AddDvalue) THEN
+    !            Name := Name + AddDvalue;
+    !        ENDIF
+    !    ENDIF
+    !    IF Present(Dname) THEN
+    !        IF Present(AddDvalue) THEN
+    !            Dname := Dname + AddDvalue;
+    !        ENDIF
+    !        IF Present(AddValue) THEN
+    !            Dname := Dname + AddValue;
+    !        ENDIF
+    !    ENDIF
+    !ENDPROC
     
     PROC TryInit (num DataObj)
         !!!!!!!!!!!!!!!!!TODO
