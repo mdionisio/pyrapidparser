@@ -620,6 +620,19 @@ MODULE SYSTEMMODULE(SYSMODULE)
         RETURN ret;
     ENDFUNC
     
+    FUNC num StrMatch(string Str, num ChPos, string Pattern)
+        VAR num ret;
+        !python:Str = pyrapid.Symbols().GetSymbol("Str").data.Get()
+        !python:ChPos = pyrapid.Symbols().GetSymbol("ChPos").data.Get() - 1
+        !python:Pattern = pyrapid.Symbols().GetSymbol("Pattern").data.Get()
+        !python:ret = Str.find(Pattern, ChPos)
+        !python:if ret<0:
+        !python:        ret = len(Str)
+        !python:ret += 1
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set( ret )
+        RETURN ret;
+    ENDFUNC
+    
     FUNC num StrLen(string Str)
         VAR num ret;
         !python:Str = pyrapid.Symbols().GetSymbol("Str").data.Get()
