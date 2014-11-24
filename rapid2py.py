@@ -597,12 +597,12 @@ class rapid_%s (pyrapid.rapid_struct):
         
         self.writemodule("sys.exit(1)")
         
-    def visit_RetryStatementAST(self, node, error_statement, **kwargs):
+    def visit_RetryStatementAST(self, node, **kwargs):
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
         self.writemodule("return 1")
         
-    def visit_TrynextStatementAST(self, node, error_statement, **kwargs):
+    def visit_TrynextStatementAST(self, node, **kwargs):
         if not (node.coord is None):
             self.writemodule("# Line %s"%(str(node.coord),))
         self.writemodule("return 2")
@@ -1254,7 +1254,7 @@ class rapid_%s (pyrapid.rapid_struct):
         if self.tmp_outineDeclarationATS_data is None:
             pyrapid.Symbols().AddGlobalSym(self.function_name, pyrapid.Symbol.CreateFunction(self.params, returntype, _rapid_func_, _error_rapid_func_, _undo_rapid_func_), self.module_name)
         else:
-            pyrapid.Symbols().AddModuleSym(self.module_name, self.function_name, pyrapid.Symbol.CreateFunction(self.params, returntype, _rapid_proc_, _error_rapid_func_, _undo_rapid_func_))
+            pyrapid.Symbols().AddModuleSym(self.module_name, self.function_name, pyrapid.Symbol.CreateFunction(self.params, returntype, _rapid_func_, _error_rapid_func_, _undo_rapid_func_))
         
         self.writemodule("def error_rapid_func_%s (local_exception):" % (self.function_name,))
         with self.ModuleScope():

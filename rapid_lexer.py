@@ -126,7 +126,6 @@ class RAPIDLexer(object):
         'ERROR',
         'FOR',
         'GOTO',
-        'LOCAL',
         'NOSTEPIN',
         'OR',
         'RAISE',
@@ -195,8 +194,71 @@ class RAPIDLexer(object):
         'PLACEHOLDER_EXP',
         'PLACEHOLDER_ARG',
         'PLACEHOLDER_ID',
+        
+        #LOCAL
+        'LOCAL_PROC',
+        'LOCAL_FUNC',
+        'LOCAL_TRAP',
+        
+        'LOCAL_VAR',
+        'LOCAL_CONST',
+        'LOCAL_PERS',
+        
+        'LOCAL_RECORD',
+        'LOCAL_ALIAS',
   
     )
+    
+    local_proc = r'LOCAL[\t\ ]+PROC'
+    local_func = r'LOCAL[\t\ ]+FUNC'
+    local_trap = r'LOCAL[\t\ ]+TRAP'
+    
+    @TOKEN(local_proc)
+    def t_LOCAL_PROC(self, t):
+        t.value = "LOCAL PROC"
+        return t
+        
+    @TOKEN(local_func)
+    def t_LOCAL_FUNC(self, t):
+        t.value = "LOCAL FUNC"
+        return t
+    
+    @TOKEN(local_trap)
+    def t_LOCAL_TRAP(self, t):
+        t.value = "LOCAL TRAP"
+        return t
+        
+    local_var = r'LOCAL[\t\ ]+VAR'
+    local_const = r'LOCAL[\t\ ]+CONST'
+    local_pers = r'LOCAL[\t\ ]+PERS'
+    
+    @TOKEN(local_var)
+    def t_LOCAL_VAR(self, t):
+        t.value = "LOCAL VAR"
+        return t
+        
+    @TOKEN(local_const)
+    def t_LOCAL_CONST(self, t):
+        t.value = "LOCAL CONST"
+        return t
+    
+    @TOKEN(local_pers)
+    def t_LOCAL_PERS(self, t):
+        t.value = "LOCAL PERS"
+        return t
+        
+    local_record = r'LOCAL[\t\ ]+RECORD'
+    local_alias = r'LOCAL[\t\ ]+ALIAS'
+    
+    @TOKEN(local_record)
+    def t_LOCAL_RECORD(self, t):
+        t.value = "LOCAL RECORD"
+        return t
+        
+    @TOKEN(local_alias)
+    def t_LOCAL_ALIAS(self, t):
+        t.value = "LOCAL ALIAS"
+        return t
     
     t_PLACEHOLDER_TDN=r'<TDN>'# rapresentation of data type
     t_PLACEHOLDER_DDN=r'<DDN>' # rapresentation of data declaration
