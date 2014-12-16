@@ -142,6 +142,8 @@ class Symbols(Singleton.Singleton):
                     return self.module_symbol[modulename][symbolname]
                 except KeyError:
                     pass
+                print "get from global: "+str(symbolname)
+                print self.global_symbol
                 return self.global_symbol[symbolname]
             else:
                 #local
@@ -1077,6 +1079,20 @@ Symbols().AddGlobalSym("SINT", Symbol.CreateConst(rapid_num, rapid_num(-1)))
 Symbols().AddGlobalSym("INT", Symbol.CreateConst(rapid_num, rapid_num(-2)))
 Symbols().AddGlobalSym("DINT", Symbol.CreateConst(rapid_num, rapid_num(-4)))
 Symbols().AddGlobalSym("LINT", Symbol.CreateConst(rapid_num, rapid_num(-8)))
+
+
+Symbols().AddGlobalSym("inpos", Symbol.CreateConst(rapid_num, rapid_num(1)))
+Symbols().AddGlobalSym("stoptime", Symbol.CreateConst(rapid_num, rapid_num(2)))
+Symbols().AddGlobalSym("fllwtime", Symbol.CreateConst(rapid_num, rapid_num(3)))
+
+
+Symbols().AddGlobalSym("LT", Symbol.CreateConst(rapid_num, rapid_num(1)))
+Symbols().AddGlobalSym("LTEQ", Symbol.CreateConst(rapid_num, rapid_num(2)))
+Symbols().AddGlobalSym("EQ", Symbol.CreateConst(rapid_num, rapid_num(3)))
+Symbols().AddGlobalSym("NOTEQ", Symbol.CreateConst(rapid_num, rapid_num(4)))
+Symbols().AddGlobalSym("GTEQ", Symbol.CreateConst(rapid_num, rapid_num(5)))
+Symbols().AddGlobalSym("GT", Symbol.CreateConst(rapid_num, rapid_num(6)))
+
 
 
 

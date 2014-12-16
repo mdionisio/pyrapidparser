@@ -1,5 +1,31 @@
 MODULE SYSTEMMODULE(SYSMODULE)
 
+    ! TYPE DEFINITION
+    ALIAS num identno;
+    ALIAS num stoppoint;
+    ALIAS num opnum;
+    
+    RECORD stoppointdatainpos
+     num position;
+     num speed;
+     num mintime;
+     num maxtime;
+    ENDRECORD
+    
+    RECORD stoppointdata
+     stoppoint type;
+     bool progsynch;
+     stoppointdatainpos inpos;
+     num stoptime;
+     num followtime;
+     string signal;
+     opnum relation;
+     num checkvalue;
+    ENDRECORD
+    
+    
+    ! PROCEDURE DEFINITION
+
     ! from: 3HAC16581-1_revK_en
     !
     
@@ -701,9 +727,31 @@ MODULE SYSTEMMODULE(SYSMODULE)
         RETURN ret;
     ENDFUNC 
 
+!! Move Instruction
 
-    
+ ! MoveL
+ !PROC MoveL ( \switch Conc, robtarget ToPoint \identno ID, speeddata Speed \num V | num T, zonedata Zone \num Z \stoppointdata Inpos, tooldata Tool \wobjdata WObj \switch Corr)
+ PROC MoveL ( robtarget ToPoint, speeddata Speed, zonedata Zone, tooldata Tool)
+  !python:print("--------- MOVEL ------------")
+ ENDPROC
+ 
+! MoveC
+! MoveJ
 
+! MoveAbsJ
+! MoveExtB
+! MoveCDO
+! MoveJDO
+! MoveLDO
+! MoveCSync
+! MoveJSync
+! MoveLSync
+
+PROC ConfJ(\switch On | switch Off)
+ENDPROC
+
+PROC ConfL(\switch On | switch Off)
+ENDPROC
 
     
 ENDMODULE
