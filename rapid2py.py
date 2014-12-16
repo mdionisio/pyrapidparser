@@ -249,10 +249,21 @@ class rapid_%s (pyrapid.rapid_struct):
             compute = EvaluateRapidExpression(self.module_name, self.function_name)
             compute.visit(varinstance_value, **kwargs)
             varinstance_value = compute.return_value
-                
-        if len(varinstance_size)==0:
+        
+        if type(varinstance_value) == list:
+            reprvarinstance_value = []
+            for i in varinstance_value:
+                if hasattr(i, "Get"):
+                    reprvarinstance_value.append(repr(i.Get()))
+                else:
+                    reprvarinstance_value.append(repr(i))
+            reprvarinstance_value = "[ " + ", ".join(reprvarinstance_value) + " ]"
+        else:
+            reprvarinstance_value = repr(varinstance_value)
+         
+        if len(varinstance_size) == 0:
             getvar = createvar(pyrapid.Symbols().GetSymbol(vartype, self.module_name, self.function_name).data(varinstance_value))
-            sgetvar = "%s(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(%s))" % ( createvars, repr(vartype), repr(self.module_name), repr(self.function_name), repr(varinstance_value) )
+            sgetvar = "%s(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data(%s))" % ( createvars, repr(vartype), repr(self.module_name), repr(self.function_name), reprvarinstance_value )
         else:
             size = []
             for i in varinstance_size:
@@ -260,7 +271,7 @@ class rapid_%s (pyrapid.rapid_struct):
                 compute.visit(i, **kwargs)
                 size.append(compute.return_value)
             getvar = createvar(   pyrapid.rapid_array(size, pyrapid.Symbols().GetSymbol(vartype, self.module_name, self.function_name).data, varinstance_value ) )
-            sgetvar = "%s( pyrapid.rapid_array(%s, pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data, %s) )" % ( createvars, str(size), repr(vartype), repr(self.module_name), repr(self.function_name), repr(varinstance_value) )
+            sgetvar = "%s( pyrapid.rapid_array(%s, pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data, %s) )" % ( createvars, str(size), repr(vartype), repr(self.module_name), repr(self.function_name), reprvarinstance_value )
             
         return (varinstance_name, getvar, sgetvar)
             
@@ -895,7 +906,7 @@ class rapid_%s (pyrapid.rapid_struct):
             #vartype = parameters_defined[argumentname][2]
             #varsize = parameters_defined[argumentname][2]
             #
-            if parameters_defined[argumentname][1]=="NORMAL":
+            if parameters_defined[argumentname][1] == "NORMAL":
                 #todo make type compare
                 vartype = parameters_defined[argumentname][2]
                 varinstance_size = parameters_defined[argumentname][3]
