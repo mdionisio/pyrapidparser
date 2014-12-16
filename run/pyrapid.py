@@ -789,7 +789,7 @@ Symbols().AddGlobalSym("orient", Symbol.CreateDataType(rapid_orient))
 
 class rapid_o_robtarget (rapid_struct):
     def __init__(self, val=None):
-        rapid_struct.__init__(self, ["trans", "rot", "robconf", "extax"], [rapid_pos, rapid_orient, rapid_confdata, rapid_extjoint])
+        rapid_struct.__init__(self, ["trans", "rot", "robconf", "extax"], [rapid_pos, rapid_orient, rapid_Confdata, rapid_extjoint])
         if not(val  is None):
             self.Set( val )
             
@@ -860,7 +860,7 @@ Symbols().AddGlobalSym("robjoint", Symbol.CreateDataType(rapid_robjoint))
 
 class rapid_robtarget (rapid_struct):
     def __init__(self, val=None):
-        rapid_struct.__init__(self, ["trans", "rot", "robconf", "extax"], [rapid_pos, rapid_orient, rapid_confdata, rapid_extjoint])
+        rapid_struct.__init__(self, ["trans", "rot", "robconf", "extax"], [rapid_pos, rapid_orient, rapid_Confdata, rapid_extjoint])
         if not(val  is None):
             self.Set( val )
             

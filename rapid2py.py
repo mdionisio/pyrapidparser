@@ -168,10 +168,14 @@ class TraslateRapidToPython( rapid_ast.NodeVisitor ):
         
         if self.tmp_TypeDefAST_data is None:
             pyrapid.Symbols().AddGlobalSym(aliasname, pyrapid.Symbol.CreateDataType(newsym))
-            self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateDataType(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data))"%(repr(aliasname), repr(typename), repr(self.module_name), repr(self.function_name), ))
+            self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateDataType(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data))" % (
+             repr(aliasname), 
+             repr(typename), repr(self.module_name), repr(self.function_name), ))
         else:
             pyrapid.Symbols().AddModuleSym(self.module_name, aliasname, pyrapid.Symbol.CreateDataType(newsym))
-            self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, pyrapid.Symbol.CreateDataType(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data))"%(repr(self.module_name), repr(aliasname), repr(typename), repr(self.module_name), repr(self.function_name), ))
+            self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, pyrapid.Symbol.CreateDataType(pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data))" % ( 
+             repr(self.module_name), repr(aliasname), 
+             repr(typename), repr(self.module_name), repr(self.function_name), ))
 
     def visit_RecordDefAST(self, node, **kwargs):
         if not (node.coord is None):
@@ -212,10 +216,14 @@ class rapid_%s (pyrapid.rapid_struct):
 
         if self.tmp_TypeDefAST_data is None:
             pyrapid.Symbols().AddGlobalSym(record_name, pyrapid.Symbol.CreateDataType(eval("rapid_%s" % (record_name,))))
-            self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateDataType(rapid_%s))"%(repr(record_name), record_name,))
+            self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateDataType(rapid_%s))" % (
+             repr(record_name), 
+             record_name,))
         else:
             pyrapid.Symbols().AddModuleSym(self.module_name, record_name, pyrapid.Symbol.CreateDataType(eval("rapid_%s" % (record_name,))))
-            self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, pyrapid.Symbol.CreateDataType(rapid_%s))"%(repr(self.module_name), repr(record_name), record_name, ))
+            self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, pyrapid.Symbol.CreateDataType(rapid_%s))" % (
+             repr(self.module_name), repr(record_name), 
+             record_name, ))
             
         self.writemodule("del rapid_%s"%(record_name,))
 
@@ -276,11 +284,11 @@ class rapid_%s (pyrapid.rapid_struct):
             if self.function_name is None:
                 #module declaration it is LOCAL in the module
                 pyrapid.Symbols().AddModuleSym( self.module_name, varinstance_name, getvar )
-                self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, %s)"%(repr(self.module_name), repr(varinstance_name), sgetvar) )
+                self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, %s)" % (repr(self.module_name), repr(varinstance_name), sgetvar) )
             else:
                 #function declaration it is in the Scope of the function
                 pyrapid.Symbols().AddScopeSym( varinstance_name, getvar )
-                self.writemodule( "pyrapid.Symbols().AddScopeSym(%s, %s)"%(repr(varinstance_name), sgetvar) )
+                self.writemodule( "pyrapid.Symbols().AddScopeSym(%s, %s)" % (repr(varinstance_name), sgetvar) )
         
     def visit_ConstDeclarationAST(self, node, **kwargs):
         if not (node.coord is None):
@@ -301,11 +309,11 @@ class rapid_%s (pyrapid.rapid_struct):
             if self.function_name is None:
                 #module declaration it is LOCAL in the module
                 pyrapid.Symbols().AddModuleSym( self.module_name, varinstance_name, getvar )
-                self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, %s)"%(repr(self.module_name), repr(varinstance_name), sgetvar) )
+                self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, %s)" % (repr(self.module_name), repr(varinstance_name), sgetvar) )
             else:
                 #function declaration it is in the Scope of the function
                 pyrapid.Symbols().AddScopeSym( varinstance_name, getvar )
-                self.writemodule( "pyrapid.Symbols().AddScopeSym(%s, %s)"%(repr(varinstance_name), sgetvar) )
+                self.writemodule( "pyrapid.Symbols().AddScopeSym(%s, %s)" % (repr(varinstance_name), sgetvar) )
     
     def visit_PersDeclarationAST(self, node, **kwargs):
         if not (node.coord is None):
@@ -326,11 +334,11 @@ class rapid_%s (pyrapid.rapid_struct):
             if self.function_name is None:
                 #module declaration it is LOCAL in the module
                 pyrapid.Symbols().AddModuleSym( self.module_name, varinstance_name, getvar )
-                self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, %s)"%(repr(self.module_name), repr(varinstance_name), sgetvar) )
+                self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, %s)" % (repr(self.module_name), repr(varinstance_name), sgetvar) )
             else:
                 #function declaration it is in the Scope of the function
                 pyrapid.Symbols().AddLocalSym(self.module_name, self.function_name, varinstance_name, getvar )
-                self.writemodule( "pyrapid.Symbols().AddLocalSym($s, %s, %s, %s)"%(repr(self.module_name), repr(self.function_name), repr(varinstance_name), sgetvar) )
+                self.writemodule( "pyrapid.Symbols().AddLocalSym($s, %s, %s, %s)" % (repr(self.module_name), repr(self.function_name), repr(varinstance_name), sgetvar) )
         
     def pre_visit_RoutineDeclarationATS(self, node, **kwargs):
         self.writemodule("############################# start routine declaration")
@@ -525,7 +533,7 @@ class rapid_%s (pyrapid.rapid_struct):
                     self.writemodule("else:")
                     with self.ModuleScope():
                         #execute undo
-                        self.writemodule("undo_manager_call = pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s).undo_call" % ( self.function_name, repr(self.module_name) ))
+                        self.writemodule("undo_manager_call = pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s).undo_call" % ( repr(self.function_name), repr(self.module_name) ))
                         self.writemodule("if not(undo_manager_call is None):")
                         with self.ModuleScope():
                             self.writemodule("undo_manager_call()")
@@ -1176,7 +1184,7 @@ class rapid_%s (pyrapid.rapid_struct):
                             else:
                                 getvar = pyrapid.Symbol.CreateVar(pyrapid.rapid_array([], pyrapid.Symbols().GetSymbol(ptype, self.module_name, self.function_name).data) )
                         except:
-                            raise Exception("error progrably not defined symbol %s (module %s, function %s)"%(ptype, self.module_name, self.function_name))
+                            raise Exception("error probably not defined symbol %s (module %s, function %s)"%(ptype, self.module_name, self.function_name))
                     pyrapid.Symbols().AddScopeSym(ik, getvar)
                 self.writemodule( "with pyrapid.Symbols().Scope(modulename=%s, functionname=%s, invalue=local_args_scope):"%(repr(self.module_name), repr(self.function_name)))
                 with self.ModuleScope():
@@ -1204,10 +1212,15 @@ class rapid_%s (pyrapid.rapid_struct):
         
         if self.tmp_outineDeclarationATS_data is None:
             self.writemodule("# rapid2py.py line:%d"%( pyrapid.lineno(), ))
-            self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateProcedure(%s, rapid_proc_%s, error_rapid_proc_%s, undo_rapid_proc_%s), %s)"%(repr(self.function_name), params, self.function_name, self.function_name, self.function_name, repr(self.module_name),))
+            self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateProcedure(%s, rapid_proc_%s, error_rapid_proc_%s, undo_rapid_proc_%s), %s)" % (
+             repr(self.function_name), 
+             params, self.function_name, self.function_name, self.function_name, 
+             repr(self.module_name),))
         else:
             self.writemodule("# rapid2py.py line:%d"%( pyrapid.lineno(), ))
-            self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, pyrapid.Symbol.CreateProcedure(%s, rapid_proc_%s, error_rapid_proc_%s, undo_rapid_proc_%s))"%(repr(self.module_name), repr(self.function_name), params, self.function_name, self.function_name, self.function_name, ))
+            self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, pyrapid.Symbol.CreateProcedure(%s, rapid_proc_%s, error_rapid_proc_%s, undo_rapid_proc_%s))" % (
+             repr(self.module_name), repr(self.function_name), 
+             params, self.function_name, self.function_name, self.function_name, ))
             
         self.writemodule("del rapid_proc_%s" % (self.function_name,))
         
@@ -1307,9 +1320,14 @@ class rapid_%s (pyrapid.rapid_struct):
                     self.writemodule("# end stantment")
             
         if self.tmp_outineDeclarationATS_data is None:
-            self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateFunction(%s, %s, rapid_func_%s, error_rapid_func_%s, undo_rapid_func_%s), %s)"%(repr(self.function_name), params, sreturntype, self.function_name, self.function_name, self.function_name, repr(self.module_name),))
+            self.writemodule( "pyrapid.Symbols().AddGlobalSym(%s, pyrapid.Symbol.CreateFunction(%s, %s, rapid_func_%s, error_rapid_func_%s, undo_rapid_func_%s), %s)" % (
+                                                              repr(self.function_name),
+                                                              params, sreturntype, self.function_name, self.function_name, self.function_name, 
+                                                              repr(self.module_name),))
         else:
-            self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, pyrapid.Symbol.CreateFunction(%s, %s, rapid_func_%s, error_rapid_func_%s, undo_rapid_func_%s))"%(repr(self.module_name), params, sreturntype, repr(self.function_name), self.function_name, self.function_name, self.function_name, ))
+            self.writemodule( "pyrapid.Symbols().AddModuleSym(%s, %s, pyrapid.Symbol.CreateFunction(%s, %s, rapid_func_%s, error_rapid_func_%s, undo_rapid_func_%s))" % (
+                                                              repr(self.module_name), repr(self.function_name), 
+                                                              params, sreturntype, self.function_name, self.function_name, self.function_name, ))
             
         self.writemodule("del rapid_func_%s" % (self.function_name,))
         

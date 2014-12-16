@@ -134,7 +134,6 @@ class RAPIDLexer(object):
         'TO',
         'TRYNEXT',
         'WHILE',
-        'TASK', #NOT IN DOCUMENTATION
         'UNDO', #NOT IN DOCUMENTATION
         'switch',#NOT IN DOCUMENTATION
     )
@@ -206,6 +205,10 @@ class RAPIDLexer(object):
         
         'LOCAL_RECORD',
         'LOCAL_ALIAS',
+        
+        #TASK
+        'TASK_VAR',
+        'TASK_PERS',
   
     )
     
@@ -232,6 +235,10 @@ class RAPIDLexer(object):
     local_const = r'LOCAL[\t\ ]+CONST'
     local_pers = r'LOCAL[\t\ ]+PERS'
     
+    #task type is not documented
+    task_var = r'TASK[\t\ ]+VAR'
+    task_pers = r'TASK[\t\ ]+PERS'
+    
     @TOKEN(local_var)
     def t_LOCAL_VAR(self, t):
         t.value = "LOCAL VAR"
@@ -245,6 +252,16 @@ class RAPIDLexer(object):
     @TOKEN(local_pers)
     def t_LOCAL_PERS(self, t):
         t.value = "LOCAL PERS"
+        return t
+        
+    @TOKEN(task_var)
+    def t_TASK_VAR(self, t):
+        t.value = "TASK VAR"
+        return t
+    
+    @TOKEN(task_pers)
+    def t_TASK_PERS(self, t):
+        t.value = "TASK PERS"
         return t
         
     local_record = r'LOCAL[\t\ ]+RECORD'
