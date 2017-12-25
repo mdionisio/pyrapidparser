@@ -23,7 +23,8 @@ class RAPIDParser(PLYParser):
             yacc_optimize=True,
             yacctab='pyRAPIDparser.yacctab',
             yacc_debug=False,
-            start_from='module_declaration'):
+            start_from='module_declaration',
+            taboutputdir=''):
         """ Create a new RAPIDParser.
         
             Some arguments for controlling the debug/optimization
@@ -64,12 +65,17 @@ class RAPIDParser(PLYParser):
             yacc_debug:
                 Generate a parser.out file that explains how yacc
                 built the parsing table from the grammar.
+                
+            taboutputdir:
+                Set this parameter to control the location of generated
+                lextab and yacctab files.
         """
         self.rapidlex = RAPIDLexer( error_func=self._lex_error_func )
             
         self.rapidlex.build(
             optimize=lex_optimize,
-            lextab=lextab)
+            lextab=lextab,
+            outputdir=taboutputdir)
         self.tokens = self.rapidlex.tokens
         
         self.rapidparser = ply.yacc.yacc(
@@ -77,7 +83,8 @@ class RAPIDParser(PLYParser):
             start=start_from,
             debug=yacc_debug,
             optimize=yacc_optimize,
-            tabmodule=yacctab)
+            tabmodule=yacctab,
+            outputdir=taboutputdir)
         
         # Stack of scopes for keeping track of typedefs. _scope_stack[-1] is
         # the current (topmost) scope.
