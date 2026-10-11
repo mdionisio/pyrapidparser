@@ -160,14 +160,86 @@ class RAPIDParser(PLYParser):
     ###
     
     def p_module_declaration_1(self, p):
-        """ module_declaration    : MODULE identifier type_definition_list data_declaration_list routine_definition_list ENDMODULE
+        """ module_declaration    : MODULE identifier module_item_list ENDMODULE
         """
-        p[0] = rapid_ast.ModuleAST(p[2], [], p[3], p[4],p[5], coord=self._coord(p.lineno(1)))
+        types, datas, routines = self._split_module_items(p[3])
+        p[0] = rapid_ast.ModuleAST(p[2], [], types, datas, routines, coord=self._coord(p.lineno(1)))
         
     def p_module_declaration_2(self, p):
-        """ module_declaration    : MODULE identifier LPAREN module_attributelist RPAREN type_definition_list data_declaration_list routine_definition_list  ENDMODULE
+        """ module_declaration    : MODULE identifier LPAREN module_attributelist RPAREN module_item_list ENDMODULE
         """
-        p[0] = rapid_ast.ModuleAST(p[2], p[4], p[6], p[7], p[8], coord=self._coord(p.lineno(1)))
+        types, datas, routines = self._split_module_items(p[6])
+        p[0] = rapid_ast.ModuleAST(p[2], p[4], types, datas, routines, coord=self._coord(p.lineno(1)))
+    
+    # type, data and routine declarations can be mixed inside a module. With
+    # LOCAL and TASK as separate tokens the parser can't decide with one token
+    # of lookahead where one section ends and the next begins, so the module
+    # body is a single list that is split by kind here.
+    # A comment is kept in the section of the last declaration seen.
+    _MODULE_ITEM_ORDER = { 'type': 0, 'data': 1, 'routine': 2 }
+    
+    def _split_module_items(self, items):
+        sections = ( [], [], [] )
+        current = 0
+        for kind, item in items:
+            if kind != 'comment':
+                current = max(current, self._MODULE_ITEM_ORDER[kind])
+                sections[self._MODULE_ITEM_ORDER[kind]].append(item)
+            else:
+                sections[current].append(item)
+        return sections
+    
+    def p_module_item_list_1(self, p):
+        """ module_item_list    : 
+        """
+        p[0] = [ ]
+        
+    def p_module_item_list_2(self, p):
+        """ module_item_list    : module_item_list module_item
+        """
+        attriblist = p[1]
+        attriblist.append(p[2])
+        p[0] = attriblist
+        
+    def p_module_item_1(self, p):
+        """ module_item         : COMMENT
+        """
+        p[0] = ( 'comment', rapid_ast.CommentAST(p[1], coord=self._coord(p.lineno(1))) )
+        
+    def p_module_item_2(self, p):
+        """ module_item         : PLACEHOLDER_TDN
+        """
+        p[0] = ( 'type', rapid_ast.TypeDefAST(None, None, coord=self._coord(p.lineno(1))) )
+        
+    def p_module_item_3(self, p):
+        """ module_item         : PLACEHOLDER_DDN
+        """
+        p[0] = ( 'data', rapid_ast.DataDefATS(None, None, coord=self._coord(p.lineno(1))) )
+        
+    def p_module_item_4(self, p):
+        """ module_item         : PLACEHOLDER_RDN
+        """
+        p[0] = ( 'routine', rapid_ast.RoutineDeclarationATS(None, None, coord=self._coord(p.lineno(1))) )
+        
+    def p_module_item_5(self, p):
+        """ module_item         : record_definition
+                                | alias_definition
+        """
+        p[0] = ( 'type', p[1] )
+        
+    def p_module_item_6(self, p):
+        """ module_item         : variable_declaration
+                                | persistent_declaration
+                                | constant_declaration
+        """
+        p[0] = ( 'data', p[1] )
+        
+    def p_module_item_7(self, p):
+        """ module_item         : procedure_declaration
+                                | function_declaration
+                                | trap_declaration
+        """
+        p[0] = ( 'routine', p[1] )
     
     def p_module_attributelist_1(self, p):
         """ module_attributelist    : module_attribute
@@ -190,18 +262,6 @@ class RAPIDParser(PLYParser):
         """
         p[0] = rapid_ast.ModuleAttributeAST(p[1], coord=self._coord(p.lineno(1)) )
         
-    def p_type_definition_list_1(self, p):
-        """ type_definition_list         : 
-        """
-        p[0] = []
-        
-    def p_type_definition_list_2(self, p):
-        """ type_definition_list         : type_definition_list type_definition
-        """
-        attriblist = p[1]
-        attriblist.append(p[2])
-        p[0] = attriblist
-                
     def p_data_declaration_list_1(self, p):
         """ data_declaration_list         : 
         """
@@ -214,41 +274,6 @@ class RAPIDParser(PLYParser):
         attriblist.append(p[2])
         p[0] = attriblist
         
-        
-    def p_routine_definition_list_1(self, p):
-        """ routine_definition_list         :
-        """
-        p[0] = []
-            
-    def p_routine_definition_list_2(self, p):
-        """ routine_definition_list         : routine_definition_list routine_declaration
-        """
-        attriblist = p[1]
-        attriblist.append(p[2])
-        p[0] = attriblist
-        
-    
-    ###
-    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
-    ###  Routine Declaration.    par:5
-    ###
-            
-    def p_routine_declaration_1(self, p):
-        """ routine_declaration         : COMMENT
-        """
-        p[0] = rapid_ast.CommentAST(p[1], coord=self._coord(p.lineno(1)))
-        
-    def p_routine_declaration_2(self, p):
-        """ routine_declaration         : PLACEHOLDER_RDN
-        """
-        p[0] =  rapid_ast.RoutineDeclarationATS(None, None, coord=self._coord(p.lineno(1)))
-        
-    def p_routine_declaration_3(self, p):
-        """ routine_declaration         : procedure_declaration
-                                                    | function_declaration
-                                                    | trap_declaration
-        """
-        p[0] =  p[1]
         
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
@@ -405,9 +430,9 @@ class RAPIDParser(PLYParser):
         p[0] = rapid_ast.RoutineDeclarationATS(None, rapid_ast.ProcedureDeclarationAST(p[2], p[4], p[6], p[7], p[8], p[9], p[10], coord=self._coord(p.lineno(1))), coord=None)
         
     def p_procedure_declaration_2(self, p):
-        """ procedure_declaration         : LOCAL_PROC identifier LPAREN parameter_list RPAREN data_declaration_list statement_list routine_backward routine_error routine_undo ENDPROC
+        """ procedure_declaration         : LOCAL PROC identifier LPAREN parameter_list RPAREN data_declaration_list statement_list routine_backward routine_error routine_undo ENDPROC
         """
-        p[0] = rapid_ast.RoutineDeclarationATS("LOCAL", rapid_ast.ProcedureDeclarationAST(p[2], p[4], p[6], p[7], p[8], p[9], p[10], coord=self._coord(p.lineno(1))), coord=None)
+        p[0] = rapid_ast.RoutineDeclarationATS("LOCAL", rapid_ast.ProcedureDeclarationAST(p[3], p[5], p[7], p[8], p[9], p[10], p[11], coord=self._coord(p.lineno(1))), coord=None)
                         
     def p_routine_backward_1(self, p):
         """ routine_backward         : 
@@ -469,9 +494,9 @@ class RAPIDParser(PLYParser):
         p[0] = rapid_ast.RoutineDeclarationATS(None, rapid_ast.FunctionDeclarationAST(p[2], p[3], p[5], p[7], p[8], p[9], p[10], coord=self._coord(p.lineno(1))), coord=None);
         
     def p_function_declaration_2(self, p):
-        """ function_declaration         : LOCAL_FUNC identifier identifier LPAREN parameter_list RPAREN data_declaration_list statement_list routine_error routine_undo ENDFUNC
+        """ function_declaration         : LOCAL FUNC identifier identifier LPAREN parameter_list RPAREN data_declaration_list statement_list routine_error routine_undo ENDFUNC
         """  
-        p[0] = rapid_ast.RoutineDeclarationATS("LOCAL", rapid_ast.FunctionDeclarationAST(p[2], p[3], p[5], p[7], p[8], p[9], p[10], coord=self._coord(p.lineno(1))), coord=None);
+        p[0] = rapid_ast.RoutineDeclarationATS("LOCAL", rapid_ast.FunctionDeclarationAST(p[3], p[4], p[6], p[8], p[9], p[10], p[11], coord=self._coord(p.lineno(1))), coord=None);
         
     def p_trap_declaration_1(self, p):
         """ trap_declaration         : TRAP identifier data_declaration_list statement_list routine_error routine_undo ENDTRAP
@@ -479,9 +504,9 @@ class RAPIDParser(PLYParser):
         p[0] = rapid_ast.RoutineDeclarationATS(None, rapid_ast.TrapDeclarationAST(p[2], p[3], p[4], p[5], p[6], coord=self._coord(p.lineno(1))), coord=None);
         
     def p_trap_declaration_2(self, p):
-        """ trap_declaration         : LOCAL_TRAP identifier data_declaration_list statement_list routine_error routine_undo ENDTRAP
+        """ trap_declaration         : LOCAL TRAP identifier data_declaration_list statement_list routine_error routine_undo ENDTRAP
         """   
-        p[0] = rapid_ast.RoutineDeclarationATS("LOCAL", rapid_ast.TrapDeclarationAST(p[2], p[3], p[4], p[5], p[6], coord=self._coord(p.lineno(1))), coord=None);
+        p[0] = rapid_ast.RoutineDeclarationATS("LOCAL", rapid_ast.TrapDeclarationAST(p[3], p[4], p[5], p[6], p[7], coord=self._coord(p.lineno(1))), coord=None);
         
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
@@ -932,14 +957,14 @@ class RAPIDParser(PLYParser):
         p[0] = rapid_ast.DataDefATS(None, rapid_ast.VarDeclarationAST(p[2], p[3], coord=self._coord(p.lineno(1))), coord=None);
         
     def p_variable_declaration_2(self, p):
-        """ variable_declaration         : LOCAL_VAR identifier variable_definition SEMI
+        """ variable_declaration         : LOCAL VAR identifier variable_definition SEMI
         """
-        p[0] = rapid_ast.DataDefATS("LOCAL", rapid_ast.VarDeclarationAST(p[2], p[3], coord=self._coord(p.lineno(1))), coord=None);
+        p[0] = rapid_ast.DataDefATS("LOCAL", rapid_ast.VarDeclarationAST(p[3], p[4], coord=self._coord(p.lineno(1))), coord=None);
         
     def p_variable_declaration_3(self, p):
-        """ variable_declaration         : TASK_VAR identifier variable_definition SEMI
+        """ variable_declaration         : TASK VAR identifier variable_definition SEMI
         """
-        p[0] = rapid_ast.DataDefATS("TASK", rapid_ast.VarDeclarationAST(p[2], p[3], coord=self._coord(p.lineno(1))), coord=None);
+        p[0] = rapid_ast.DataDefATS("TASK", rapid_ast.VarDeclarationAST(p[3], p[4], coord=self._coord(p.lineno(1))), coord=None);
         
     def p_variable_definition_1(self, p):
         """ variable_definition         : identifier
@@ -1313,14 +1338,14 @@ class RAPIDParser(PLYParser):
         p[0] = rapid_ast.DataDefATS(None, rapid_ast.PersDeclarationAST(p[2], p[3], coord=self._coord(p.lineno(1))), coord=None);
         
     def p_persistent_declaration_2(self, p):
-        """ persistent_declaration         : LOCAL_PERS identifier variable_definition SEMI
+        """ persistent_declaration         : LOCAL PERS identifier variable_definition SEMI
         """
-        p[0] = rapid_ast.DataDefATS("LOCAL", rapid_ast.PersDeclarationAST(p[2], p[3], coord=self._coord(p.lineno(1))), coord=None);
+        p[0] = rapid_ast.DataDefATS("LOCAL", rapid_ast.PersDeclarationAST(p[3], p[4], coord=self._coord(p.lineno(1))), coord=None);
         
     def p_persistent_declaration_3(self, p):
-        """ persistent_declaration         : TASK_PERS identifier variable_definition SEMI
+        """ persistent_declaration         : TASK PERS identifier variable_definition SEMI
         """
-        p[0] = rapid_ast.DataDefATS("TASK", rapid_ast.PersDeclarationAST(p[2], p[3], coord=self._coord(p.lineno(1))), coord=None);
+        p[0] = rapid_ast.DataDefATS("TASK", rapid_ast.PersDeclarationAST(p[3], p[4], coord=self._coord(p.lineno(1))), coord=None);
                 
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf
@@ -1333,30 +1358,10 @@ class RAPIDParser(PLYParser):
         p[0] = rapid_ast.DataDefATS(None, rapid_ast.ConstDeclarationAST(p[2], p[3], coord=self._coord(p.lineno(1))), coord=None);    
         
     def p_constant_declaration_2(self, p):
-        """ constant_declaration         : LOCAL_CONST identifier variable_definition SEMI
+        """ constant_declaration         : LOCAL CONST identifier variable_definition SEMI
         """
-        p[0] = rapid_ast.DataDefATS("LOCAL", rapid_ast.ConstDeclarationAST(p[2], p[3], coord=self._coord(p.lineno(1))), coord=None);
+        p[0] = rapid_ast.DataDefATS("LOCAL", rapid_ast.ConstDeclarationAST(p[3], p[4], coord=self._coord(p.lineno(1))), coord=None);
         
-    ###
-    ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revB_en_library.pdf
-    ###  Data Types.    par:2.11
-    ###
-    
-    def p_type_definition_1(self, p):
-        """ type_definition         : COMMENT
-        """
-        p[0] = rapid_ast.CommentAST(p[1], coord=self._coord(p.lineno(1)))
-    
-    def p_type_definition_2(self, p):
-        """ type_definition         : PLACEHOLDER_TDN
-        """
-        p[0] = rapid_ast.TypeDefAST(None, None, coord=self._coord(p.lineno(1)))
-    
-    def p_type_definition_3(self, p):
-        """ type_definition         : record_definition
-                                             | alias_definition
-        """
-        p[0] = p[1]
     
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revB_en_library.pdf
@@ -1369,9 +1374,9 @@ class RAPIDParser(PLYParser):
         p[0] = rapid_ast.TypeDefAST(None, rapid_ast.RecordDefAST(p[2], p[3], coord=self._coord(p.lineno(1))), coord=None);
         
     def p_record_definition_2(self, p):
-        """ record_definition         : LOCAL_RECORD identifier record_component_list ENDRECORD
+        """ record_definition         : LOCAL RECORD identifier record_component_list ENDRECORD
         """
-        p[0] = rapid_ast.TypeDefAST("LOCAL",rapid_ast.RecordDefAST(p[2], p[3], coord=self._coord(p.lineno(1))), coord=None)
+        p[0] = rapid_ast.TypeDefAST("LOCAL",rapid_ast.RecordDefAST(p[3], p[4], coord=self._coord(p.lineno(1))), coord=None)
         
     def p_record_component_list_1(self, p):
         """ record_component_list         : record_component_definition
@@ -1402,9 +1407,9 @@ class RAPIDParser(PLYParser):
         p[0] = rapid_ast.TypeDefAST(None, rapid_ast.AliasDefATS(p[2], p[3], coord=self._coord(p.lineno(1))), coord=None);
         
     def p_alias_definition_2(self, p):
-        """ alias_definition         : LOCAL_ALIAS identifier identifier SEMI
+        """ alias_definition         : LOCAL ALIAS identifier identifier SEMI
         """
-        p[0] = rapid_ast.TypeDefAST("LOCAL", rapid_ast.AliasDefATS(p[2], p[3], coord=self._coord(p.lineno(1))), coord=None)
+        p[0] = rapid_ast.TypeDefAST("LOCAL", rapid_ast.AliasDefATS(p[3], p[4], coord=self._coord(p.lineno(1))), coord=None)
         
 
     # END GRAMMAR
