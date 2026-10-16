@@ -1,7 +1,7 @@
 from copy import deepcopy
 import operator
 
-import Singleton
+from run import Singleton
 
 import inspect
 
@@ -94,7 +94,7 @@ class SymFunction(Symbol):
         self.undo_call = undo_call
     
     def AddLocalSymbol(self, symbolname, data):
-        if self.localsymbol.has_key(symbolname):
+        if (symbolname in self.localsymbol):
             raise Exception("symbol %s already defined"%(symbolname,))
         else:
             self.localsymbol[symbolname] = data
@@ -108,7 +108,7 @@ class SymProcedure(Symbol):
         self.undo_call = undo_call
     
     def AddLocalSymbol(self, symbolname, data):
-        if self.localsymbol.has_key(symbolname):
+        if (symbolname in self.localsymbol):
             raise Exception("symbol %s already defined"%(symbolname,))
         else:
             self.localsymbol[symbolname] = data
@@ -142,8 +142,8 @@ class Symbols(Singleton.Singleton):
                     return self.module_symbol[modulename][symbolname]
                 except KeyError:
                     pass
-                print "get from global: "+str(symbolname)
-                print self.global_symbol
+                print("get from global: "+str(symbolname))
+                print(self.global_symbol)
                 return self.global_symbol[symbolname]
             else:
                 #local
@@ -161,12 +161,12 @@ class Symbols(Singleton.Singleton):
             
     def IsInScope(self, symbolname):
         try:
-            return self.scope_symbol[-1][2].has_key(symbolname)
+            return (symbolname in self.scope_symbol[-1][2])
         except:
             return False
             
     def UnLoadModule(self, modulename):
-        if self.module_global_symbol.has_key(modulename):
+        if (modulename in self.module_global_symbol):
             for i in self.module_global_symbol[modulename]:
                 self.global_symbol.pop(i)
             self.module_global_symbol.pop(modulename)
@@ -175,21 +175,21 @@ class Symbols(Singleton.Singleton):
             
         
     def AddGlobalSym(self, symbolname, data, modulename=None):
-        if self.global_symbol.has_key(symbolname):
+        if (symbolname in self.global_symbol):
             raise Exception("symbol %s already defined"%(symbolname,))
         else:
             self.global_symbol[symbolname] = data
             if not(modulename is None):
-                if self.module_global_symbol.has_key(modulename):
+                if (modulename in self.module_global_symbol):
                     self.module_global_symbol[modulename].append(symbolname)
                 else:
                     self.module_global_symbol[modulename] = [ symbolname ]
         
     def AddModuleSym(self, module, symbolname, data):
-        if not self.module_symbol.has_key(module):
+        if not (module in self.module_symbol):
             self.module_symbol[module] = {}
         msymbol = self.module_symbol[module]
-        if msymbol.has_key(symbolname):    
+        if (symbolname in msymbol):    
             raise Exception("symbol %s already defined in module %s"%(symbolname,module))
         else:
             msymbol[symbolname] = data
@@ -217,19 +217,19 @@ class Symbols(Singleton.Singleton):
         modulename = self.scope_symbol[-1][0]
         functionname = self.scope_symbol[-1][1]
         symbols = self.scope_symbol[-1][2]
-        if symbols.has_key(symbolname):
+        if (symbolname in symbols):
             raise Exception("symbol %s already defined in the scope"%(symbolname,))
-        elif self.local_symbol.has_key(modulename) and self.local_symbol[modulename].has_key(functionname) and self.local_symbol[modulename][functionname].has_key(symbolname):
+        elif (modulename in self.local_symbol) and (functionname in self.local_symbol[modulename]) and (symbolname in self.local_symbol[modulename][functionname]):
             raise Exception("symbol %s already defined in the local scope"%(symbolname,))
         else:
             symbols[symbolname] = data
             
         
     def AddLocalSym(self, module, function, symbolname, data):
-        if not self.local_symbol.has_key(module):
+        if not (module in self.local_symbol):
             self.local_symbol[module] = {}
         msymbol = self.local_symbol[module]
-        if not msymbol.has_key(function):
+        if not (function in msymbol):
             raise Exception("function/procedure %s never defined in %s"%(function,module))
         lsymbol = msymbol[function]
         lsymbol.AddLocalSymbol(symbolname, data)

@@ -165,6 +165,11 @@ class RAPIDParser(PLYParser):
         types, datas, routines = self._split_module_items(p[3])
         p[0] = rapid_ast.ModuleAST(p[2], [], types, datas, routines, coord=self._coord(p.lineno(1)))
         
+    def p_module_declaration_3(self, p):
+        """ module_declaration    : COMMENT
+        """
+        p[0] = rapid_ast.CommentAST(p[1], coord=self._coord(p.lineno(1)))
+
     def p_module_declaration_2(self, p):
         """ module_declaration    : MODULE identifier LPAREN module_attributelist RPAREN module_item_list ENDMODULE
         """
@@ -1435,7 +1440,7 @@ if __name__ == "__main__":
     
     text = ""
     if len(sys.argv)==2:
-        with open(sys.argv[1],'rU') as f:
+        with open(sys.argv[1],'r') as f:
             text = f.read()
     
     ## set debuglevel to 2 for debugging

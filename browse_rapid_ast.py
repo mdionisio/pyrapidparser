@@ -459,14 +459,14 @@ class WriteRapid( rapid_ast.NodeVisitor ):
         self.write("TEST ")
         self.visit(node.expression)
         self.write()
-        for i in node.casestatement_list:
+        for i in node.cases:
             self.visit(i)
-        if len(node.defaultstatement)>0:
+        if len(node.default)>0:
             self.writeindent()
             self.write("DEFAULT:")
             self.write()
             self.indent += 1
-            for i in node.defaultstatement:
+            for i in node.default:
                 self.visit(i)
             self.indent -= 1
         self.writeindent()
@@ -481,7 +481,10 @@ class WriteRapid( rapid_ast.NodeVisitor ):
             self.write()
         else:
             self.write("CASE ")
-            self.visit(node.test_value)
+            for n, v in enumerate(node.test_value):
+                if n > 0:
+                    self.write(", ")
+                self.visit(v)
             self.write(" : ")
             self.write()
             self.indent += 1

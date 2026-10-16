@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 from browse_rapid_ast import EvaluateRapidExpression, ensure_dir
 import rapid_ast
 import os
@@ -1387,7 +1387,7 @@ if __name__ == '__main__':
                 ltext.append( (i, f.read()) )
             
     for i in options.infiles:
-        with open(i,"rU") as f:
+        with open(i,"r") as f:
             ltext.append( (i, f.read()) )
     
     attriblist = []
