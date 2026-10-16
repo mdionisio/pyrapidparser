@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+rapid_ast.py
+lextab.py
+yacctab.py
+parser.out
+parsetab.py
+dist/
+.coverage
+.pytest_cache/
+test/*.ast.mod
+test/*.source.mod
+test/rapid_program.mod

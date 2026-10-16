@@ -1,0 +1,58 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "pyrapidparser"
+version = "0.1.0"
+description = "Parser, AST tools and Python translator for the ABB RAPID language"
+readme = "readme.txt"
+requires-python = ">=3.9"
+dependencies = [
+    "ply>=3.11",
+]
+
+[tool.hatch.build]
+# the sources are flat top-level modules, so list them explicitly
+[tool.hatch.build.targets.wheel]
+include = [
+    "/ast_gen.py",
+    "/browse_rapid_ast.py",
+    "/plyparser.py",
+    "/rapid2py.py",
+    "/rapid2rapid.py",
+    "/rapid_lexer.py",
+    "/rapid_parser.py",
+    "/run",
+]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "/*.py",
+    "/_rapid_ast.cfg",
+    "/readme.txt",
+    "/run",
+    "/test",
+    "/default",
+]
+
+# rapid_ast.py is generated from _rapid_ast.cfg (see hatch_build.py)
+[tool.hatch.build.hooks.custom]
+
+[tool.hatch.envs.default]
+dependencies = [
+    "pytest",
+    "pytest-cov",
+]
+
+[tool.hatch.envs.default.scripts]
+gen-ast = "python _ast_gen.py"
+test = ["gen-ast", "pytest {args}"]
+cov = ["gen-ast", "pytest --cov --cov-report=term-missing {args}"]
+
+[tool.hatch.envs.hatch-test]
+dependencies = ["ply>=3.11"]
+
+[tool.pytest.ini_options]
+testpaths = ["test_rapid.py", "test_roundtrip.py"]
+pythonpath = ["."]
