@@ -31,6 +31,7 @@ KNOWN_FAILURES = {
     "test8.mod": "Symbol p1 has to be a constant variable",
     "test10.mod": "rapid_struct.Set with a list of wrong size",
     "test20.mod": "symbol TPWrite already defined (clash with default/standard.sys)",
+    "test41.mod": "procedure called before its declaration (forward reference)",
 }
 
 

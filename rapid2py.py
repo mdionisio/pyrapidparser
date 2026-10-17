@@ -543,6 +543,12 @@ class rapid_%s (pyrapid.rapid_struct):
         else:
             self.params[pname] = ("switch", None, None, None, [])
 
+    def visit_RoutineErrorAST(self, node: rapid_ast.RoutineErrorAST, **kwargs: Any) -> None:
+        # error_number_list (error recovery point for long jump) is not supported
+        # by the runtime: only the statements of the handler are translated
+        for i in node.statement_list:
+            self.visit(i, **kwargs)
+
     def visit_ExpressionAST(self, node: rapid_ast.ExpressionAST, **kwargs: Any) -> None:
         # expr is None or AggregateAST or Operator1AST or Operator2AST or FunctionCallAST or VariableAST or ExpressionAST or LiteralATS
         if node.expr is None:

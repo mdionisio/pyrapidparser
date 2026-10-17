@@ -471,6 +471,26 @@ ENDMODULE
 
         self.assertTrue(compare.full_compare(res, n3), "there is error parsing func declaration")
 
+    def test_rapid_error_recovery_point(self) -> None:
+        text = r"""
+MODULE syun1
+    PROC main()
+        routine1;
+    ERROR (56, ERR_DIVZERO)
+        RETRY;
+    ENDPROC
+ENDMODULE
+"""
+        res = TestParserFunctions.parser.parse(text, "file.rapid", debuglevel=0)
+        handler = res.routine_definitions[0].definition.routine_error
+
+        self.assertEqual(
+            [getattr(i, "value", None) or i.name for i in handler.error_number_list],
+            [56, "ERR_DIVZERO"],
+        )
+        self.assertEqual(len(handler.statement_list), 1)
+        self.assertIsInstance(handler.statement_list[0].statement, rapid_ast.RetryStatementAST)
+
 
 if __name__ == "__main__":
     unittest.main()

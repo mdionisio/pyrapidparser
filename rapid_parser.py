@@ -421,7 +421,7 @@ class RAPIDParser(PLYParser):
 
     def p_routine_error_2(self, p: YaccProduction) -> None:
         """routine_error         : ERROR LPAREN error_number_list RPAREN statement_list"""
-        p[0] = rapid_ast.RoutineErrorAST(p[2], p[3], coord=self._coord(p.lineno(1)))
+        p[0] = rapid_ast.RoutineErrorAST(p[3], p[5], coord=self._coord(p.lineno(1)))
 
     def p_routine_error_3(self, p: YaccProduction) -> None:
         """routine_error         : ERROR statement_list"""
