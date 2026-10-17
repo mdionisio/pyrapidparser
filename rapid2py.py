@@ -1121,28 +1121,22 @@ class rapid_%s (pyrapid.rapid_struct):
         in_parameters_index = parameters_index
         parameters_index = in_parameters_index.pop()
 
+        names = list(parameters_defined.keys())
         if node.argumentname is None:
-            if isinstance(parameters_index, int):
-                while True:
-                    try:
-                        argumentname = list(parameters_defined.keys())[parameters_index]
-                    except:
-                        raise Exception("too much parameters")
-                    parameters_index += 1
-                    if (
-                        isinstance(node.argumentvalue, rapid_ast.VariableAST)
-                        and parameters_defined[argumentname][0] == "switch"
-                    ):
-                        continue
+            # a positional argument is the next required parameter: the optional ones
+            # are always named (kernel manual 5.2)
+            while True:
+                try:
+                    argumentname = names[parameters_index]
+                except IndexError:
+                    raise Exception("too much parameters")
+                parameters_index += 1
+                if str(parameters_defined[argumentname][0]).lower() == "required":
                     break
-            else:
-                raise Exception("positional parameter after a named one")
         else:
             argumentname = parameter_name(parameters_defined, node.argumentname.name)
-            if list(parameters_defined.keys())[parameters_index] == argumentname:
-                parameters_index += 1
-            else:
-                parameters_index = None
+            if argumentname in names:
+                parameters_index = names.index(argumentname) + 1
 
         try:
             defined.index(argumentname)
@@ -1275,28 +1269,22 @@ class rapid_%s (pyrapid.rapid_struct):
         in_parameters_index = parameters_index
         parameters_index = in_parameters_index.pop()
 
+        names = list(parameters_defined.keys())
         if node.argumentname is None:
-            if isinstance(parameters_index, int):
-                while True:
-                    try:
-                        argumentname = list(parameters_defined.keys())[parameters_index]
-                    except:
-                        raise Exception("too much parameters")
-                    parameters_index += 1
-                    if (
-                        isinstance(node.argumentvalue, rapid_ast.VariableAST)
-                        and parameters_defined[argumentname][0] == "switch"
-                    ):
-                        continue
+            # a positional argument is the next required parameter: the optional ones
+            # are always named (kernel manual 5.2)
+            while True:
+                try:
+                    argumentname = names[parameters_index]
+                except IndexError:
+                    raise Exception("too much parameters")
+                parameters_index += 1
+                if str(parameters_defined[argumentname][0]).lower() == "required":
                     break
-            else:
-                raise Exception("positional parameter after a named one")
         else:
             argumentname = parameter_name(parameters_defined, node.argumentname.name)
-            if list(parameters_defined.keys())[parameters_index] == argumentname:
-                parameters_index += 1
-            else:
-                parameters_index = None
+            if argumentname in names:
+                parameters_index = names.index(argumentname) + 1
 
         try:
             defined.index(argumentname)
