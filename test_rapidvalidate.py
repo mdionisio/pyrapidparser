@@ -88,6 +88,8 @@ CASES = [
     # --- 2.13 The type string
     ("string of 80 characters", module('    VAR string s := "%s";' % ("x" * 80)), []),
     ("string too long", module('    VAR string s := "%s";' % ("x" * 81)), ["string-too-long"]),
+    ("string with character codes", module('    VAR string s := "%s";' % ("\\07" * 80)), []),
+    ("string escapes", module('    VAR string s := "a\\\\b""c\\41";'), []),
     # --- 2.12, 2.20, 5.3 scope rules
     (
         "duplicate module object",

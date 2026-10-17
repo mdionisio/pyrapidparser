@@ -8,6 +8,7 @@ import os.path
 import run.pyrapid as pyrapid
 import copy
 import rapid_parser
+from rapid_lexer import decode_string
 from collections import OrderedDict
 
 
@@ -645,7 +646,7 @@ class rapid_%s (pyrapid.rapid_struct):
     def visit_LiteralATS(self, node: rapid_ast.LiteralATS, **kwargs: Any) -> None:
         # value is int or float or string
         if isinstance(node.value, str):
-            self.simple_writemodule(repr(node.value))
+            self.simple_writemodule(repr(decode_string(node.value)))
         else:
             self.simple_writemodule(str(node.value))
 

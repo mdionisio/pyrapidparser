@@ -259,10 +259,16 @@ class RAPIDLexer(object):
         r"""('""" + cconst_char + """[^'\n]+')|('')|('""" + bad_escape + r"""[^'\n]*')"""
     )
 
-    # string literals (K&R2: A.2.6)
-    string_char = r"""([^"\\\n]|""" + escape_sequence + ")"
+    # string literals (RAPID kernel manual, 2.7):
+    #   <string literal> ::= '"' { <character> | <character code> } '"'
+    #   <character code> ::= '\' <hex digit> <hex digit>
+    # "If a back slash or double quote character should be included in a string literal it
+    # must be written twice."
+    character_code = r"""(\\[0-9a-fA-F]{2})"""
+    string_char = r"""([^"\\\n]|""|\\\\|""" + character_code + ")"
     string_literal = '"' + string_char + '*"'
-    bad_string_literal = '"' + string_char + "*" + bad_escape + string_char + '*"'
+    # a back slash that is not doubled and does not start a character code
+    bad_string_literal = '"' + string_char + "*" + r"\\" + r'[^"\n]*"'
 
     # floating constants (K&R2: A.2.5.3)
     exponent_part = r"""([eE][-+]?[0-9]+)"""
@@ -389,7 +395,10 @@ class RAPIDLexer(object):
 
     @TOKEN(bad_string_literal)
     def t_BAD_STRING_LITERAL(self, t: LexToken) -> None:
-        msg = "String contains invalid escape code"
+        msg = (
+            "String contains a back slash that is not doubled (\\\\) "
+            "and is not a character code (\\hh)"
+        )
         self._error(msg, t)
 
     @TOKEN(identifier)
@@ -400,6 +409,21 @@ class RAPIDLexer(object):
     def t_error(self, t: LexToken) -> None:
         msg = "Illegal character %s" % repr(t.value[0])
         self._error(msg, t)
+
+
+def decode_string(raw: str) -> str:
+    """value of a string literal as written between the quotes (2.7): character codes
+    \\hh, doubled back slash and doubled double quote"""
+
+    def replace(m: "re.Match[str]") -> str:
+        text = m.group(0)
+        if text == '""':
+            return '"'
+        if text == "\\\\":
+            return "\\"
+        return chr(int(text[1:], 16))
+
+    return re.sub(r'\\[0-9a-fA-F]{2}|\\\\|""', replace, raw)
 
 
 if __name__ == "__main__":

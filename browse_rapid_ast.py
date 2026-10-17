@@ -1,6 +1,7 @@
 from typing import Any, Optional, TextIO
 
 import rapid_ast
+from rapid_lexer import decode_string
 import os
 import os.path
 import run.pyrapid as pyrapid
@@ -544,7 +545,10 @@ class EvaluateRapidExpression(rapid_ast.NodeVisitor):
         self.return_value = self._const_data(node).Get()
 
     def visit_LiteralATS(self, node: rapid_ast.LiteralATS) -> None:
-        self.return_value = node.value
+        if isinstance(node.value, str):
+            self.return_value = decode_string(node.value)
+        else:
+            self.return_value = node.value
 
     def visit_Operator1AST(self, node: rapid_ast.Operator1AST) -> None:
         parse = EvaluateRapidExpression(self.modulename, self.functionname)

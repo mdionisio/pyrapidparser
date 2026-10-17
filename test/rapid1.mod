@@ -217,9 +217,9 @@ MODULE syun1
         !!WaitTime 10;
         TPWrite "WaitTime Time:=10";
         !WaitTime Time:=10;
-        TPWrite "WaitTime \InPos, 10";
+        TPWrite "WaitTime \\InPos, 10";
         !WaitTime \InPos, 10;
-        TPWrite "WaitTime \InPos, 10";
+        TPWrite "WaitTime \\InPos, 10";
         !WaitTime \InPos, Time:=10;
         
         TPWrite "PROVAAAAAAAAAAAAAAAAAAAAAA";
