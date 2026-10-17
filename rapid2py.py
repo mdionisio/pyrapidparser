@@ -20,6 +20,7 @@ class TraslateRapidToPython(rapid_ast.NodeVisitor):
         self.return_type: Any = None
         self.params: "OrderedDict[str, Any]" = OrderedDict()
         self.lastparamadded: Optional[str] = None
+        self.declared_routines: set[tuple[Optional[str], str]] = set()
         self.indent_module = 0
         self.directory = out_folder
         ensure_dir(self.directory)
@@ -82,6 +83,56 @@ class TraslateRapidToPython(rapid_ast.NodeVisitor):
 
     def popModuleScope(self) -> None:
         self.indent_module -= 4
+
+    def register_routine(self, local: bool, symbol: Any) -> None:
+        assert self.function_name is not None
+        key = (self.module_name, self.function_name)
+        if key in self.declared_routines:
+            return  # already declared by declare_routines
+        self.declared_routines.add(key)
+        if local:
+            pyrapid.Symbols().AddModuleSym(self.module_name, self.function_name, symbol)
+        else:
+            pyrapid.Symbols().AddGlobalSym(self.function_name, symbol, self.module_name)
+
+    def declare_routines(self, modules: list[Any]) -> None:
+        """declare the procedures and functions of all the modules before the translation:
+        a routine can be called before its declaration"""
+        for module in modules:
+            if not isinstance(module, rapid_ast.ModuleAST):
+                continue
+            self.module_name = module.module_name.name or "default"
+            for item in module.routine_definitions:
+                if not isinstance(item, rapid_ast.RoutineDeclarationATS):
+                    continue
+                definition = item.definition
+                if isinstance(definition, rapid_ast.ProcedureDeclarationAST):
+                    name = definition.procedure_name.name
+                elif isinstance(definition, rapid_ast.FunctionDeclarationAST):
+                    name = definition.function_name.name
+                else:
+                    continue
+                self.params = OrderedDict()
+                self.lastparamadded = None
+                for i in definition.parameter_list:
+                    self.visit(i)
+                self.function_name = name
+                symbol: pyrapid.Symbol
+                if isinstance(definition, rapid_ast.ProcedureDeclarationAST):
+                    symbol = pyrapid.Symbol.CreateProcedure(self.params)
+                else:
+                    returntype = pyrapid.Symbols().GetSymbol(
+                        definition.data_type.name, self.module_name, None
+                    )
+                    symbol = pyrapid.Symbol.CreateFunction(self.params, returntype)
+                self.register_routine(item.type is not None, symbol)
+        self.module_name = None
+        self.function_name = None
+        self.params = OrderedDict()
+
+    def visit_ModulesAST(self, node: rapid_ast.ModulesAST, **kwargs: Any) -> None:
+        self.declare_routines(node.module_list)
+        self.generic_visit(node, **kwargs)
 
     def visit_IdentifierAST(self, node: rapid_ast.IdentifierAST, **kwargs: Any) -> None:
         pass
@@ -1518,22 +1569,12 @@ class rapid_%s (pyrapid.rapid_struct):
         def _undo_rapid_proc_() -> None:
             pass
 
-        if self.tmp_outineDeclarationATS_data is None:
-            pyrapid.Symbols().AddGlobalSym(
-                self.function_name,
-                pyrapid.Symbol.CreateProcedure(
-                    self.params, _rapid_proc_, _error_rapid_proc_, _undo_rapid_proc_
-                ),
-                self.module_name,
-            )
-        else:
-            pyrapid.Symbols().AddModuleSym(
-                self.module_name,
-                self.function_name,
-                pyrapid.Symbol.CreateProcedure(
-                    self.params, _rapid_proc_, _error_rapid_proc_, _undo_rapid_proc_
-                ),
-            )
+        self.register_routine(
+            self.tmp_outineDeclarationATS_data is not None,
+            pyrapid.Symbol.CreateProcedure(
+                self.params, _rapid_proc_, _error_rapid_proc_, _undo_rapid_proc_
+            ),
+        )
 
         self.writemodule("def error_rapid_proc_%s (local_exception):" % (self.function_name,))
         with self.ModuleScope():
@@ -1688,22 +1729,12 @@ class rapid_%s (pyrapid.rapid_struct):
         def _undo_rapid_func_() -> None:
             pass
 
-        if self.tmp_outineDeclarationATS_data is None:
-            pyrapid.Symbols().AddGlobalSym(
-                self.function_name,
-                pyrapid.Symbol.CreateFunction(
-                    self.params, returntype, _rapid_func_, _error_rapid_func_, _undo_rapid_func_
-                ),
-                self.module_name,
-            )
-        else:
-            pyrapid.Symbols().AddModuleSym(
-                self.module_name,
-                self.function_name,
-                pyrapid.Symbol.CreateFunction(
-                    self.params, returntype, _rapid_func_, _error_rapid_func_, _undo_rapid_func_
-                ),
-            )
+        self.register_routine(
+            self.tmp_outineDeclarationATS_data is not None,
+            pyrapid.Symbol.CreateFunction(
+                self.params, returntype, _rapid_func_, _error_rapid_func_, _undo_rapid_func_
+            ),
+        )
 
         self.writemodule("def error_rapid_func_%s (local_exception):" % (self.function_name,))
         with self.ModuleScope():

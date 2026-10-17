@@ -39,7 +39,6 @@ KNOWN_FAILURES = {
     "test8.mod": "invalid RAPID: variable used in a constant expression",
     "test10.mod": "invalid RAPID: aggregate does not match the pose record",
     "test20.mod": "invalid RAPID: TPWrite already declared in default/standard.sys",
-    "test41.mod": "procedure called before its declaration (forward reference)",
 }
 
 
