@@ -11,3 +11,6 @@ dist/
 test/*.ast.mod
 test/*.source.mod
 test/rapid_program.mod
+
+# official ABB manuals (copyright ABB, not redistributed)
+doc/abb/official/
