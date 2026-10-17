@@ -46,7 +46,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
     
     PROC ExitCycle()
         !python:import sys
-        !python:print "Exit for ExitCycle"
+        !python:print("Exit for ExitCycle")
         !python:sys.exit(0)
     ENDPROC
     
