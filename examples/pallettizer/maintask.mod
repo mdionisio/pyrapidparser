@@ -1,6 +1,11 @@
 MODULE MAINTASK
-!python rapid2py.py -i examples/pallettizer/schema.mod -s -f schema.py
-!python rapid2py.py -e MAIN -i examples/pallettizer/settings.mod -i examples/pallettizer/gloadschema.mod -i examples/pallettizer/schema.mod -i examples/pallettizer/maintask.mod -f pallettizer.py -r
+!robot: irb460_approx
+! Palletizer: ABB IRB 460, 4 axes (approximate model, see models/irb460_approx.json).
+! The motion is still to be written: the program does not move the robot yet.
+! Translation (from the project folder):
+!   python rapid2py.py -e MAIN -i examples/pallettizer/settings.mod -i examples/pallettizer/gloadschema.mod
+!       -i examples/pallettizer/schema.mod -i examples/pallettizer/types.mod
+!       -i examples/pallettizer/maintask.mod -d out -f pallettizer.py
 !
 !
 
@@ -79,8 +84,8 @@ MODULE MAINTASK
         VAR num spacepos;
         VAR string basecommand;
         VAR string tmp;
-        VAR PlateProdType prod := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
-        CONST string command_to_find := "PlaceProduct";
+        VAR TakeProdType prod := [0, 0, 0, 0];
+        CONST string command_to_find := "TakeProduct";
         
         spacepos := StrFind(command, 1, " ");
         
@@ -106,8 +111,8 @@ MODULE MAINTASK
         VAR num spacepos;
         VAR string basecommand;
         VAR string tmp;
-        VAR TakeProdType prod := [0, 0, 0, 0];
-        CONST string command_to_find := "TakeProduct";
+        VAR PlateProdType prod := [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        CONST string command_to_find := "PlaceProduct";
         
         spacepos := StrFind(command, 1, " ");
         
@@ -341,9 +346,9 @@ MODULE MAINTASK
     ENDPROC
     
     PROC AResetAllSchemas()
-        LOCAL VAR num i;
-        LOCAL VAR num j;
-        LOCAL VAR num k;
+        VAR num i;
+        VAR num j;
+        VAR num k;
         
         TPWrite "RESET ALL SCHEMAS";
         
@@ -372,7 +377,7 @@ MODULE MAINTASK
     ENDPROC
     
     PROC ALoadSchemas()
-        LOCAL VAR num i;
+        VAR num i;
         
         TPWrite "LOAD/RELOAD ALL SCHEMAS";
         
@@ -645,10 +650,10 @@ MODULE MAINTASK
     !
     PROC MAIN_AUTOMATIC()
         CONST num nDescheduleTime := 1.0;
-        LOCAL VAR bool bAutomaticContineExecution := TRUE;
-        LOCAL VAR clock cTimeDoNothing;
-        LOCAL VAR bool bDoneSomething;
-        LOCAL VAR todoType ActionToDo;
+        VAR bool bAutomaticContineExecution := TRUE;
+        VAR clock cTimeDoNothing;
+        VAR bool bDoneSomething;
+        VAR todoType ActionToDo;
         
         ClkReset cTimeDoNothing;
         ClkStart cTimeDoNothing;
