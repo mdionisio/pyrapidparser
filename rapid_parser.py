@@ -949,34 +949,35 @@ class RAPIDParser(PLYParser):
         """expression         : PLACEHOLDER_EXP"""
         p[0] = rapid_ast.ExpressionAST(None, coord=self._coord(p.lineno(1)))
 
-    def p_expr_1(self, p: YaccProduction) -> None:
+    # Operators of the same priority are evaluated from left to right
+    # (RAPID kernel manual, 3.1), so the lists are left recursive.
+    # NOT applies only to the first logical term:
+    #   <expr> ::= [ NOT ] <logical term> { ( OR | XOR ) <logical term> }
+
+    def p_expr(self, p: YaccProduction) -> None:
         """expr         : logical_term_list"""
         p[0] = p[1]
-
-    def p_expr_2(self, p: YaccProduction) -> None:
-        """expr         : NOT logical_term_list"""
-        p[0] = rapid_ast.Operator1AST("NOT", p[2], coord=self._coord(p.lineno(1)))
 
     def p_logical_term_list_1(self, p: YaccProduction) -> None:
         """logical_term_list         : logical_term"""
         p[0] = p[1]
 
     def p_logical_term_list_2(self, p: YaccProduction) -> None:
-        """logical_term_list         : logical_term OR logical_term_list
-        | logical_term XOR logical_term_list
+        """logical_term_list         : NOT logical_term"""
+        p[0] = rapid_ast.Operator1AST("NOT", p[2], coord=self._coord(p.lineno(1)))
+
+    def p_logical_term_list_3(self, p: YaccProduction) -> None:
+        """logical_term_list         : logical_term_list OR logical_term
+        | logical_term_list XOR logical_term
         """
         p[0] = rapid_ast.Operator2AST(p[2], p[1], p[3], coord=None)
 
-    def p_logical_term(self, p: YaccProduction) -> None:
-        """logical_term         : relation_list"""
+    def p_logical_term_1(self, p: YaccProduction) -> None:
+        """logical_term         : relation"""
         p[0] = p[1]
 
-    def p_relation_list_1(self, p: YaccProduction) -> None:
-        """relation_list         : relation"""
-        p[0] = p[1]
-
-    def p_relation_list_2(self, p: YaccProduction) -> None:
-        """relation_list         : relation AND relation_list"""
+    def p_logical_term_2(self, p: YaccProduction) -> None:
+        """logical_term         : logical_term AND relation"""
         p[0] = rapid_ast.Operator2AST(p[2], p[1], p[3], coord=None)
 
     def p_relation_1(self, p: YaccProduction) -> None:
@@ -988,57 +989,24 @@ class RAPIDParser(PLYParser):
         p[0] = rapid_ast.Operator2AST(p[2], p[1], p[3], coord=None)
 
     def p_simple_expr_1(self, p: YaccProduction) -> None:
-        """simple_expr         : term simple_expr_list"""
-        term = p[1]
-        simple_expr_list = p[2]
-
-        if simple_expr_list is None:
-            p[0] = term
-        else:
-            p[0] = rapid_ast.Operator2AST(
-                simple_expr_list[0], term, simple_expr_list[1], coord=None
-            )
+        """simple_expr         : term"""
+        p[0] = p[1]
 
     def p_simple_expr_2(self, p: YaccProduction) -> None:
-        """simple_expr         : addop term simple_expr_list"""
-        term = rapid_ast.Operator1AST(p[1], p[2], coord=None)
-        simple_expr_list = p[3]
+        """simple_expr         : addop term"""
+        p[0] = rapid_ast.Operator1AST(p[1], p[2], coord=None)
 
-        if simple_expr_list is None:
-            p[0] = term
-        else:
-            p[0] = rapid_ast.Operator2AST(
-                simple_expr_list[0], term, simple_expr_list[1], coord=None
-            )
+    def p_simple_expr_3(self, p: YaccProduction) -> None:
+        """simple_expr         : simple_expr addop term"""
+        p[0] = rapid_ast.Operator2AST(p[2], p[1], p[3], coord=None)
 
-    def p_simple_expr_list_1(self, p: YaccProduction) -> None:
-        """simple_expr_list         :"""
-        p[0] = None
+    def p_term_1(self, p: YaccProduction) -> None:
+        """term         : primary"""
+        p[0] = p[1]
 
-    def p_simple_expr_list_2(self, p: YaccProduction) -> None:
-        """simple_expr_list         :  addop term simple_expr_list"""
-        if p[3] is None:
-            p[0] = (p[1], p[2])
-        else:
-            p[0] = (p[1], rapid_ast.Operator2AST(p[3][0], p[2], p[3][1], coord=None))
-
-    def p_term(self, p: YaccProduction) -> None:
-        """term         : primary primary_list"""
-        if p[2] is None:
-            p[0] = p[1]
-        else:
-            p[0] = rapid_ast.Operator2AST(p[2][0], p[1], p[2][1], coord=None)
-
-    def p_primary_list_1(self, p: YaccProduction) -> None:
-        """primary_list         :"""
-        p[0] = None
-
-    def p_primary_list_2(self, p: YaccProduction) -> None:
-        """primary_list         : mulop primary primary_list"""
-        if p[3] is None:
-            p[0] = (p[1], p[2])
-        else:
-            p[0] = (p[1], rapid_ast.Operator2AST(p[3][0], p[2], p[3][1], coord=None))
+    def p_term_2(self, p: YaccProduction) -> None:
+        """term         : term mulop primary"""
+        p[0] = rapid_ast.Operator2AST(p[2], p[1], p[3], coord=None)
 
     def p_primary_1(self, p: YaccProduction) -> None:
         """primary         : literal

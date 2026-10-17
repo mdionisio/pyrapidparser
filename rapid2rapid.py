@@ -7,6 +7,46 @@ import rapid_parser
 import os
 import os.path
 
+# Expression grammar levels (RAPID kernel manual, 3.1), from the most general:
+#   <expr>          ::= [ NOT ] <logical term> { ( OR | XOR ) <logical term> }
+#   <logical term>  ::= <relation> { AND <relation> }
+#   <relation>      ::= <simple expr> [ <relop> <simple expr> ]
+#   <simple expr>   ::= [ <addop> ] <term> { <addop> <term> }
+#   <term>          ::= <primary> { <mulop> <primary> }
+#   <primary>       ::= literal | variable | function call | aggregate | ( <expr> )
+# The parser drops the parentheses, a node is written in parentheses when its
+# level is more general than the level required where it is used.
+LEVEL_EXPR = 1
+LEVEL_LOGICAL_TERM = 2
+LEVEL_RELATION = 3
+LEVEL_SIMPLE_EXPR = 4
+LEVEL_TERM = 5
+LEVEL_PRIMARY = 6
+
+# operator: (level of the node, level required for the left and right operand)
+BINARY_LEVELS = {
+    "OR": (LEVEL_EXPR, LEVEL_EXPR, LEVEL_LOGICAL_TERM),
+    "XOR": (LEVEL_EXPR, LEVEL_EXPR, LEVEL_LOGICAL_TERM),
+    "AND": (LEVEL_LOGICAL_TERM, LEVEL_LOGICAL_TERM, LEVEL_RELATION),
+    "+": (LEVEL_SIMPLE_EXPR, LEVEL_SIMPLE_EXPR, LEVEL_TERM),
+    "-": (LEVEL_SIMPLE_EXPR, LEVEL_SIMPLE_EXPR, LEVEL_TERM),
+    "*": (LEVEL_TERM, LEVEL_TERM, LEVEL_PRIMARY),
+    "/": (LEVEL_TERM, LEVEL_TERM, LEVEL_PRIMARY),
+    "DIV": (LEVEL_TERM, LEVEL_TERM, LEVEL_PRIMARY),
+    "MOD": (LEVEL_TERM, LEVEL_TERM, LEVEL_PRIMARY),
+}
+for _relop in ("<", "<=", "=", ">", ">=", "<>"):
+    BINARY_LEVELS[_relop] = (LEVEL_RELATION, LEVEL_SIMPLE_EXPR, LEVEL_SIMPLE_EXPR)
+
+
+def expression_level(node: Any) -> int:
+    if isinstance(node, rapid_ast.Operator2AST):
+        return BINARY_LEVELS[node.operator][0]
+    if isinstance(node, rapid_ast.Operator1AST):
+        # NOT <logical term> starts an <expr>, +/- <term> starts a <simple expr>
+        return LEVEL_EXPR if node.operator == "NOT" else LEVEL_SIMPLE_EXPR
+    return LEVEL_PRIMARY
+
 
 class WriteRapid(rapid_ast.NodeVisitor):
     __indent__ = "\t"
@@ -98,18 +138,29 @@ class WriteRapid(rapid_ast.NodeVisitor):
         self.write_list(node.expr)
         self.write("]")
 
+    def write_operand(self, node: Any, level: int) -> None:
+        parenthesize = expression_level(node) < level
+        if parenthesize:
+            self.write("(")
+        self.visit(node)
+        if parenthesize:
+            self.write(")")
+
     def visit_Operator1AST(self, node: rapid_ast.Operator1AST) -> None:
-        if not (node.operator is None):
+        if node.operator == "NOT":
+            self.write("NOT ")
+            self.write_operand(node.par1, LEVEL_LOGICAL_TERM)
+        else:
             self.write(node.operator)
-            self.write(" ")
-        self.visit(node.par1)
+            self.write_operand(node.par1, LEVEL_TERM)
 
     def visit_Operator2AST(self, node: rapid_ast.Operator2AST) -> None:
-        self.visit(node.par1)
+        _, left, right = BINARY_LEVELS[node.operator]
+        self.write_operand(node.par1, left)
         self.write(" ")
         self.write(node.operator)
         self.write(" ")
-        self.visit(node.par2)
+        self.write_operand(node.par2, right)
 
     def visit_LiteralATS(self, node: rapid_ast.LiteralATS) -> None:
         if isinstance(node.value, str):

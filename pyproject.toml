@@ -60,7 +60,7 @@ format-check = "ruff format --check --diff {args}"
 dependencies = ["ply>=3.11"]
 
 [tool.pytest.ini_options]
-testpaths = ["test_rapid.py", "test_roundtrip.py", "test_rapid2py.py", "test_quality.py"]
+testpaths = ["test_rapid.py", "test_expressions.py", "test_roundtrip.py", "test_rapid2py.py", "test_quality.py"]
 pythonpath = ["."]
 
 [tool.ruff]
@@ -83,6 +83,7 @@ files = [
     "rapid_parser.py",
     "run",
     "test_quality.py",
+    "test_expressions.py",
     "test_rapid.py",
     "test_roundtrip.py",
     "test_rapid2py.py",
