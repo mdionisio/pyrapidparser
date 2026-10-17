@@ -217,9 +217,17 @@ class TraslateRapidToPython(rapid_ast.NodeVisitor):
         if not (node.coord is None):
             self.writemodule("# Line %s" % (str(node.coord),))
         const_python_start = "python:"
+        const_robot_start = "robot:"
         if node.comment.startswith(const_python_start):
             # self.writemodule( "# from python comment ...")
             self.writemodule(node.comment[len(const_python_start) :])
+        elif node.comment.strip().lower().startswith(const_robot_start) and (
+            self.function_name is None
+        ):
+            # robot model of the task (rapidvalidate checks the name)
+            model = node.comment.strip()[len(const_robot_start) :].strip()
+            self.writemodule("import pyrapid_motion")
+            self.writemodule("pyrapid_motion.UseRobot(%s)" % (repr(model),))
         else:
             self.writemodule("# ## COMMENT:" + node.comment + " ##")
 

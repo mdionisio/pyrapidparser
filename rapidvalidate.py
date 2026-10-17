@@ -44,6 +44,9 @@ class Diagnostic:
 # 2.3 Identifiers: "The maximum length of an identifier is 32 characters."
 MAX_IDENTIFIER_LENGTH = 32
 
+# "!robot: <model>": the robot model of the task (robotmodel.py), not in the manual
+ROBOT_DIRECTIVE = "robot:"
+
 # 9.2 Module declarations: attributes in table order
 MODULE_ATTRIBUTES = ("SYSMODULE", "NOVIEW", "NOSTEPIN", "VIEWONLY", "READONLY")
 
@@ -241,6 +244,20 @@ def statements(statement_list: Optional[Sequence[Any]]) -> Iterator[Any]:
         yield item
 
 
+def robot_comments(node: Any, in_routine: bool = False) -> Iterator[tuple[Any, bool]]:
+    """the !robot: comments of a module, and whether they are inside a routine"""
+    if isinstance(node, rapid_ast.CommentAST):
+        if node.comment.strip().lower().startswith(ROBOT_DIRECTIVE):
+            yield node, in_routine
+    elif isinstance(node, (list, tuple)):
+        for child in node:
+            yield from robot_comments(child, in_routine)
+    elif isinstance(node, rapid_ast.Node):
+        inside = in_routine or isinstance(node, rapid_ast.RoutineDeclarationATS)
+        for _, child in node.children():
+            yield from robot_comments(child, inside)
+
+
 def unwrap(node: Any) -> Any:
     while isinstance(node, (rapid_ast.ExpressionAST, rapid_ast.ConstExpressionAST)):
         node = node.expr if isinstance(node, rapid_ast.ExpressionAST) else node.expression
@@ -431,6 +448,7 @@ class Validator:
         module_nodes = [m for m in modules if isinstance(m, rapid_ast.ModuleAST)]
         infos = [self.collect_module(m) for m in module_nodes]
         self.check_module_names()
+        self.check_robot_directives(module_nodes)
         for t in self.types:
             self.resolve_type_definition(t)
         for d in self.data:
@@ -586,6 +604,38 @@ class Validator:
                             "module-attribute",
                             "module attribute %s excludes %s" % (name, other),
                         )
+
+    def check_robot_directives(self, module_nodes: Sequence[Any]) -> None:
+        """the comment !robot: <model> names the robot model of the task: it must be a
+        known model, outside the routines, the same in all the modules"""
+        chosen: Optional[tuple[str, Any]] = None
+        for module in module_nodes:
+            for comment, in_routine in robot_comments(module):
+                name = comment.comment[len(ROBOT_DIRECTIVE) :].strip()
+                if in_routine:
+                    self.report(
+                        comment,
+                        "robot-directive",
+                        "!robot: is allowed only outside the routines",
+                    )
+                    continue
+                # imported here: numpy and Pinocchio are needed only by the robot programs
+                import robotmodel
+
+                try:
+                    robotmodel.find_model(name)
+                except robotmodel.ModelError as error:
+                    self.report(comment, "unknown-robot", str(error))
+                    continue
+                if chosen is None:
+                    chosen = (name, comment)
+                elif chosen[0].lower() != name.lower():
+                    file, line = node_position(chosen[1])
+                    self.report(
+                        comment,
+                        "robot-conflict",
+                        "the task already moves the robot %s (%s:%s)" % (chosen[0], file, line),
+                    )
 
     def check_module_names(self) -> None:
         # 2.20, 5.3, 9.2 "A module and a global module object (type, data object or routine)

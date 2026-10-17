@@ -85,6 +85,9 @@ EXEC_FILES = sorted(glob.glob(os.path.join(EXEC_DIR, "*.mod")))
 def test_rapid2py_execution(path: str, tmp_path: pathlib.Path) -> None:
     """translate test/exec/<name>.mod, run its main and compare stdout with <name>.out"""
     name = os.path.splitext(os.path.basename(path))[0]
+    with open(path, "r") as f:
+        if "!robot:" in f.read():
+            pytest.importorskip("pinocchio")
     outdir = os.fspath(tmp_path)
     result = subprocess.run(
         [sys.executable, "rapid2py.py", "-s", "-e", name + ".main"]

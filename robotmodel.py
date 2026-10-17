@@ -31,6 +31,8 @@ says what is used instead. Units: m, rad, s. The conversion from the RAPID units
 (mm, degrees) is in run/pyrapid_motion.py.
 """
 
+from __future__ import annotations
+
 import functools
 import glob
 import json
@@ -40,13 +42,20 @@ import sys
 import types
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
-import numpy as np
-import numpy.typing as npt
-import pinocchio as pin
+try:
+    import numpy as np
+    import pinocchio as pin
+except ImportError:  # pragma: no cover
+    # the model names (available_models, find_model) do not need the motion dependencies
+    np = None  # type: ignore[assignment]
+    pin = None
 
-Vector = npt.NDArray[np.float64]
+if TYPE_CHECKING:
+    import numpy.typing as npt
+
+    Vector = npt.NDArray[np.float64]
 
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 ABB_DIR = os.path.join(PROJECT_DIR, "third_party", "abb")
@@ -535,6 +544,10 @@ def _mesh_xml(xml: str) -> str:
 def load(name: str, geometry: bool = False, verbose: bool = True) -> RobotModel:
     """load the model name; the warnings about the missing data are printed on stderr
     when verbose"""
+    if pin is None:
+        raise ModelError(
+            "the robot models need Pinocchio: pip install pyrapidparser[motion]"
+        )  # pragma: no cover
     path = find_model(name)
     name = os.path.splitext(os.path.basename(path))[0]
     options = _load_options(name)
