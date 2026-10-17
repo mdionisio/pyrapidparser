@@ -30,6 +30,10 @@ class TraslateRapidToPython(rapid_ast.NodeVisitor):
         self.params: "OrderedDict[str, Any]" = OrderedDict()
         self.lastparamadded: Optional[str] = None
         self.declared_routines: set[tuple[Optional[str], str]] = set()
+        # statement lists with labels (unique names of the dispatch loop variables)
+        self.goto_lists = 0
+        # FOR statements (unique names of the loop variables)
+        self.for_loops = 0
         self.indent_module = 0
         self.directory = out_folder
         ensure_dir(self.directory)
@@ -598,8 +602,7 @@ class rapid_%s (pyrapid.rapid_struct):
     def visit_RoutineErrorAST(self, node: rapid_ast.RoutineErrorAST, **kwargs: Any) -> None:
         # error_number_list (error recovery point for long jump) is not supported
         # by the runtime: only the statements of the handler are translated
-        for i in node.statement_list:
-            self.visit(i, **kwargs)
+        self.write_statement_list(node.statement_list, **kwargs)
 
     def visit_ExpressionAST(self, node: rapid_ast.ExpressionAST, **kwargs: Any) -> None:
         # expr is None or AggregateAST or Operator1AST or Operator2AST or FunctionCallAST or VariableAST or ExpressionAST or LiteralATS
@@ -795,14 +798,81 @@ class rapid_%s (pyrapid.rapid_struct):
     def visit_GotoStatementAST(self, node: rapid_ast.GotoStatementAST, **kwargs: Any) -> None:
         if not (node.coord is None):
             self.writemodule("# Line %s" % (str(node.coord),))
-        labelname = "." + node.dest.name
-        self.writemodule("goto " + labelname)
+        # caught by the dispatch loop of the statement list of the label
+        self.writemodule("raise pyrapid.Goto(%s)" % (repr(node.dest.name.lower()),))
 
     def visit_LabelAST(self, node: rapid_ast.LabelAST, **kwargs: Any) -> None:
+        # the labels are handled by write_statement_list
         if not (node.coord is None):
             self.writemodule("# Line %s" % (str(node.coord),))
-        labelname = "." + node.name.name
-        self.writemodule("label " + labelname)
+        self.writemodule("# label %s:" % (node.name.name,))
+
+    def write_statement_list(self, statement_list: list[Any], **kwargs: Any) -> None:
+        """Translate a statement list.
+
+        A list that declares labels is executed by a dispatch loop: it is split in
+        segments, one for each label, a GOTO raises pyrapid.Goto and the loop of the list
+        that declares the label restarts from the segment of the label. A GOTO may not
+        transfer control into a statement list (kernel manual 4.7), so the label is in the
+        list of the GOTO or in one that contains it, and the exception reaches its loop
+        through the Python loops of WHILE, FOR, IF and TEST.
+        """
+
+        def label_of(item: Any) -> Optional[str]:
+            if isinstance(item, rapid_ast.StatementAST) and isinstance(
+                item.statement, rapid_ast.LabelAST
+            ):
+                name = item.statement.name.name
+                return None if name is None else str(name)
+            return None
+
+        labels = [name for name in (label_of(i) for i in statement_list) if name is not None]
+        if not labels:
+            for i in statement_list:
+                self.visit(i, **kwargs)
+            return
+
+        self.goto_lists += 1
+        pc = "_pc%d" % (self.goto_lists,)
+        goto = "_goto%d" % (self.goto_lists,)
+        self.writemodule("%s = 0" % (pc,))
+        self.writemodule("while True:")
+        with self.ModuleScope():
+            self.writemodule("try:")
+            with self.ModuleScope():
+                segment = 0
+                self.writemodule("if %s <= %d:" % (pc, segment))
+                self.pushModuleScope()
+                self.writemodule("pass")
+                for i in statement_list:
+                    name = label_of(i)
+                    if name is None:
+                        self.visit(i, **kwargs)
+                        continue
+                    self.popModuleScope()
+                    segment += 1
+                    self.visit(i.statement, **kwargs)
+                    self.writemodule("if %s <= %d:" % (pc, segment))
+                    self.pushModuleScope()
+                    self.writemodule("pass")
+                self.popModuleScope()
+                self.writemodule("break")
+            self.writemodule("except pyrapid.Goto as %s:" % (goto,))
+            with self.ModuleScope():
+                for index, name in enumerate(labels, 1):
+                    keyword = "if" if index == 1 else "elif"
+                    self.writemodule("%s %s.label == %s:" % (keyword, goto, repr(name.lower())))
+                    with self.ModuleScope():
+                        self.writemodule("%s = %d" % (pc, index))
+                self.writemodule("else:")
+                with self.ModuleScope():
+                    self.writemodule("raise")
+
+    def visit_RoutineBackwardAST(self, node: rapid_ast.RoutineBackwardAST, **kwargs: Any) -> None:
+        self.write_statement_list(node.statement_list, **kwargs)
+
+    def visit_RoutineUndoAST(self, node: rapid_ast.RoutineUndoAST, **kwargs: Any) -> None:
+        self.write_statement_list(node.statement_list, **kwargs)
 
     def visit_RaiseStatementAST(self, node: rapid_ast.RaiseStatementAST, **kwargs: Any) -> None:
         # error_number
@@ -824,8 +894,10 @@ class rapid_%s (pyrapid.rapid_struct):
                     repr(name),
                 )
             )
-        elif isinstance(node.error_number, int) or isinstance(node.error_number, float):
-            self.writemodule('raise pyrapid.RapidException(%d,"unknown")' % (node.error_number,))
+        elif isinstance(node.error_number, rapid_ast.LiteralATS):
+            self.writemodule(
+                'raise pyrapid.RapidException(%d,"unknown")' % (node.error_number.value,)
+            )
 
     def visit_ReturnStatementAST(self, node: rapid_ast.ReturnStatementAST, **kwargs: Any) -> None:
         if not (node.coord is None):
@@ -877,8 +949,7 @@ class rapid_%s (pyrapid.rapid_struct):
         with self.ModuleScope():
             self.writemodule("pass")
 
-            for i in node.statement_list:
-                self.visit(i, **kwargs)
+            self.write_statement_list(node.statement_list, **kwargs)
 
         for i in node.elseif_list:
             self.visit(i, **kwargs)
@@ -886,8 +957,7 @@ class rapid_%s (pyrapid.rapid_struct):
         if len(node.else_statement_list) > 0:
             self.writemodule("else:")
             with self.ModuleScope():
-                for i in node.else_statement_list:
-                    self.visit(i, **kwargs)
+                self.write_statement_list(node.else_statement_list, **kwargs)
 
     def visit_ElseIfStatement(self, node: rapid_ast.ElseIfStatement, **kwargs: Any) -> None:
         # condition*, statement_list**
@@ -901,49 +971,46 @@ class rapid_%s (pyrapid.rapid_struct):
         with self.ModuleScope():
             self.writemodule("pass")
 
-            for i in node.statement_list:
-                self.visit(i, **kwargs)
+            self.write_statement_list(node.statement_list, **kwargs)
 
     def visit_ForStatement(self, node: rapid_ast.ForStatement, **kwargs: Any) -> None:
-        # loop_variable*, ifrom*, ito*, istep*, statement_list**
+        # kernel manual 4.16: the loop variable is declared (with type num) by its
+        # appearance, has the scope of the statement list and hides any other object with
+        # the same name. The from, to and step expressions are evaluated only once; without
+        # STEP the step is 1 (or -1 if the range is descending).
         if not (node.coord is None):
             self.writemodule("# Line %s" % (str(node.coord),))
         self.writemodule("# FOR Statement")
-        self.simple_writeindent()
-        self.simple_writemodule(
-            "pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data.Set( "
-            % (repr(node.loop_variable.name), repr(self.module_name), repr(self.function_name))
-        )
-        self.visit(node.ifrom, **kwargs)
-        self.simple_writemodule(" ) ")
-        self.simple_writemodule()
-
-        self.simple_writeindent()
-        self.simple_writemodule("while ( ")
-        self.simple_writemodule(
-            "pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data.Get() <= ("
-            % (repr(node.loop_variable.name), repr(self.module_name), repr(self.function_name))
-        )
-        self.visit(node.ito, **kwargs)
-        self.simple_writemodule(")")
-        self.simple_writemodule("): ")
-        self.simple_writemodule()
-        with self.ModuleScope():
-            for i in node.statement_list:
-                self.visit(i, **kwargs)
-
+        self.for_loops += 1
+        loop = "_for%d" % (self.for_loops,)
+        variable = repr(node.loop_variable.name)
+        for name, expression in (("from", node.ifrom), ("to", node.ito), ("step", node.istep)):
+            if expression is None:
+                continue
             self.simple_writeindent()
-            self.simple_writemodule(
-                "pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data.Set( "
-                % (repr(node.loop_variable.name), repr(self.module_name), repr(self.function_name))
-            )
-            self.simple_writemodule(
-                "pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data.Get() + ("
-                % (repr(node.loop_variable.name), repr(self.module_name), repr(self.function_name))
-            )
-            self.visit(node.ifrom, **kwargs)
-            self.simple_writemodule(") ) ")
+            self.simple_writemodule("%s_%s = ( " % (loop, name))
+            self.visit(expression, **kwargs)
+            self.simple_writemodule(" )")
             self.simple_writemodule()
+        if node.istep is None:
+            self.writemodule("%s_step = 1 if %s_from <= %s_to else -1" % (loop, loop, loop))
+        self.writemodule(
+            "%s_hidden = pyrapid.Symbols().PushLoopVariable(%s, %s_from)" % (loop, variable, loop)
+        )
+        self.writemodule("try:")
+        with self.ModuleScope():
+            self.writemodule("%s_var = pyrapid.Symbols().GetSymbol(%s).data" % (loop, variable))
+            self.writemodule(
+                "while (%s_step >= 0 and %s_var.Get() <= %s_to) or "
+                "(%s_step < 0 and %s_var.Get() >= %s_to):" % ((loop,) * 6)
+            )
+            with self.ModuleScope():
+                self.writemodule("pass")
+                self.write_statement_list(node.statement_list, **kwargs)
+                self.writemodule("%s_var.Set(%s_var.Get() + %s_step)" % (loop, loop, loop))
+        self.writemodule("finally:")
+        with self.ModuleScope():
+            self.writemodule("pyrapid.Symbols().PopLoopVariable(%s, %s_hidden)" % (variable, loop))
         self.writemodule("# END FOR Statement")
 
     def visit_WhileStatement(self, node: rapid_ast.WhileStatement, **kwargs: Any) -> None:
@@ -958,8 +1025,7 @@ class rapid_%s (pyrapid.rapid_struct):
         self.simple_writemodule()
         with self.ModuleScope():
             self.writemodule("pass")
-            for i in node.statement_list:
-                self.visit(i, **kwargs)
+            self.write_statement_list(node.statement_list, **kwargs)
 
         self.writemodule("# END WHILE Statement")
 
@@ -982,8 +1048,7 @@ class rapid_%s (pyrapid.rapid_struct):
         if len(node.default) > 0:
             self.writemodule("else:")
             with self.ModuleScope():
-                for i in node.default:
-                    self.visit(i, **kwargs)
+                self.write_statement_list(node.default, **kwargs)
 
         self.writemodule("# END TEST Statement")
 
@@ -1005,8 +1070,7 @@ class rapid_%s (pyrapid.rapid_struct):
         self.simple_writemodule()
         with self.ModuleScope():
             self.writemodule("pass")
-            for i in node.statement_list:
-                self.visit(i, **kwargs)
+            self.write_statement_list(node.statement_list, **kwargs)
         self.writemodule("# END CASE Statement")
 
     ##
@@ -1647,8 +1711,7 @@ class rapid_%s (pyrapid.rapid_struct):
 
                     self.writemodule("# stantments")
 
-                    for i in node.statement_list:
-                        self.visit(i, **kwargs)
+                    self.write_statement_list(node.statement_list, **kwargs)
 
                     self.writemodule("# backward stantment")
                     self.writemodule("if False:")
@@ -1802,8 +1865,7 @@ class rapid_%s (pyrapid.rapid_struct):
 
                     self.writemodule("# stantments")
 
-                    for i in node.statement_list:
-                        self.visit(i, **kwargs)
+                    self.write_statement_list(node.statement_list, **kwargs)
 
                     self.writemodule("# end stantment")
 

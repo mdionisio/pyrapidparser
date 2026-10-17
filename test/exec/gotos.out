@@ -1,0 +1,6 @@
+loop 5
+skip 5
+out 7
+inner 3
+handler 10
+after error 4

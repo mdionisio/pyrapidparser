@@ -430,8 +430,9 @@ class WriteRapid(rapid_ast.NodeVisitor):
         self.visit(node.ifrom)
         self.write(" TO ")
         self.visit(node.ito)
-        self.write(" STEP ")
-        self.visit(node.istep)
+        if node.istep is not None:
+            self.write(" STEP ")
+            self.visit(node.istep)
         self.write(" DO")
         self.write()
         self.indent += 1

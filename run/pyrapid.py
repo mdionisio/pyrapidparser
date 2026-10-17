@@ -61,6 +61,15 @@ class RapidException(Exception):
         Symbols().GetSymbol(symbolname="ERRNO").data.Set(code)
 
 
+class Goto(Exception):
+    """GOTO <label>: raised by the translated code and caught by the dispatch loop of the
+    statement list that declares the label (see rapid2py.write_statement_list)"""
+
+    def __init__(self, label: str) -> None:
+        Exception.__init__(self, "GOTO %s" % (label,))
+        self.label = label.lower()
+
+
 class Symbol:
     SYM_TYPE_VAR = 1
     SYM_TYPE_CONST_VAR = 2
@@ -292,6 +301,21 @@ class Symbols(Singleton.Singleton):
 
     def PopScope(self) -> None:
         self.scope_symbol.pop()
+
+    def PushLoopVariable(self, symbolname: str, value: Any) -> Any:
+        """declare a FOR loop variable in the current scope (kernel manual 4.16), it hides
+        any other object with the same name: the hidden one is returned"""
+        symbols = self.scope_symbol[-1][2]
+        hidden = symbols.get(symbolname)
+        symbols[symbolname] = Symbol.CreateVar(rapid_num, rapid_num(value))
+        return hidden
+
+    def PopLoopVariable(self, symbolname: str, hidden: Any) -> None:
+        symbols = self.scope_symbol[-1][2]
+        if hidden is None:
+            del symbols[symbolname]
+        else:
+            symbols[symbolname] = hidden
 
     def AddScopeSym(self, symbolname: str, data: Any) -> None:
         modulename = self.scope_symbol[-1][0]

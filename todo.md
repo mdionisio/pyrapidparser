@@ -6,10 +6,6 @@ instructions = 3HAC050917-001.
 
 ## rapid2py / runtime
 
-- [ ] **GOTO e label**: il codice generato contiene ancora `goto .x` / `label .x`, che
-  non è Python valido (dipendeva da `run/goto.py`, solo Python 2). Va scelta una
-  soluzione tra quelle proposte (vedi la sezione "GOTO" più sotto), poi va tolto
-  `run/goto.py`.
 - [ ] **Punti di recupero con long jump** `ERROR (56, ERR_DIVZERO)` (kernel 7.2): rapid2py
   traduce il gestore ma ignora la lista dei numeri di errore, quindi il long jump non è
   implementato.
@@ -27,7 +23,6 @@ instructions = 3HAC050917-001.
   risoluzione `"modulo:procedura"`.
 - [ ] **Istruzioni installate mancanti** in `default/standard.sys` (MoveJ, MoveC, ...):
   oggi rapidvalidate e rapid2py le rifiutano come procedure non definite.
-- [ ] Rimuovere `run/goto.py` dopo la soluzione del GOTO.
 
 ## Parser / lexer
 
@@ -55,45 +50,3 @@ instructions = 3HAC050917-001.
   (warning).
 - [ ] **Placeholder** (`<SMT>`, `<EXP>`, ...): sintatticamente validi, ma rapid2py non li
   può tradurre. Valutare un warning.
-
-## GOTO: soluzioni proposte
-
-Vincolo del manuale (kernel 4.7): "A goto statement may not transfer control into a
-statement list". La label quindi è sempre nella stessa lista del GOTO o in una lista che
-la contiene, e rapidvalidate lo controlla già (`goto-into-list`).
-
-1. **Macchina a stati con eccezione (consigliata).** Ogni lista che contiene label viene
-   divisa in segmenti, uno per label, ed eseguita in un ciclo di dispatch:
-
-   ```python
-   _pc = 0
-   while True:
-       try:
-           if _pc <= 0:
-               ...  # istruzioni prima della prima label
-           if _pc <= 1:  # label next:
-               ...
-           break
-       except pyrapid.Goto as goto:
-           if goto.label != "next":
-               raise  # label di una lista più esterna
-           _pc = 1
-   ```
-
-   `GOTO next;` diventa `raise pyrapid.Goto("next")`. L'eccezione attraversa i `while`/`if`
-   Python generati da WHILE/FOR/IF e arriva al dispatcher della lista che possiede la
-   label. Funziona all'indietro (i cicli fatti con GOTO) e in avanti, senza ricorsione.
-   `pyrapid.Goto` non deve derivare da `RapidException`, così non viene intercettata dai
-   gestori ERROR. Un GOTO nella stessa lista può essere ottimizzato in `_pc = k; continue`.
-2. **Funzioni annidate per ogni label (trampolino).** Il codice dopo ogni label diventa
-   una funzione locale, e GOTO restituisce il nome della label al chiamante, che continua
-   in un ciclo. Va bene per le label della lista principale, ma con le liste annidate
-   (label dentro un WHILE) diventa complesso, e senza il ciclo di trampolino i salti
-   all'indietro diventano ricorsione, con stack overflow per i cicli lunghi.
-3. **Patch del bytecode** (come `run/goto.py` o il pacchetto `goto-statement`):
-   dipende dalla versione di CPython (il bytecode è cambiato in 3.11, 3.12 e 3.13), è
-   fragile e poco mantenuto. Sconsigliata.
-4. **Supporto parziale.** Si supportano solo le label della lista principale della
-   routine (un `while True` con `continue`), e rapid2py rifiuta gli altri casi con una
-   diagnostica. È semplice, ma lascia fuori i salti da dentro IF/WHILE/FOR, che sono
-   proprio i più comuni (`IF ... GOTO retry;`).

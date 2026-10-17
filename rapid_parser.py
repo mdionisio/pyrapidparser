@@ -788,12 +788,9 @@ class RAPIDParser(PLYParser):
 
     def p_for_statement_2(self, p: YaccProduction) -> None:
         """for_statement        : FOR identifier FROM expression TO expression DO statement_list ENDFOR"""
-        step = 1
-        literal_step = rapid_ast.LiteralATS(step)
-        expression_step = rapid_ast.ExpressionAST(literal_step)
-        p[0] = rapid_ast.ForStatement(
-            p[2], p[4], p[6], expression_step, p[8], coord=self._coord(p.lineno(1))
-        )
+        # without STEP the step is 1, or -1 if the range is descending (kernel manual 4.16):
+        # it depends on the values, so istep is None
+        p[0] = rapid_ast.ForStatement(p[2], p[4], p[6], None, p[8], coord=self._coord(p.lineno(1)))
 
     ###
     ###  IRC5-RAPID Kernel Reference Manual 3HAC16585-1_revG_en_library.pdf

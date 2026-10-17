@@ -67,8 +67,8 @@ pythonpath = ["."]
 [tool.ruff]
 line-length = 100
 target-version = "py39"
-# run/goto.py is Python 2 only; generated files (rapid_ast.py from _rapid_ast.cfg, PLY tables)
-extend-exclude = ["rapid_ast.py", "lextab.py", "yacctab.py", "parsetab.py", "run/goto.py"]
+# generated files (rapid_ast.py from _rapid_ast.cfg, PLY tables)
+extend-exclude = ["rapid_ast.py", "lextab.py", "yacctab.py", "parsetab.py"]
 
 [tool.mypy]
 strict = true
@@ -94,8 +94,6 @@ files = [
     "test_rapidvalidate.py",
     "test/server.py",
 ]
-# run/goto.py is a Python 2 only bytecode hack (unused) and cannot be parsed by Python 3
-exclude = ["^run/goto\\.py$"]
 # rapid_ast.py is generated and untyped: its constructors may be called from typed code
 untyped_calls_exclude = ["rapid_ast"]
 
