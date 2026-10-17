@@ -150,9 +150,11 @@ class RAPIDLexer(object):
         "switch",  # NOT IN DOCUMENTATION
     )
 
+    # "The language is not case sensitive" (RAPID overview manual, 1.1.1): keywords are
+    # looked up in upper case
     keyword_map: dict[str, str] = {}
     for keyword in keywords:
-        keyword_map[keyword] = keyword
+        keyword_map[keyword.upper()] = keyword
 
     ##
     ## All the tokens recognized by the lexer
@@ -403,7 +405,13 @@ class RAPIDLexer(object):
 
     @TOKEN(identifier)
     def t_ID(self, t: LexToken) -> LexToken:
-        t.type = self.keyword_map.get(t.value, "ID")
+        keyword = self.keyword_map.get(t.value.upper())
+        if keyword is None:
+            t.type = "ID"
+        else:
+            # the parser sees the keywords as they are written in the grammar
+            t.type = keyword
+            t.value = keyword
         return t
 
     def t_error(self, t: LexToken) -> None:

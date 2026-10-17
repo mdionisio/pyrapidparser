@@ -1,4 +1,4 @@
-MODULE test
+MODULE test26
     LOCAL PROC client()
         VAR socketdev socket1;
         VAR string received_string;

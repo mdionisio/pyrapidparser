@@ -82,9 +82,8 @@ CASES = [
         ),
         [],
     ),
-    # --- 2.3 Identifiers, 2.4 Reserved words
+    # --- 2.3 Identifiers (reserved words are rejected by the lexer)
     ("identifier too long", module("    VAR num %s;" % ("a" * 33)), ["identifier-too-long"]),
-    ("reserved word", module("    VAR num test;"), ["reserved-word"]),
     # --- 2.13 The type string
     ("string of 80 characters", module('    VAR string s := "%s";' % ("x" * 80)), []),
     ("string too long", module('    VAR string s := "%s";' % ("x" * 81)), ["string-too-long"]),
@@ -401,7 +400,7 @@ INVALID_FILES = {
         (171, "not-a-procedure"),
         (200, "not-a-procedure"),
     ],
-    "test1.mod": [(3, "reserved-word"), (5, "unknown-type")],
+    "test1.mod": [(5, "unknown-type")],
     "test6.mod": [(9, "duplicate-name")],
     "test7.mod": [(9, "duplicate-name")],
     "test8.mod": [
@@ -433,11 +432,6 @@ INVALID_FILES = {
     "test17.mod": [(3, "undefined-name")],
     "test18.mod": [(3, "undefined-name")],
     "test20.mod": [(2, "duplicate-global")],
-    "test25.mod": [(1, "reserved-word")],
-    "test26.mod": [(1, "reserved-word")],
-    "test27.mod": [(1, "reserved-word")],
-    "test28.mod": [(1, "reserved-word")],
-    "test29.mod": [(1, "reserved-word")],
     "test30.mod": [(6, "not-literal")],
     "test33.mod": [(17, "local-in-routine")],
     "test40.mod": [(8, "not-literal")],

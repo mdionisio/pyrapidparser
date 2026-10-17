@@ -33,6 +33,7 @@ MOD_FILES = sorted(
 
 # the translation fails (with --no-validate): invalid RAPID or rapid2py limitations
 KNOWN_FAILURES = {
+    "rapid1.mod": "invalid RAPID: PIPPO is both an alias and a procedure (case insensitive)",
     "test1.mod": "invalid RAPID: unknown data type pone",
     "test6.mod": "invalid RAPID: pippo is both a record and a variable",
     "test7.mod": "invalid RAPID: pippo is both a record and a variable",

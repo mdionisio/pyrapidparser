@@ -1,11 +1,50 @@
 from copy import deepcopy
 from functools import reduce
 import operator
-from typing import Any, Optional
+from collections.abc import MutableMapping
+from typing import Any, Iterator, Optional
 
 from run import Singleton
 
 import inspect
+
+
+class NoCaseDict(MutableMapping[Any, Any]):
+    """dict with string keys compared ignoring the case: "The language is not case
+    sensitive" (RAPID overview manual, 1.1.1). A key keeps the spelling of its first
+    insertion."""
+
+    def __init__(self, data: Any = None) -> None:
+        self._data: dict[Any, tuple[Any, Any]] = {}
+        if data is not None:
+            self.update(data)
+
+    @staticmethod
+    def _key(key: Any) -> Any:
+        return key.lower() if isinstance(key, str) else key
+
+    def __getitem__(self, key: Any) -> Any:
+        return self._data[self._key(key)][1]
+
+    def __setitem__(self, key: Any, value: Any) -> None:
+        k = self._key(key)
+        name = self._data[k][0] if k in self._data else key
+        self._data[k] = (name, value)
+
+    def __delitem__(self, key: Any) -> None:
+        del self._data[self._key(key)]
+
+    def __contains__(self, key: object) -> bool:
+        return self._key(key) in self._data
+
+    def __iter__(self) -> Iterator[Any]:
+        return (name for name, _ in self._data.values())
+
+    def __len__(self) -> int:
+        return len(self._data)
+
+    def __repr__(self) -> str:
+        return "NoCaseDict(%r)" % (dict(self.items()),)
 
 
 def lineno() -> int:
@@ -113,7 +152,7 @@ class SymFunction(Symbol):
     ) -> None:
         Symbol.__init__(self, Symbol.SYM_TYPE_FUNCTION, call)
         self.parameters = parameters
-        self.localsymbol: dict[str, Any] = {}
+        self.localsymbol: NoCaseDict = NoCaseDict()
         self.returntype = returntype
         self.error_call = error_call
         self.undo_call = undo_call
@@ -131,7 +170,7 @@ class SymProcedure(Symbol):
     ) -> None:
         Symbol.__init__(self, Symbol.SYM_TYPE_PROCEDURE, call)
         self.parameters = parameters
-        self.localsymbol: dict[str, Any] = {}
+        self.localsymbol: NoCaseDict = NoCaseDict()
         self.error_call = error_call
         self.undo_call = undo_call
 
@@ -147,12 +186,12 @@ class Symbols(Singleton.Singleton):
         self.reset()
 
     def reset(self) -> None:
-        self.global_symbol: dict[str, Any] = {}
-        self.module_symbol: dict[Optional[str], dict[str, Any]] = {}
-        self.local_symbol: dict[Optional[str], dict[Optional[str], Any]] = {}
-        self.scope_symbol: list[tuple[Optional[str], Optional[str], dict[str, Any]]] = []
+        self.global_symbol: NoCaseDict = NoCaseDict()
+        self.module_symbol: NoCaseDict = NoCaseDict()
+        self.local_symbol: NoCaseDict = NoCaseDict()
+        self.scope_symbol: list[tuple[Optional[str], Optional[str], NoCaseDict]] = []
         # contain for each module the list of global symbol defined
-        self.module_global_symbol: dict[str, list[str]] = {}
+        self.module_global_symbol: NoCaseDict = NoCaseDict()
 
     def GetSymbol(
         self, symbolname: str, modulename: Optional[str] = None, functionname: Optional[str] = None
@@ -218,7 +257,7 @@ class Symbols(Singleton.Singleton):
 
     def AddModuleSym(self, module: Optional[str], symbolname: str, data: Any) -> None:
         if not (module in self.module_symbol):
-            self.module_symbol[module] = {}
+            self.module_symbol[module] = NoCaseDict()
         msymbol = self.module_symbol[module]
         if symbolname in msymbol:
             raise Exception("symbol %s already defined in module %s" % (symbolname, module))
@@ -249,7 +288,7 @@ class Symbols(Singleton.Singleton):
         functionname: Optional[str] = None,
         invalue: dict[str, Any] = {},
     ) -> None:
-        self.scope_symbol.append((modulename, functionname, invalue))
+        self.scope_symbol.append((modulename, functionname, NoCaseDict(invalue)))
 
     def PopScope(self) -> None:
         self.scope_symbol.pop()
@@ -273,7 +312,7 @@ class Symbols(Singleton.Singleton):
         self, module: Optional[str], function: Optional[str], symbolname: str, data: Any
     ) -> None:
         if not (module in self.local_symbol):
-            self.local_symbol[module] = {}
+            self.local_symbol[module] = NoCaseDict()
         msymbol = self.local_symbol[module]
         if not (function in msymbol):
             raise Exception("function/procedure %s never defined in %s" % (function, module))
@@ -283,7 +322,7 @@ class Symbols(Singleton.Singleton):
 
 class ModuleSymbol(Singleton.Singleton):
     def __global_init__(self) -> None:
-        self.global_symbol: dict[str, Any] = {}
+        self.global_symbol: NoCaseDict = NoCaseDict()
 
 
 class rapid_struct:
@@ -292,18 +331,23 @@ class rapid_struct:
         self.types = types
         self.val: Any = [self.types[i]() for i in range(0, len(self.names))]
 
+    def component_index(self, name: str) -> int:
+        """record components are not case sensitive"""
+        lower = [n.lower() for n in self.names]
+        return lower.index(name.lower())
+
     def GetElem(self, elem: Any) -> Any:
         if isinstance(elem, int):
             return self.val[elem]
         else:
-            return self.val[self.names.index(elem)]
+            return self.val[self.component_index(elem)]
 
     def SetElem(self, elem: Any, val: Any) -> None:
         # add check type
         if isinstance(elem, int):
             self.val[elem] = val
         else:
-            self.val[self.names.index(elem)] = val
+            self.val[self.component_index(elem)] = val
 
     def Get(self) -> Any:
         if self.val is None:

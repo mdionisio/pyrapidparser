@@ -1,4 +1,4 @@
-MODULE test
+MODULE test29
     
     PROC client()
         VAR num found;

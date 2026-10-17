@@ -1,6 +1,6 @@
 MODULE syun1(SYSMODULE)
     ! comment
-    VAR string test := "pippo !pluto";
+    VAR string test_str := "pippo !pluto";
     VAR num n1 := 0;
     PERS pone pose1;
     VAR orient o1 := [1, 0, 0, 0];

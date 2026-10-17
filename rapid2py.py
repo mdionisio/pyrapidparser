@@ -12,6 +12,14 @@ from rapid_lexer import decode_string
 from collections import OrderedDict
 
 
+def parameter_name(parameters: Any, name: str) -> str:
+    """the declared name of a parameter: RAPID is not case sensitive"""
+    for key in parameters:
+        if key.lower() == name.lower():
+            return str(key)
+    return name
+
+
 class TraslateRapidToPython(rapid_ast.NodeVisitor):
     def __init__(self, out_filename: str = "rapid_program.py", out_folder: str = "run") -> None:
         self.file_module: Optional[TextIO] = None
@@ -1038,7 +1046,7 @@ class rapid_%s (pyrapid.rapid_struct):
             else:
                 raise Exception("positional parameter after a named one")
         else:
-            argumentname = node.argumentname.name
+            argumentname = parameter_name(parameters_defined, node.argumentname.name)
             if list(parameters_defined.keys())[parameters_index] == argumentname:
                 parameters_index += 1
             else:
@@ -1192,7 +1200,7 @@ class rapid_%s (pyrapid.rapid_struct):
             else:
                 raise Exception("positional parameter after a named one")
         else:
-            argumentname = node.argumentname.name
+            argumentname = parameter_name(parameters_defined, node.argumentname.name)
             if list(parameters_defined.keys())[parameters_index] == argumentname:
                 parameters_index += 1
             else:
@@ -1329,7 +1337,7 @@ class rapid_%s (pyrapid.rapid_struct):
         function_name = node.function.name
 
         # SPECIAL FUNCTION #
-        if function_name == "Present":
+        if function_name.lower() == "present":
             if len(node.arguments) != 1:
                 raise Exception("Present function accept one parameter")
             if node.arguments[0].type == "Required":
@@ -1350,12 +1358,12 @@ class rapid_%s (pyrapid.rapid_struct):
                     raise Exception("Present function accept one unqualified name")
             else:
                 raise Exception("Present function accept one required unqualified name")
-        elif function_name == "Dim":
+        elif function_name.lower() == "dim":
             if len(node.arguments) != 2:
                 raise Exception("Dim function accept 2 parameter")
             if node.arguments[0].type == "Required":
                 if (node.arguments[0].argumentname is None) or (
-                    node.arguments[0].argumentname == "ArrPar"
+                    node.arguments[0].argumentname.name.lower() == "arrpar"
                 ):
                     if isinstance(node.arguments[0].argumentvalue, rapid_ast.VariableAST):
                         if isinstance(node.arguments[0].argumentvalue.var, rapid_ast.IdentifierAST):
@@ -1369,8 +1377,8 @@ class rapid_%s (pyrapid.rapid_struct):
             else:
                 raise Exception("Dim function first parameter has to be Reuired")
             if node.arguments[1].type == "Required":
-                if (node.arguments[0].argumentname is None) or (
-                    node.arguments[0].argumentname == "DimNo"
+                if (node.arguments[1].argumentname is None) or (
+                    node.arguments[1].argumentname.name.lower() == "dimno"
                 ):
                     pass
                 else:
@@ -1396,10 +1404,10 @@ class rapid_%s (pyrapid.rapid_struct):
             kwargs["defined"] = defined
             self.visit(node.arguments[1], **kwargs)
             self.simple_writemodule("})")
-        elif function_name == "IsVar":
+        elif function_name.lower() == "isvar":
             if len(node.arguments) != 1:
                 raise Exception("IsVar function accept one parameter")
-        elif function_name == "IsPers":
+        elif function_name.lower() == "ispers":
             if len(node.arguments) != 1:
                 raise Exception("IsPers function accept one parameter")
         else:
@@ -1468,18 +1476,17 @@ class rapid_%s (pyrapid.rapid_struct):
             #
 
         # SPECIAL PROCEDURE
-        if procedure_name == "WaitUntil":
+        if isinstance(procedure_name, str) and procedure_name.lower() == "waituntil":
             # TODO
             # WaitUntil \InPos Cond \MaxTime \TimeFlag
             self.writemodule("import time")
             self.simple_writeindent()
             self.simple_writemodule("while ( ")
 
-            for i in range(len(node.arguments)):
-                argn = node.arguments[i].argumentname
-                argv = node.arguments[i].argumentvalue
-                if argn != "InPos":
-                    self.visit(argv, **kwargs)
+            # the condition is the required argument (\InPos is a switch)
+            for argument in node.arguments:
+                if argument.type == "Required":
+                    self.visit(argument.argumentvalue, **kwargs)
                     break
 
             self.simple_writemodule("): ")

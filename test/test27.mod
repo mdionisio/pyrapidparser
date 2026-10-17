@@ -1,4 +1,4 @@
-MODULE test
+MODULE test27
     LOCAL PROC client1(num pippo)
         TPWrite "pippo:", \Num:=pippo;
         RAISE ERR_MODULE;

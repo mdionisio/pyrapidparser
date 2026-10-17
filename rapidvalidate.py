@@ -41,18 +41,6 @@ class Diagnostic:
         return "%s:%d: %s: %s [%s]" % (self.file, self.line, self.severity, self.message, self.code)
 
 
-# 2.4 Reserved words
-RESERVED_WORDS = frozenset(
-    w.lower()
-    for w in (
-        "ALIAS AND BACKWARD CASE CONNECT CONST DEFAULT DIV DO ELSE ELSEIF ENDFOR ENDFUNC ENDIF "
-        "ENDMODULE ENDPROC ENDRECORD ENDTEST ENDTRAP ENDWHILE ERROR EXIT FALSE FOR FROM FUNC "
-        "GOTO IF INOUT LOCAL MOD MODULE NOSTEPIN NOT NOVIEW OR PERS PROC RAISE READONLY RECORD "
-        "RETRY RETURN STEP SYSMODULE TEST THEN TO TRAP TRUE TRYNEXT UNDO VAR VIEWONLY WHILE "
-        "WITH XOR"
-    ).split()
-)
-
 # 2.3 Identifiers: "The maximum length of an identifier is 32 characters."
 MAX_IDENTIFIER_LENGTH = 32
 
@@ -436,9 +424,6 @@ class Validator:
                 "identifier-too-long",
                 "identifier '%s' is longer than %d characters" % (name, MAX_IDENTIFIER_LENGTH),
             )
-        # 2.4 Reserved words: "they must not be used as identifiers"
-        if name.lower() in RESERVED_WORDS:
-            self.report(node, "reserved-word", "'%s' is a reserved word" % (name,))
 
     # ------------------------------------------------------------- entry point
 
