@@ -43,16 +43,61 @@ include = [
 dependencies = [
     "pytest",
     "pytest-cov",
+    "mypy>=1.9",
+    "ruff",
+    "hatchling",
 ]
 
 [tool.hatch.envs.default.scripts]
 gen-ast = "python _ast_gen.py"
 test = ["gen-ast", "pytest {args}"]
 cov = ["gen-ast", "pytest --cov --cov-report=term-missing {args}"]
+typecheck = ["gen-ast", "mypy {args}"]
+format = "ruff format {args}"
+format-check = "ruff format --check --diff {args}"
 
 [tool.hatch.envs.hatch-test]
 dependencies = ["ply>=3.11"]
 
 [tool.pytest.ini_options]
-testpaths = ["test_rapid.py", "test_roundtrip.py"]
+testpaths = ["test_rapid.py", "test_roundtrip.py", "test_quality.py"]
 pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+# run/goto.py is Python 2 only; generated files (rapid_ast.py from _rapid_ast.cfg, PLY tables)
+extend-exclude = ["rapid_ast.py", "lextab.py", "yacctab.py", "parsetab.py", "run/goto.py"]
+
+[tool.mypy]
+strict = true
+files = [
+    "_ast_gen.py",
+    "ast_gen.py",
+    "browse_rapid_ast.py",
+    "hatch_build.py",
+    "plyparser.py",
+    "rapid2py.py",
+    "rapid2rapid.py",
+    "rapid_lexer.py",
+    "rapid_parser.py",
+    "run",
+    "test_quality.py",
+    "test_rapid.py",
+    "test_roundtrip.py",
+    "test/server.py",
+]
+# run/goto.py is a Python 2 only bytecode hack (unused) and cannot be parsed by Python 3
+exclude = ["^run/goto\\.py$"]
+# rapid_ast.py is generated and untyped: its constructors may be called from typed code
+untyped_calls_exclude = ["rapid_ast"]
+
+[[tool.mypy.overrides]]
+module = ["rapid_ast", "lextab", "yacctab", "parsetab"]
+ignore_errors = true
+# rapid_ast re-exports Node, NodeVisitor, ... from ast_gen
+implicit_reexport = true
+
+[[tool.mypy.overrides]]
+module = ["ply", "ply.*"]
+ignore_missing_imports = true

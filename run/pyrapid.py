@@ -1,152 +1,184 @@
 from copy import deepcopy
+from functools import reduce
 import operator
+from typing import Any, Optional
 
 from run import Singleton
 
 import inspect
 
-def lineno():
+
+def lineno() -> int:
     """Returns the current line number in our program."""
-    return inspect.currentframe().f_back.f_lineno
+    frame = inspect.currentframe()
+    assert frame is not None and frame.f_back is not None
+    return frame.f_back.f_lineno
+
 
 class RapidException(Exception):
-    def __init__(self, code, desc):
+    def __init__(self, code: int, desc: str) -> None:
         Exception.__init__(self, desc)
         self.code = code
-        Symbols().GetSymbol(symbolname='ERRNO').data.Set(code)
-        
+        Symbols().GetSymbol(symbolname="ERRNO").data.Set(code)
+
 
 class Symbol:
-    SYM_TYPE_VAR         = 1
-    SYM_TYPE_CONST_VAR   = 2
-    SYM_TYPE_PERS_VAR    = 3
-    SYM_TYPE_FUNCTION    = 4
-    SYM_TYPE_PROCEDURE   = 5
-    SYM_TYPE_DATATYPE    = 6
-    SYM_TYPE_NONE        = 7
+    SYM_TYPE_VAR = 1
+    SYM_TYPE_CONST_VAR = 2
+    SYM_TYPE_PERS_VAR = 3
+    SYM_TYPE_FUNCTION = 4
+    SYM_TYPE_PROCEDURE = 5
+    SYM_TYPE_DATATYPE = 6
+    SYM_TYPE_NONE = 7
 
-    def __init__(self, type, data):
+    def __init__(self, type: int, data: Any) -> None:
         self.type = type
         self.data = data
-        
-    def Get(self):
+
+    def Get(self) -> tuple[int, Any]:
         return (self.type, self.data)
-        
+
     @classmethod
-    def CreateNone(cls):
+    def CreateNone(cls) -> "Symbol":
         return cls(cls.SYM_TYPE_NONE, None)
-        
+
     @classmethod
-    def CreateDataType(cls, datatype):
+    def CreateDataType(cls, datatype: Any) -> "Symbol":
         return cls(cls.SYM_TYPE_DATATYPE, datatype)
-        
+
     @staticmethod
-    def CreateFunction(parameters, returntype, call=None, error_call=None, undo_call=None):
+    def CreateFunction(
+        parameters: Any,
+        returntype: Any,
+        call: Any = None,
+        error_call: Any = None,
+        undo_call: Any = None,
+    ) -> "SymFunction":
         return SymFunction(parameters, returntype, call, error_call, undo_call)
-        
+
     @staticmethod
-    def CreateProcedure(parameters, call=None, error_call=None, undo_call=None):
+    def CreateProcedure(
+        parameters: Any, call: Any = None, error_call: Any = None, undo_call: Any = None
+    ) -> "SymProcedure":
         return SymProcedure(parameters, call, error_call, undo_call)
-        
+
     @staticmethod
-    def CreateVar(vartype, varval=None):
+    def CreateVar(vartype: Any, varval: Any = None) -> "SymVar":
         if varval is None:
             return SymVar(type(vartype), vartype)
         else:
             return SymVar(vartype, varval)
-        
+
     @staticmethod
-    def CreateConst(vartype, varval=None):
+    def CreateConst(vartype: Any, varval: Any = None) -> "SymConst":
         if varval is None:
             return SymConst(type(vartype), vartype)
         else:
             return SymConst(vartype, varval)
-        
+
     @staticmethod
-    def CreatePers(vartype, varval=None):
+    def CreatePers(vartype: Any, varval: Any = None) -> "SymPers":
         if varval is None:
             return SymPers(type(vartype), vartype)
         else:
             return SymPers(vartype, varval)
-        
+
+
 class SymVar(Symbol):
-    def __init__(self, vartype, varval):
+    def __init__(self, vartype: Any, varval: Any) -> None:
         Symbol.__init__(self, Symbol.SYM_TYPE_VAR, varval)
         self.vartype = vartype
-        
+
+
 class SymConst(Symbol):
-    def __init__(self, vartype, varval):
+    def __init__(self, vartype: Any, varval: Any) -> None:
         Symbol.__init__(self, Symbol.SYM_TYPE_CONST_VAR, varval)
         self.vartype = vartype
-        
+
+
 class SymPers(Symbol):
-    def __init__(self, vartype, varval):
+    def __init__(self, vartype: Any, varval: Any) -> None:
         Symbol.__init__(self, Symbol.SYM_TYPE_PERS_VAR, varval)
         self.vartype = vartype
-        
+
+
 class SymFunction(Symbol):
-    def __init__(self, parameters, returntype, call, error_call=None, undo_call=None):
+    def __init__(
+        self,
+        parameters: Any,
+        returntype: Any,
+        call: Any,
+        error_call: Any = None,
+        undo_call: Any = None,
+    ) -> None:
         Symbol.__init__(self, Symbol.SYM_TYPE_FUNCTION, call)
         self.parameters = parameters
-        self.localsymbol = {}
+        self.localsymbol: dict[str, Any] = {}
         self.returntype = returntype
         self.error_call = error_call
         self.undo_call = undo_call
-    
-    def AddLocalSymbol(self, symbolname, data):
-        if (symbolname in self.localsymbol):
-            raise Exception("symbol %s already defined"%(symbolname,))
-        else:
-            self.localsymbol[symbolname] = data
-        
-class SymProcedure(Symbol):
-    def __init__(self, parameters, call, error_call=None, undo_call=None):
-        Symbol.__init__(self, Symbol.SYM_TYPE_PROCEDURE, call)
-        self.parameters = parameters
-        self.localsymbol = {}
-        self.error_call = error_call
-        self.undo_call = undo_call
-    
-    def AddLocalSymbol(self, symbolname, data):
-        if (symbolname in self.localsymbol):
-            raise Exception("symbol %s already defined"%(symbolname,))
+
+    def AddLocalSymbol(self, symbolname: str, data: Any) -> None:
+        if symbolname in self.localsymbol:
+            raise Exception("symbol %s already defined" % (symbolname,))
         else:
             self.localsymbol[symbolname] = data
 
+
+class SymProcedure(Symbol):
+    def __init__(
+        self, parameters: Any, call: Any, error_call: Any = None, undo_call: Any = None
+    ) -> None:
+        Symbol.__init__(self, Symbol.SYM_TYPE_PROCEDURE, call)
+        self.parameters = parameters
+        self.localsymbol: dict[str, Any] = {}
+        self.error_call = error_call
+        self.undo_call = undo_call
+
+    def AddLocalSymbol(self, symbolname: str, data: Any) -> None:
+        if symbolname in self.localsymbol:
+            raise Exception("symbol %s already defined" % (symbolname,))
+        else:
+            self.localsymbol[symbolname] = data
+
+
 class Symbols(Singleton.Singleton):
-    def __global_init__(self):
+    def __global_init__(self) -> None:
         self.reset()
-        
-    def reset(self):
-        self.global_symbol = {}
-        self.module_symbol = {}
-        self.local_symbol = {}
-        self.scope_symbol = []
-        self.module_global_symbol = {} # contain for each module the list of global symbol defined
-        
-    def GetSymbol(self, symbolname, modulename=None, functionname=None):
+
+    def reset(self) -> None:
+        self.global_symbol: dict[str, Any] = {}
+        self.module_symbol: dict[Optional[str], dict[str, Any]] = {}
+        self.local_symbol: dict[Optional[str], dict[Optional[str], Any]] = {}
+        self.scope_symbol: list[tuple[Optional[str], Optional[str], dict[str, Any]]] = []
+        # contain for each module the list of global symbol defined
+        self.module_global_symbol: dict[str, list[str]] = {}
+
+    def GetSymbol(
+        self, symbolname: str, modulename: Optional[str] = None, functionname: Optional[str] = None
+    ) -> Any:
         try:
             try:
                 return self.scope_symbol[-1][2][symbolname]
             except IndexError:
                 pass
-                #print ("error: there is no scope defined")
+                # print ("error: there is no scope defined")
             except KeyError:
                 pass
             if (functionname is None) and (modulename is None):
-                #global
+                # global
                 return self.global_symbol[symbolname]
-            elif (modulename is None):
-                #module
+            elif modulename is None:
+                # module
                 try:
                     return self.module_symbol[modulename][symbolname]
                 except KeyError:
                     pass
-                print("get from global: "+str(symbolname))
+                print("get from global: " + str(symbolname))
                 print(self.global_symbol)
                 return self.global_symbol[symbolname]
             else:
-                #local
+                # local
                 try:
                     return self.local_symbol[modulename][functionname][symbolname]
                 except KeyError:
@@ -158,124 +190,144 @@ class Symbols(Singleton.Singleton):
                 return self.global_symbol[symbolname]
         except KeyError:
             return None
-            
-    def IsInScope(self, symbolname):
+
+    def IsInScope(self, symbolname: str) -> bool:
         try:
-            return (symbolname in self.scope_symbol[-1][2])
+            return symbolname in self.scope_symbol[-1][2]
         except:
             return False
-            
-    def UnLoadModule(self, modulename):
-        if (modulename in self.module_global_symbol):
+
+    def UnLoadModule(self, modulename: str) -> bool:
+        if modulename in self.module_global_symbol:
             for i in self.module_global_symbol[modulename]:
                 self.global_symbol.pop(i)
             self.module_global_symbol.pop(modulename)
             return True
         return False
-            
-        
-    def AddGlobalSym(self, symbolname, data, modulename=None):
-        if (symbolname in self.global_symbol):
-            raise Exception("symbol %s already defined"%(symbolname,))
+
+    def AddGlobalSym(self, symbolname: str, data: Any, modulename: Optional[str] = None) -> None:
+        if symbolname in self.global_symbol:
+            raise Exception("symbol %s already defined" % (symbolname,))
         else:
             self.global_symbol[symbolname] = data
-            if not(modulename is None):
-                if (modulename in self.module_global_symbol):
+            if not (modulename is None):
+                if modulename in self.module_global_symbol:
                     self.module_global_symbol[modulename].append(symbolname)
                 else:
-                    self.module_global_symbol[modulename] = [ symbolname ]
-        
-    def AddModuleSym(self, module, symbolname, data):
+                    self.module_global_symbol[modulename] = [symbolname]
+
+    def AddModuleSym(self, module: Optional[str], symbolname: str, data: Any) -> None:
         if not (module in self.module_symbol):
             self.module_symbol[module] = {}
         msymbol = self.module_symbol[module]
-        if (symbolname in msymbol):    
-            raise Exception("symbol %s already defined in module %s"%(symbolname,module))
+        if symbolname in msymbol:
+            raise Exception("symbol %s already defined in module %s" % (symbolname, module))
         else:
             msymbol[symbolname] = data
-            
-    class Scope():
-        def __init__(self, modulename, functionname=None, invalue={}):
+
+    class Scope:
+        def __init__(
+            self,
+            modulename: Optional[str],
+            functionname: Optional[str] = None,
+            invalue: dict[str, Any] = {},
+        ) -> None:
             self.modulename = modulename
             self.functionname = functionname
             self.invalue = invalue
-            
-        def __enter__(self):
+
+        def __enter__(self) -> "Symbols":
             Symbols().PushScope(self.modulename, self.functionname, self.invalue)
             return Symbols()
-            
-        def __exit__(self, type, value, traceback):
+
+        def __exit__(self, type: Any, value: Any, traceback: Any) -> None:
             Symbols().PopScope()
-            
-    def PushScope(self, modulename, functionname=None, invalue={}):
-        self.scope_symbol.append( ( modulename, functionname, invalue ) )
-        
-    def PopScope(self):
+
+    def PushScope(
+        self,
+        modulename: Optional[str],
+        functionname: Optional[str] = None,
+        invalue: dict[str, Any] = {},
+    ) -> None:
+        self.scope_symbol.append((modulename, functionname, invalue))
+
+    def PopScope(self) -> None:
         self.scope_symbol.pop()
-        
-    def AddScopeSym(self, symbolname, data):
+
+    def AddScopeSym(self, symbolname: str, data: Any) -> None:
         modulename = self.scope_symbol[-1][0]
         functionname = self.scope_symbol[-1][1]
         symbols = self.scope_symbol[-1][2]
-        if (symbolname in symbols):
-            raise Exception("symbol %s already defined in the scope"%(symbolname,))
-        elif (modulename in self.local_symbol) and (functionname in self.local_symbol[modulename]) and (symbolname in self.local_symbol[modulename][functionname]):
-            raise Exception("symbol %s already defined in the local scope"%(symbolname,))
+        if symbolname in symbols:
+            raise Exception("symbol %s already defined in the scope" % (symbolname,))
+        elif (
+            (modulename in self.local_symbol)
+            and (functionname in self.local_symbol[modulename])
+            and (symbolname in self.local_symbol[modulename][functionname])
+        ):
+            raise Exception("symbol %s already defined in the local scope" % (symbolname,))
         else:
             symbols[symbolname] = data
-            
-        
-    def AddLocalSym(self, module, function, symbolname, data):
+
+    def AddLocalSym(
+        self, module: Optional[str], function: Optional[str], symbolname: str, data: Any
+    ) -> None:
         if not (module in self.local_symbol):
             self.local_symbol[module] = {}
         msymbol = self.local_symbol[module]
         if not (function in msymbol):
-            raise Exception("function/procedure %s never defined in %s"%(function,module))
+            raise Exception("function/procedure %s never defined in %s" % (function, module))
         lsymbol = msymbol[function]
         lsymbol.AddLocalSymbol(symbolname, data)
-        
-        
-        
+
+
 class ModuleSymbol(Singleton.Singleton):
-    def __global_init__(self):
-        self.global_symbol = {}
-        
-class rapid_struct :
-    def __init__(self, names, types):
+    def __global_init__(self) -> None:
+        self.global_symbol: dict[str, Any] = {}
+
+
+class rapid_struct:
+    def __init__(self, names: list[str], types: list[Any]) -> None:
         self.names = names
         self.types = types
-        self.val = [ self.types[i]() for i in range(0, len(self.names)) ]
-        
-    def GetElem(self, elem):
+        self.val: Any = [self.types[i]() for i in range(0, len(self.names))]
+
+    def GetElem(self, elem: Any) -> Any:
         if isinstance(elem, int):
-            return self.val[ elem ]
+            return self.val[elem]
         else:
-            return self.val[ self.names.index(elem) ]
-        
-    def SetElem(self, elem, val):
+            return self.val[self.names.index(elem)]
+
+    def SetElem(self, elem: Any, val: Any) -> None:
         # add check type
         if isinstance(elem, int):
-            self.val[ self.toLinear(elem) ] = val
+            self.val[elem] = val
         else:
-            self.val[ self.names.index(elem) ] = val
-            
-    def Get(self):
+            self.val[self.names.index(elem)] = val
+
+    def Get(self) -> Any:
         if self.val is None:
             raise Exception("variable never assigned")
         else:
-            #return self
+            # return self
             return self.val
-            
-    def Set(self, val):
-        if isinstance(val, list) and len(val)==len(self.names):
-            for i in range(0, len(val)):
-                self.val[i].Set( val[i] )
-        else:
-            raise Exception("has to be implemented val:%s, type:%s (%s)"%(str(val),str(type(val)),str(self.names)))
 
-class rapid_array :
-    def __init__(self, size=[], elem_type=None, val=None):
-        if len(size)==0:
+    def Set(self, val: Any) -> None:
+        if isinstance(val, list) and len(val) == len(self.names):
+            for i in range(0, len(val)):
+                self.val[i].Set(val[i])
+        else:
+            raise Exception(
+                "has to be implemented val:%s, type:%s (%s)"
+                % (str(val), str(type(val)), str(self.names))
+            )
+
+
+class rapid_array:
+    def __init__(self, size: list[Any] = [], elem_type: Any = None, val: Any = None) -> None:
+        self.size: Any
+        self.val: list[Any]
+        if len(size) == 0:
             if not (val is None):
                 self.elem_type = elem_type
                 self.Set(val)
@@ -286,29 +338,28 @@ class rapid_array :
             self.elem_type = elem_type
             self.size = None
             self.SetSize(size, val)
-            
-            
-    def SetSize(self, size, val=None):
+
+    def SetSize(self, size: list[Any], val: Any = None) -> None:
         if self.size is None:
             if val is None:
                 self.size = size
-                self.val = [ self.elem_type() for i in range(reduce(operator.mul, self.size)) ]
+                self.val = [self.elem_type() for i in range(reduce(operator.mul, self.size))]
             else:
                 self.size = size
-                val, psize =  rapid_array.unrollarray(val)
-                self.val = [ self.elem_type(val[i]) for i in range(reduce(operator.mul, self.size)) ]
+                val, psize = rapid_array.unrollarray(val)
+                self.val = [self.elem_type(val[i]) for i in range(reduce(operator.mul, self.size))]
         else:
             raise Exception("size already defined")
-            
+
     @staticmethod
-    def unrollarray(indata):
-        out = []
-        psize = [ len(indata) ]
-        tmp_psize = None
+    def unrollarray(indata: list[Any]) -> tuple[list[Any], list[int]]:
+        out: list[Any] = []
+        psize = [len(indata)]
+        tmp_psize: Optional[list[int]] = None
         for i in indata:
             if isinstance(i, list):
-                outt, psizet = rapid_array.unrollarray(i) 
-                out += outt 
+                outt, psizet = rapid_array.unrollarray(i)
+                out += outt
                 if tmp_psize is None:
                     tmp_psize = psizet
                 elif tmp_psize != psizet:
@@ -318,69 +369,69 @@ class rapid_array :
         if not (tmp_psize is None):
             psize += tmp_psize
         return (out, psize)
-            
-    def toLinear(self, val):
+
+    def toLinear(self, val: Any) -> int:
         if isinstance(val, int):
-            val = [ val ]
+            val = [val]
         elif isinstance(val, float):
-            val = [ int(val) ]
-            
+            val = [int(val)]
+
         x = 0
-        for i in range(len(self.size),0,-1):
-            localsize = self.size[:(i-1)]
-            if len(localsize)==0:
-                tmp = val[i-1]
+        for i in range(len(self.size), 0, -1):
+            localsize = self.size[: (i - 1)]
+            if len(localsize) == 0:
+                tmp = val[i - 1]
                 if isinstance(tmp, int):
-                    x += tmp-1
-                elif isinstance(val[i-1], float):
-                    x += int(tmp)-1
+                    x += tmp - 1
+                elif isinstance(val[i - 1], float):
+                    x += int(tmp) - 1
                 elif isinstance(tmp, rapid_num):
-                    x += int(tmp.Get())-1
+                    x += int(tmp.Get()) - 1
                 else:
-                    x += int(tmp.data.Get())-1
+                    x += int(tmp.data.Get()) - 1
             else:
-                if isinstance(val[i-1], int):
-                    x += int(reduce(operator.mul,localsize) * (val[i-1]-1))
-                elif isinstance(val[i-1], float):
-                    x += int(reduce(operator.mul,localsize) * int(val[i-1]-1))
-                elif isinstance(val[i-1], rapid_num):
-                    x += int(reduce(operator.mul,localsize) * (val[i-1].Get()-1))
+                if isinstance(val[i - 1], int):
+                    x += int(reduce(operator.mul, localsize) * (val[i - 1] - 1))
+                elif isinstance(val[i - 1], float):
+                    x += int(reduce(operator.mul, localsize) * int(val[i - 1] - 1))
+                elif isinstance(val[i - 1], rapid_num):
+                    x += int(reduce(operator.mul, localsize) * (val[i - 1].Get() - 1))
                 else:
-                    x += int(reduce(operator.mul,localsize) * (val[i-1].data.Get()-1))
-                
+                    x += int(reduce(operator.mul, localsize) * (val[i - 1].data.Get() - 1))
+
         return x
-        
-    def GetElem(self, elem):
+
+    def GetElem(self, elem: Any) -> Any:
         if isinstance(elem, int):
-            ielem = elem;
+            ielem: Any = elem
         elif isinstance(elem, float):
-            ielem = int(elem);
+            ielem = int(elem)
         elif isinstance(elem, list):
-            ielem = elem;
+            ielem = elem
         elif isinstance(elem, tuple):
-            ielem = elem;
+            ielem = elem
         else:
-            ielem = elem.Get();
-        return self.val[ self.toLinear(ielem) ]
-        
-    def SetElem(self, elem, val):
+            ielem = elem.Get()
+        return self.val[self.toLinear(ielem)]
+
+    def SetElem(self, elem: Any, val: Any) -> None:
         # add check type
         if isinstance(elem, int):
-            ielem = elem;
+            ielem: Any = elem
         elif isinstance(elem, float):
-            ielem = int(elem);
+            ielem = int(elem)
         elif isinstance(elem, list):
-            ielem = elem;
+            ielem = elem
         elif isinstance(elem, tuple):
-            ielem = elem;
+            ielem = elem
         else:
-            ielem = elem.Get();
-        self.val[ self.toLinear(ielem) ] = val
-            
-    def GetType(self):
+            ielem = elem.Get()
+        self.val[self.toLinear(ielem)] = val
+
+    def GetType(self) -> Any:
         return self.elem_type
-        
-    def GetSize(self, DimNo=None):
+
+    def GetSize(self, DimNo: Any = None) -> Any:
         if DimNo is None:
             return self.size
         else:
@@ -388,216 +439,238 @@ class rapid_array :
                 return self.size[DimNo - 1]
             else:
                 return self.size[DimNo.data.Get() - 1]
-        
-    def Set(self, val):
+
+    def Set(self, val: Any) -> None:
         if isinstance(val, rapid_array):
             self.val = deepcopy(val.Get())
             # add type check and compute size
             self.elem_type = val.GetType()
             self.size = val.GetSize()
         elif isinstance(val, list):
-            val, psize =  rapid_array.unrollarray(val)
-            self.size = [ len(val) ]
-            self.val = [ self.elem_type(val[i]) for i in range(reduce(operator.mul,self.size)) ]
+            val, psize = rapid_array.unrollarray(val)
+            self.size = [len(val)]
+            self.val = [self.elem_type(val[i]) for i in range(reduce(operator.mul, self.size))]
         else:
             raise Exception("type unsupported")
-        
-    def Get(self):
-        if self.val is None:
-            raise Exception("variable never assigned")
-        else:
-            return self.val  
-            
-class rapid_anytype :
-    def __init__(self, val=None):
-        self.val = None
-        if not (val is None):
-            self.Set(val)
-        
-    def Set(self, val):
-        self.val = val
-        
-    def Get(self):
+
+    def Get(self) -> Any:
         if self.val is None:
             raise Exception("variable never assigned")
         else:
             return self.val
-            
-Symbols().AddGlobalSym("anytype", Symbol.CreateDataType(rapid_anytype))
 
-class rapid_num :
-    def __init__(self, val=None):
-        self.val = None
+
+class rapid_anytype:
+    def __init__(self, val: Any = None) -> None:
+        self.val: Any = None
         if not (val is None):
             self.Set(val)
-        
-    def Set(self, val):
+
+    def Set(self, val: Any) -> None:
+        self.val = val
+
+    def Get(self) -> Any:
+        if self.val is None:
+            raise Exception("variable never assigned")
+        else:
+            return self.val
+
+
+Symbols().AddGlobalSym("anytype", Symbol.CreateDataType(rapid_anytype))
+
+
+class rapid_num:
+    def __init__(self, val: Any = None) -> None:
+        self.val: Any = None
+        if not (val is None):
+            self.Set(val)
+
+    def Set(self, val: Any) -> None:
         if isinstance(val, float) or isinstance(val, int):
             self.val = val
         elif isinstance(val, rapid_num):
             self.val = val.val
         else:
-            raise Exception("type unsupported val=%s has to be a number"%(str(val)))
-        
-    def Get(self):
+            raise Exception("type unsupported val=%s has to be a number" % (str(val)))
+
+    def Get(self) -> Any:
         if self.val is None:
             raise Exception("variable never assigned")
         else:
             return self.val
-            
+
+
 Symbols().AddGlobalSym("num", Symbol.CreateDataType(rapid_num))
-            
-class rapid_byte :
-    def __init__(self, val=None):
-        self.val = None
+
+
+class rapid_byte:
+    def __init__(self, val: Any = None) -> None:
+        self.val: Any = None
         if not (val is None):
             self.Set(val)
-        
-    def Set(self, val):
+
+    def Set(self, val: Any) -> None:
         if isinstance(val, int):
             self.val = val
         elif isinstance(val, rapid_byte):
             self.val = val.val
         else:
             raise Exception("type unsupported")
-        
-    def Get(self):
+
+    def Get(self) -> Any:
         if self.val is None:
             raise Exception("variable never assigned")
         else:
             return self.val
-            
+
+
 Symbols().AddGlobalSym("byte", Symbol.CreateDataType(rapid_byte))
-            
-class rapid_clock :
-    def __init__(self, val=None):
-        self.val = None
+
+
+class rapid_clock:
+    def __init__(self, val: Any = None) -> None:
+        self.val: Any = None
         if not (val is None):
             self.Set(val)
-        
-    def Set(self, val):
+
+    def Set(self, val: Any) -> None:
         if isinstance(val, tuple):
             self.val = val
         elif isinstance(val, rapid_clock):
             self.val = val.val
         else:
             raise Exception("type unsupported")
-        
-    def Get(self):
+
+    def Get(self) -> Any:
         if self.val is None:
             raise Exception("variable never assigned")
         else:
             return self.val
-            
+
+
 Symbols().AddGlobalSym("clock", Symbol.CreateDataType(rapid_clock))
-            
-class rapid_bool :
-    def __init__(self, val=None):
-        self.val = None
+
+
+class rapid_bool:
+    def __init__(self, val: Any = None) -> None:
+        self.val: Any = None
         if not (val is None):
             self.Set(val)
-        
-    def Set(self, val):
+
+    def Set(self, val: Any) -> None:
         if isinstance(val, bool):
             self.val = val
         elif isinstance(val, rapid_bool):
             self.val = val.val
         else:
-            raise Exception("type unsupported: %s",type(val))
-        
-    def Get(self):
+            raise Exception("type unsupported: %s", type(val))
+
+    def Get(self) -> Any:
         if self.val is None:
             raise Exception("variable never assigned")
         else:
             return self.val
-            
+
+
 Symbols().AddGlobalSym("bool", Symbol.CreateDataType(rapid_bool))
-        
-class rapid_string :
-    def __init__(self, val=None):
-        self.val = None
+
+
+class rapid_string:
+    def __init__(self, val: Any = None) -> None:
+        self.val: Any = None
         if not (val is None):
             self.Set(val)
-        
-    def Set(self, val):
+
+    def Set(self, val: Any) -> None:
         if isinstance(val, str):
             self.val = val
         elif isinstance(val, rapid_string):
             self.val = val.val
         else:
             raise Exception("type unsupported")
-        
-    def Get(self):
+
+    def Get(self) -> Any:
         if self.val is None:
             raise Exception("variable never assigned")
         else:
             return self.val
-            
+
+
 Symbols().AddGlobalSym("string", Symbol.CreateDataType(rapid_string))
-        
-class rapid_Confdata (rapid_struct):
-    def __init__(self, val=None):
-        rapid_struct.__init__(self, ["cf1", "cf4", "cf6", "cfx"], [rapid_num, rapid_num, rapid_num, rapid_num])
-        if not(val  is None):
-            self.Set( val )
-            
-    def Set(self, val):
+
+
+class rapid_Confdata(rapid_struct):
+    def __init__(self, val: Any = None) -> None:
+        rapid_struct.__init__(
+            self, ["cf1", "cf4", "cf6", "cfx"], [rapid_num, rapid_num, rapid_num, rapid_num]
+        )
+        if not (val is None):
+            self.Set(val)
+
+    def Set(self, val: Any) -> None:
         if isinstance(val, rapid_Confdata):
             self.val = val.val
         else:
             rapid_struct.Set(self, val)
-            
+
+
 Symbols().AddGlobalSym("Confdata", Symbol.CreateDataType(rapid_Confdata))
-            
-class rapid_dionum :
-    def __init__(self, val=None):
-        self.val = None
+
+
+class rapid_dionum:
+    def __init__(self, val: Any = None) -> None:
+        self.val: Any = None
         if not (val is None):
             self.Set(val)
-        
-    def Set(self, val):
-        if isinstance(val, int) and ( (val == 1) or (val == 0) ):
+
+    def Set(self, val: Any) -> None:
+        if isinstance(val, int) and ((val == 1) or (val == 0)):
             self.val = val
         elif isinstance(val, rapid_dionum):
             self.val = val.val
         else:
             raise Exception("type unsupported")
-        
-    def Get(self):
+
+    def Get(self) -> Any:
         if self.val is None:
             raise Exception("variable never assigned")
         else:
             return self.val
-            
+
+
 Symbols().AddGlobalSym("dionum", Symbol.CreateDataType(rapid_dionum))
 
-class rapid_errnum :
+
+class rapid_errnum:
     __error__ = 0
-    def __init__(self, val=None):
-        if (val is None):
+
+    def __init__(self, val: Any = None) -> None:
+        self.val: Any
+        if val is None:
             rapid_errnum.__error__ += 1
             self.val = rapid_errnum.__error__
         else:
             self.Set(val)
-        
-    def Set(self, val):
+
+    def Set(self, val: Any) -> None:
         if isinstance(val, int):
             self.val = val
         elif isinstance(val, rapid_errnum):
             self.val = val.val
         else:
             raise Exception("type unsupported")
-        
-    def Get(self):
+
+    def Get(self) -> Any:
         if self.val is None:
             raise Exception("variable never assigned")
         else:
             return self.val
-            
+
+
 Symbols().AddGlobalSym("errnum", Symbol.CreateDataType(rapid_errnum))
 
 Symbols().AddGlobalSym("ERRNO", Symbol.CreateVar(rapid_errnum, rapid_errnum(-1)))
-            
+
 Symbols().AddGlobalSym("ERR_ALRDYCNT", Symbol.CreateConst(rapid_errnum, rapid_errnum()))
 Symbols().AddGlobalSym("ERR_CNTNOTVAR", Symbol.CreateConst(rapid_errnum, rapid_errnum()))
 Symbols().AddGlobalSym("ERR_CNV_NOT_ACT", Symbol.CreateConst(rapid_errnum, rapid_errnum()))
@@ -670,349 +743,492 @@ Symbols().AddGlobalSym("ERR_SOCK_CONNREF", Symbol.CreateConst(rapid_errnum, rapi
 Symbols().AddGlobalSym("ERR_SOCK_TIMEOUT", Symbol.CreateConst(rapid_errnum, rapid_errnum()))
 
 
+class rapid_extjoint(rapid_struct):
+    def __init__(self, val: Any = None) -> None:
+        rapid_struct.__init__(
+            self,
+            ["eax_a", "eax_b", "eax_c", "eax_d", "eax_e", "eax_f"],
+            [rapid_num, rapid_num, rapid_num, rapid_num, rapid_num, rapid_num],
+        )
+        if not (val is None):
+            self.Set(val)
 
-class rapid_extjoint (rapid_struct):
-    def __init__(self, val=None):
-        rapid_struct.__init__(self, ["eax_a", "eax_b", "eax_c", "eax_d", "eax_e", "eax_f"], [rapid_num, rapid_num, rapid_num, rapid_num, rapid_num, rapid_num])
-        if not(val  is None):
-            self.Set( val )
-            
-    def Set(self, val):
+    def Set(self, val: Any) -> None:
         if isinstance(val, rapid_extjoint):
             self.val = val.val
         else:
             rapid_struct.Set(self, val)
 
+
 Symbols().AddGlobalSym("extjoint", Symbol.CreateDataType(rapid_extjoint))
-            
-class rapid_intnum :
-    def __init__(self, val=None):
-        self.val = None
+
+
+class rapid_intnum:
+    def __init__(self, val: Any = None) -> None:
+        self.val: Any = None
         if not (val is None):
             self.Set(val)
-        
-    def Set(self, val):
+
+    def Set(self, val: Any) -> None:
         if isinstance(val, int):
             self.val = val
         elif isinstance(val, rapid_intnum):
             self.val = val.val
         else:
             raise Exception("type unsupported")
-        
-    def Get(self):
+
+    def Get(self) -> Any:
         if self.val is None:
             raise Exception("variable never assigned")
         else:
             return self.val
-            
+
+
 Symbols().AddGlobalSym("intnum", Symbol.CreateDataType(rapid_intnum))
 
-class rapid_iodev :
-    def __init__(self, val=None):
-        self.val = None
+
+class rapid_iodev:
+    def __init__(self, val: Any = None) -> None:
+        self.val: Any = None
         if not (val is None):
             self.Set(val)
-        
-    def Set(self, val):
-        if isinstance(val, string):
+
+    def Set(self, val: Any) -> None:
+        if isinstance(val, str):
             self.val = val
         elif isinstance(val, rapid_iodev):
             self.val = val.val
         else:
             raise Exception("type unsupported")
-        
-    def Get(self):
+
+    def Get(self) -> Any:
         if self.val is None:
             raise Exception("variable never assigned")
         else:
             return self.val
 
+
 Symbols().AddGlobalSym("iodev", Symbol.CreateDataType(rapid_iodev))
 
-class rapid_jointtarget (rapid_struct):
-    def __init__(self, val=None):
+
+class rapid_jointtarget(rapid_struct):
+    def __init__(self, val: Any = None) -> None:
         rapid_struct.__init__(self, ["robax", "extax"], [rapid_robjoint, rapid_extjoint])
-        if not(val  is None):
-            self.Set( val )
-            
-    def Set(self, val):
+        if not (val is None):
+            self.Set(val)
+
+    def Set(self, val: Any) -> None:
         if isinstance(val, rapid_jointtarget):
             self.val = val.val
         else:
             rapid_struct.Set(self, val)
-            
+
+
 Symbols().AddGlobalSym("jointtarget", Symbol.CreateDataType(rapid_jointtarget))
 
-class rapid_loaddata (rapid_struct):
-    def __init__(self, val=None):
-        rapid_struct.__init__(self, ["mass", "cog", "aom", "ix", "iy", "iz"], [rapid_num, rapid_pos, rapid_orient, rapid_num, rapid_num, rapid_num])
-        if not(val  is None):
-            self.Set( val )
-            
-    def Set(self, val):
+
+class rapid_loaddata(rapid_struct):
+    def __init__(self, val: Any = None) -> None:
+        rapid_struct.__init__(
+            self,
+            ["mass", "cog", "aom", "ix", "iy", "iz"],
+            [rapid_num, rapid_pos, rapid_orient, rapid_num, rapid_num, rapid_num],
+        )
+        if not (val is None):
+            self.Set(val)
+
+    def Set(self, val: Any) -> None:
         if isinstance(val, rapid_loaddata):
             self.val = val.val
         else:
             rapid_struct.Set(self, val)
-            
+
+
 Symbols().AddGlobalSym("loaddata", Symbol.CreateDataType(rapid_loaddata))
 
-#todo define loadsession
-#todo define mecunit
-#todo defne motsetdata
+# todo define loadsession
+# todo define mecunit
+# todo defne motsetdata
 
-class rapid_o_jointtarget (rapid_struct):
-    def __init__(self, val=None):
+
+class rapid_o_jointtarget(rapid_struct):
+    def __init__(self, val: Any = None) -> None:
         rapid_struct.__init__(self, ["robax", "extax"], [rapid_robjoint, rapid_extjoint])
-        if not(val  is None):
-            self.Set( val )
-            
-    def Set(self, val):
+        if not (val is None):
+            self.Set(val)
+
+    def Set(self, val: Any) -> None:
         if isinstance(val, rapid_o_jointtarget):
             self.val = val.val
         else:
             rapid_struct.Set(self, val)
-            
+
+
 Symbols().AddGlobalSym("o_jointtarget", Symbol.CreateDataType(rapid_o_jointtarget))
 
-class rapid_orient (rapid_struct):
-    def __init__(self, val=None):
-        rapid_struct.__init__(self, ["q1", "q2", "q3", "q4"], [rapid_num, rapid_num, rapid_num, rapid_num])
-        if not(val  is None):
-            self.Set( val )
-            
-    def Set(self, val):
+
+class rapid_orient(rapid_struct):
+    def __init__(self, val: Any = None) -> None:
+        rapid_struct.__init__(
+            self, ["q1", "q2", "q3", "q4"], [rapid_num, rapid_num, rapid_num, rapid_num]
+        )
+        if not (val is None):
+            self.Set(val)
+
+    def Set(self, val: Any) -> None:
         if isinstance(val, rapid_orient):
             self.val = val.val
         else:
             rapid_struct.Set(self, val)
-            
+
+
 Symbols().AddGlobalSym("orient", Symbol.CreateDataType(rapid_orient))
 
-class rapid_o_robtarget (rapid_struct):
-    def __init__(self, val=None):
-        rapid_struct.__init__(self, ["trans", "rot", "robconf", "extax"], [rapid_pos, rapid_orient, rapid_Confdata, rapid_extjoint])
-        if not(val  is None):
-            self.Set( val )
-            
-    def Set(self, val):
+
+class rapid_o_robtarget(rapid_struct):
+    def __init__(self, val: Any = None) -> None:
+        rapid_struct.__init__(
+            self,
+            ["trans", "rot", "robconf", "extax"],
+            [rapid_pos, rapid_orient, rapid_Confdata, rapid_extjoint],
+        )
+        if not (val is None):
+            self.Set(val)
+
+    def Set(self, val: Any) -> None:
         if isinstance(val, rapid_o_robtarget):
             self.val = val.val
         else:
             rapid_struct.Set(self, val)
-            
+
+
 Symbols().AddGlobalSym("o_robtarget", Symbol.CreateDataType(rapid_o_robtarget))
 
-class rapid_pos (rapid_struct):
-    def __init__(self, val=None):
+
+class rapid_pos(rapid_struct):
+    def __init__(self, val: Any = None) -> None:
         rapid_struct.__init__(self, ["x", "y", "z"], [rapid_num, rapid_num, rapid_num])
-        if not(val is None):
-            self.Set( val )
-           
-    def Set(self, val):
+        if not (val is None):
+            self.Set(val)
+
+    def Set(self, val: Any) -> None:
         if isinstance(val, rapid_pos):
             self.val = val.val
         else:
             rapid_struct.Set(self, val)
-            
+
+
 Symbols().AddGlobalSym("pos", Symbol.CreateDataType(rapid_pos))
-            
-class rapid_pose (rapid_struct):
-    def __init__(self, val=None):
+
+
+class rapid_pose(rapid_struct):
+    def __init__(self, val: Any = None) -> None:
         rapid_struct.__init__(self, ["trans", "rot"], [rapid_pos, rapid_orient])
-        if not(val is None):
-            self.Set( val )
-            
-    def Set(self, val):
+        if not (val is None):
+            self.Set(val)
+
+    def Set(self, val: Any) -> None:
         if isinstance(val, rapid_pose):
             self.val = val.val
         else:
             rapid_struct.Set(self, val)
-            
-Symbols().AddGlobalSym("pose", Symbol.CreateDataType(rapid_pose))            
 
-class rapid_progdisp (rapid_struct):
-    def __init__(self, val=None):
-        rapid_struct.__init__(self, ["pdisp", "eoffs"], [rapid_pose, rapid_extjoints])
-        if not(val  is None):
-            self.Set( val )
-            
-    def Set(self, val):
+
+Symbols().AddGlobalSym("pose", Symbol.CreateDataType(rapid_pose))
+
+
+class rapid_progdisp(rapid_struct):
+    def __init__(self, val: Any = None) -> None:
+        rapid_struct.__init__(self, ["pdisp", "eoffs"], [rapid_pose, rapid_extjoint])
+        if not (val is None):
+            self.Set(val)
+
+    def Set(self, val: Any) -> None:
         if isinstance(val, rapid_progdisp):
             self.val = val.val
         else:
             rapid_struct.Set(self, val)
-            
-Symbols().AddGlobalSym("progdisp", Symbol.CreateDataType(rapid_progdisp))  
 
 
-class rapid_robjoint (rapid_struct):
-    def __init__(self, val=None):
-        rapid_struct.__init__(self, ["rax_1", "rax_2", "rax_3", "rax_4", "rax_5", "rax_6"], [rapid_num, rapid_num, rapid_num, rapid_num, rapid_num, rapid_num])
-        if not(val  is None):
-            self.Set( val )
-            
-    def Set(self, val):
+Symbols().AddGlobalSym("progdisp", Symbol.CreateDataType(rapid_progdisp))
+
+
+class rapid_robjoint(rapid_struct):
+    def __init__(self, val: Any = None) -> None:
+        rapid_struct.__init__(
+            self,
+            ["rax_1", "rax_2", "rax_3", "rax_4", "rax_5", "rax_6"],
+            [rapid_num, rapid_num, rapid_num, rapid_num, rapid_num, rapid_num],
+        )
+        if not (val is None):
+            self.Set(val)
+
+    def Set(self, val: Any) -> None:
         if isinstance(val, rapid_robjoint):
             self.val = val.val
         else:
             rapid_struct.Set(self, val)
-            
-Symbols().AddGlobalSym("robjoint", Symbol.CreateDataType(rapid_robjoint))            
 
-class rapid_robtarget (rapid_struct):
-    def __init__(self, val=None):
-        rapid_struct.__init__(self, ["trans", "rot", "robconf", "extax"], [rapid_pos, rapid_orient, rapid_Confdata, rapid_extjoint])
-        if not(val  is None):
-            self.Set( val )
-            
-    def Set(self, val):
+
+Symbols().AddGlobalSym("robjoint", Symbol.CreateDataType(rapid_robjoint))
+
+
+class rapid_robtarget(rapid_struct):
+    def __init__(self, val: Any = None) -> None:
+        rapid_struct.__init__(
+            self,
+            ["trans", "rot", "robconf", "extax"],
+            [rapid_pos, rapid_orient, rapid_Confdata, rapid_extjoint],
+        )
+        if not (val is None):
+            self.Set(val)
+
+    def Set(self, val: Any) -> None:
         if isinstance(val, rapid_robtarget):
             self.val = val.val
         else:
             rapid_struct.Set(self, val)
-            
+
+
 Symbols().AddGlobalSym("robtarget", Symbol.CreateDataType(rapid_robtarget))
 
-#todo define shapedata
-#todo define signalai 
-#todo define signalao
-#todo define signaldi 
-#todo define signaldo
-#todo define signalgi
-#todo define signalgo
+# todo define shapedata
+# todo define signalai
+# todo define signalao
+# todo define signaldi
+# todo define signaldo
+# todo define signalgi
+# todo define signalgo
 
-class rapid_speeddata (rapid_struct):
-    def __init__(self, val=None):
-        rapid_struct.__init__(self, ["v_tcp", "v_ori", "v_leax", "v_reax"], [rapid_num, rapid_num, rapid_num, rapid_num])
-        if not(val  is None):
-            self.Set( val )
-            
-    def Set(self, val):
+
+class rapid_speeddata(rapid_struct):
+    def __init__(self, val: Any = None) -> None:
+        rapid_struct.__init__(
+            self,
+            ["v_tcp", "v_ori", "v_leax", "v_reax"],
+            [rapid_num, rapid_num, rapid_num, rapid_num],
+        )
+        if not (val is None):
+            self.Set(val)
+
+    def Set(self, val: Any) -> None:
         if isinstance(val, rapid_speeddata):
             self.val = val.val
         else:
             rapid_struct.Set(self, val)
-            
+
+
 Symbols().AddGlobalSym("speeddata", Symbol.CreateDataType(rapid_speeddata))
 
-Symbols().AddGlobalSym("v5", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([5, 500, 5000, 1000])))
-Symbols().AddGlobalSym("v10", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([10, 500, 5000, 1000])))
-Symbols().AddGlobalSym("v20", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([20, 500, 5000, 1000])))
-Symbols().AddGlobalSym("v30", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([30, 500, 5000, 1000])))
-Symbols().AddGlobalSym("v40", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([40, 500, 5000, 1000])))
-Symbols().AddGlobalSym("v60", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([60, 500, 5000, 1000])))
-Symbols().AddGlobalSym("v80", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([80, 500, 5000, 1000])))
-Symbols().AddGlobalSym("v100", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([100, 500, 5000, 1000])))
-Symbols().AddGlobalSym("v150", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([150, 500, 5000, 1000])))
-Symbols().AddGlobalSym("v200", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([200, 500, 5000, 1000])))
-Symbols().AddGlobalSym("v300", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([300, 500, 5000, 1000])))
-Symbols().AddGlobalSym("v400", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([400, 500, 5000, 1000])))
-Symbols().AddGlobalSym("v500", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([500, 500, 5000, 1000])))
-Symbols().AddGlobalSym("v600", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([600, 500, 5000, 1000])))
-Symbols().AddGlobalSym("v800", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([800, 500, 5000, 1000])))
-Symbols().AddGlobalSym("v1000", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([1000, 500, 5000, 1000])))
-Symbols().AddGlobalSym("v1500", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([1500, 500, 5000, 1000])))
-Symbols().AddGlobalSym("v2000", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([2000, 500, 5000, 1000])))
-Symbols().AddGlobalSym("v2500", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([2500, 500, 5000, 1000])))
-Symbols().AddGlobalSym("v3000", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([3000, 500, 5000, 1000])))
-Symbols().AddGlobalSym("v4000", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([4000, 500, 5000, 1000])))
-Symbols().AddGlobalSym("v5000", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([5000, 500, 5000, 1000])))
-Symbols().AddGlobalSym("vmax", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([5000, 500, 5000, 1000])))
-Symbols().AddGlobalSym("v6000", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([6000, 500, 5000, 1000])))
-Symbols().AddGlobalSym("v7000", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([7000, 500, 5000, 1000])))
+Symbols().AddGlobalSym(
+    "v5", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([5, 500, 5000, 1000]))
+)
+Symbols().AddGlobalSym(
+    "v10", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([10, 500, 5000, 1000]))
+)
+Symbols().AddGlobalSym(
+    "v20", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([20, 500, 5000, 1000]))
+)
+Symbols().AddGlobalSym(
+    "v30", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([30, 500, 5000, 1000]))
+)
+Symbols().AddGlobalSym(
+    "v40", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([40, 500, 5000, 1000]))
+)
+Symbols().AddGlobalSym(
+    "v60", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([60, 500, 5000, 1000]))
+)
+Symbols().AddGlobalSym(
+    "v80", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([80, 500, 5000, 1000]))
+)
+Symbols().AddGlobalSym(
+    "v100", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([100, 500, 5000, 1000]))
+)
+Symbols().AddGlobalSym(
+    "v150", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([150, 500, 5000, 1000]))
+)
+Symbols().AddGlobalSym(
+    "v200", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([200, 500, 5000, 1000]))
+)
+Symbols().AddGlobalSym(
+    "v300", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([300, 500, 5000, 1000]))
+)
+Symbols().AddGlobalSym(
+    "v400", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([400, 500, 5000, 1000]))
+)
+Symbols().AddGlobalSym(
+    "v500", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([500, 500, 5000, 1000]))
+)
+Symbols().AddGlobalSym(
+    "v600", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([600, 500, 5000, 1000]))
+)
+Symbols().AddGlobalSym(
+    "v800", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([800, 500, 5000, 1000]))
+)
+Symbols().AddGlobalSym(
+    "v1000", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([1000, 500, 5000, 1000]))
+)
+Symbols().AddGlobalSym(
+    "v1500", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([1500, 500, 5000, 1000]))
+)
+Symbols().AddGlobalSym(
+    "v2000", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([2000, 500, 5000, 1000]))
+)
+Symbols().AddGlobalSym(
+    "v2500", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([2500, 500, 5000, 1000]))
+)
+Symbols().AddGlobalSym(
+    "v3000", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([3000, 500, 5000, 1000]))
+)
+Symbols().AddGlobalSym(
+    "v4000", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([4000, 500, 5000, 1000]))
+)
+Symbols().AddGlobalSym(
+    "v5000", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([5000, 500, 5000, 1000]))
+)
+Symbols().AddGlobalSym(
+    "vmax", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([5000, 500, 5000, 1000]))
+)
+Symbols().AddGlobalSym(
+    "v6000", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([6000, 500, 5000, 1000]))
+)
+Symbols().AddGlobalSym(
+    "v7000", Symbol.CreateConst(rapid_speeddata, rapid_speeddata([7000, 500, 5000, 1000]))
+)
 
-#todo define symnum
-#todo define constant
-#RUN_UNDEF 
-#RUN_CONT_CYCLE 
-#RUN_INSTR_FWD 
-#RUN_INSTR_BWD 
-#RUN_SIM 
-#OP_UNDEF 
-#OP_AUTO 
-#OP_MAN_PROG 
-#OP_MAN_TEST 
+# todo define symnum
+# todo define constant
+# RUN_UNDEF
+# RUN_CONT_CYCLE
+# RUN_INSTR_FWD
+# RUN_INSTR_BWD
+# RUN_SIM
+# OP_UNDEF
+# OP_AUTO
+# OP_MAN_PROG
+# OP_MAN_TEST
 
 
-#define also
+# define also
 
-#C_MOTSET 
-#C_PROGDISP 
-#ERRNO 
-#INTNO 
+# C_MOTSET
+# C_PROGDISP
+# ERRNO
+# INTNO
 
 
-#todo define taskid
+# todo define taskid
 
-class rapid_tooldata (rapid_struct):
-    def __init__(self, val=None):
-        rapid_struct.__init__(self, ["robhold", "tframe", "tload"], [rapid_bool, rapid_pose, rapid_loaddata])
-        if not(val  is None):
-            self.Set( val )
-            
-    def Set(self, val):
+
+class rapid_tooldata(rapid_struct):
+    def __init__(self, val: Any = None) -> None:
+        rapid_struct.__init__(
+            self, ["robhold", "tframe", "tload"], [rapid_bool, rapid_pose, rapid_loaddata]
+        )
+        if not (val is None):
+            self.Set(val)
+
+    def Set(self, val: Any) -> None:
         if isinstance(val, rapid_tooldata):
             self.val = val.val
         else:
             rapid_struct.Set(self, val)
-            
+
+
 Symbols().AddGlobalSym("tooldata", Symbol.CreateDataType(rapid_tooldata))
 
-#todo define tpnum
+# todo define tpnum
 
-#todo define contant
-#TP_PROGRAM 
-#TP_LATEST 
+# todo define contant
+# TP_PROGRAM
+# TP_LATEST
 
-#todo define triggdata
-#todo define tunetype
+# todo define triggdata
+# todo define tunetype
 
-#todo define contant
-#TUNE_DF 
-#TUNE_KP 
-#TUNE_KV 
-#TUNE_TI 
-#TUNE_FRIC_LEV 
-#TUNE_FRIC_RAMP 
-#SP_MODE1 
-#SP_MODE2 
+# todo define contant
+# TUNE_DF
+# TUNE_KP
+# TUNE_KV
+# TUNE_TI
+# TUNE_FRIC_LEV
+# TUNE_FRIC_RAMP
+# SP_MODE1
+# SP_MODE2
 
-#todo define wobjdata
+# todo define wobjdata
 
-#todo define wzstationary
+# todo define wzstationary
 
-#todo define zonedata
+# todo define zonedata
 
-class rapid_zonedata (rapid_struct):
-    def __init__(self, val=None):
-        rapid_struct.__init__(self, ["finep", "pzone_tcp", "pzone_ori", "pzone_eax", "zone_ori", "zone_leax", "zone_reax"], [rapid_bool, rapid_num, rapid_num, rapid_num, rapid_num, rapid_num, rapid_num])
-        if not(val  is None):
-            self.Set( val )
-            
-    def Set(self, val):
+
+class rapid_zonedata(rapid_struct):
+    def __init__(self, val: Any = None) -> None:
+        rapid_struct.__init__(
+            self,
+            ["finep", "pzone_tcp", "pzone_ori", "pzone_eax", "zone_ori", "zone_leax", "zone_reax"],
+            [rapid_bool, rapid_num, rapid_num, rapid_num, rapid_num, rapid_num, rapid_num],
+        )
+        if not (val is None):
+            self.Set(val)
+
+    def Set(self, val: Any) -> None:
         if isinstance(val, rapid_zonedata):
             self.val = val.val
         else:
             rapid_struct.Set(self, val)
-            
+
+
 Symbols().AddGlobalSym("zonedata", Symbol.CreateDataType(rapid_zonedata))
 
 
-Symbols().AddGlobalSym("fine", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([True, 0, 0, 0, 0, 0, 0])))
-Symbols().AddGlobalSym("z1", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 1, 1, 1, 0.1, 1, 0.1])))
-Symbols().AddGlobalSym("z5", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 5, 8, 8, 0.8, 8, 0.8])))
-Symbols().AddGlobalSym("z10", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 10, 15, 15, 1.5, 15, 1.5])))
-Symbols().AddGlobalSym("z15", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 15, 23, 23, 2.3, 23, 2.3])))
-Symbols().AddGlobalSym("z20", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 20, 30, 30, 3.0, 30, 3.0])))
-Symbols().AddGlobalSym("z30", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 30, 45, 45, 4.5, 45, 4.5])))
-Symbols().AddGlobalSym("z40", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 40, 60, 60, 6.0, 60, 6.0])))
-Symbols().AddGlobalSym("z50", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 50, 75, 75, 7.5, 75, 7.5])))
-Symbols().AddGlobalSym("z60", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 60, 90, 90, 9.0, 90, 9.0])))
-Symbols().AddGlobalSym("z80", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 80, 120, 120, 12.0, 120, 12.0])))
-Symbols().AddGlobalSym("z100", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 100, 150, 150, 12.0, 120, 12.0])))
-Symbols().AddGlobalSym("z150", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 150, 225, 225, 23.0, 225, 23.0])))
-Symbols().AddGlobalSym("z200", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 200, 300, 300, 30.0, 300, 30.0])))
+Symbols().AddGlobalSym(
+    "fine", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([True, 0, 0, 0, 0, 0, 0]))
+)
+Symbols().AddGlobalSym(
+    "z1", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 1, 1, 1, 0.1, 1, 0.1]))
+)
+Symbols().AddGlobalSym(
+    "z5", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 5, 8, 8, 0.8, 8, 0.8]))
+)
+Symbols().AddGlobalSym(
+    "z10", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 10, 15, 15, 1.5, 15, 1.5]))
+)
+Symbols().AddGlobalSym(
+    "z15", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 15, 23, 23, 2.3, 23, 2.3]))
+)
+Symbols().AddGlobalSym(
+    "z20", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 20, 30, 30, 3.0, 30, 3.0]))
+)
+Symbols().AddGlobalSym(
+    "z30", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 30, 45, 45, 4.5, 45, 4.5]))
+)
+Symbols().AddGlobalSym(
+    "z40", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 40, 60, 60, 6.0, 60, 6.0]))
+)
+Symbols().AddGlobalSym(
+    "z50", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 50, 75, 75, 7.5, 75, 7.5]))
+)
+Symbols().AddGlobalSym(
+    "z60", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 60, 90, 90, 9.0, 90, 9.0]))
+)
+Symbols().AddGlobalSym(
+    "z80",
+    Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 80, 120, 120, 12.0, 120, 12.0])),
+)
+Symbols().AddGlobalSym(
+    "z100",
+    Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 100, 150, 150, 12.0, 120, 12.0])),
+)
+Symbols().AddGlobalSym(
+    "z150",
+    Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 150, 225, 225, 23.0, 225, 23.0])),
+)
+Symbols().AddGlobalSym(
+    "z200",
+    Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 200, 300, 300, 30.0, 300, 30.0])),
+)
 
 
 Symbols().AddGlobalSym("socketstatus", Symbol.CreateDataType(rapid_num))
@@ -1024,50 +1240,53 @@ Symbols().AddGlobalSym("SOCKET_LISTENING", Symbol.CreateConst(rapid_num, rapid_n
 Symbols().AddGlobalSym("SOCKET_CLOSED", Symbol.CreateConst(rapid_num, rapid_num(5)))
 
 
-class rapid_socketdev :
-    def __init__(self, val=None):
-        self.val = ( Symbols().GetSymbol("SOCKET_CLOSED").data.Get(), None)
+class rapid_socketdev:
+    def __init__(self, val: Any = None) -> None:
+        self.val: Any = (Symbols().GetSymbol("SOCKET_CLOSED").data.Get(), None)
         if not (val is None):
             self.Set(val)
-        
-    def Set(self, val):
+
+    def Set(self, val: Any) -> None:
         if isinstance(val, tuple):
             self.val = val
         elif isinstance(val, rapid_socketdev):
             self.val = val.val
         else:
             raise Exception("type unsupported")
-        
-    def Get(self):
+
+    def Get(self) -> Any:
         if self.val is None:
             raise Exception("variable never assigned")
         else:
             return self.val
+
 
 Symbols().AddGlobalSym("socketdev", Symbol.CreateDataType(rapid_socketdev))
 
 
 Symbols().AddGlobalSym("WAIT_MAX", Symbol.CreateConst(rapid_num, rapid_num(-1)))
 
-class rapid_rawbytes :
-    def __init__(self, val=None):
-        self.val = ""
+
+class rapid_rawbytes:
+    def __init__(self, val: Any = None) -> None:
+        self.val: Any = ""
         if not (val is None):
             self.Set(val)
-        
-    def Set(self, val):
+
+    def Set(self, val: Any) -> None:
         if isinstance(val, str):
             self.val = val
         elif isinstance(val, rapid_string):
             self.val = val.val
         else:
             raise Exception("type unsupported")
-        
-    def Get(self):
+
+    def Get(self) -> Any:
         if self.val is None:
             raise Exception("variable never assigned")
         else:
             return self.val
+
 
 Symbols().AddGlobalSym("rawbytes", Symbol.CreateDataType(rapid_rawbytes))
 
@@ -1092,14 +1311,3 @@ Symbols().AddGlobalSym("EQ", Symbol.CreateConst(rapid_num, rapid_num(3)))
 Symbols().AddGlobalSym("NOTEQ", Symbol.CreateConst(rapid_num, rapid_num(4)))
 Symbols().AddGlobalSym("GTEQ", Symbol.CreateConst(rapid_num, rapid_num(5)))
 Symbols().AddGlobalSym("GT", Symbol.CreateConst(rapid_num, rapid_num(6)))
-
-
-
-
-
-
-
-
-
-
-

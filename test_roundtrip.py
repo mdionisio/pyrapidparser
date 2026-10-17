@@ -2,6 +2,7 @@
 
 The text produced by the first and the second conversion must be identical.
 """
+
 import glob
 import io
 import os
@@ -15,14 +16,19 @@ from rapid2rapid import WriteRapid
 TEST_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "test")
 # *.ast.mod / *.source.mod are outputs of test_rapid.py
 MOD_FILES = sorted(
-    f for f in glob.glob(os.path.join(TEST_DIR, "*.mod"))
+    f
+    for f in glob.glob(os.path.join(TEST_DIR, "*.mod"))
     if not f.endswith((".ast.mod", ".source.mod", "rapid_program.mod"))
 )
 
 
-def convert(text, filename):
-    parser = rapid_parser.RAPIDParser(lex_optimize=True, yacc_debug=False, yacc_optimize=False,
-                                      start_from='module_declaration_list')
+def convert(text: str, filename: str) -> str:
+    parser = rapid_parser.RAPIDParser(
+        lex_optimize=True,
+        yacc_debug=False,
+        yacc_optimize=False,
+        start_from="module_declaration_list",
+    )
     modules = rapid_ast.ModulesAST(parser.parse(text, filename, debuglevel=0).module_list)
     out = io.StringIO()
     WriteRapid(filew=out).visit(modules)
@@ -30,7 +36,7 @@ def convert(text, filename):
 
 
 @pytest.mark.parametrize("path", MOD_FILES, ids=os.path.basename)
-def test_rapid2rapid_roundtrip(path):
+def test_rapid2rapid_roundtrip(path: str) -> None:
     with open(path, "r") as f:
         source = f.read()
 
