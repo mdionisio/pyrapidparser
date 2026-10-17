@@ -78,7 +78,7 @@ format-check = "ruff format --check --diff {args}"
 dependencies = ["ply>=3.11"]
 
 [tool.pytest.ini_options]
-testpaths = ["test_rapid.py", "test_case_insensitive.py", "test_expressions.py", "test_strings.py", "test_roundtrip.py", "test_rapidvalidate.py", "test_robotmodel.py", "test_rapid2py.py", "test_quality.py"]
+testpaths = ["test_rapid.py", "test_case_insensitive.py", "test_expressions.py", "test_strings.py", "test_roundtrip.py", "test_rapidvalidate.py", "test_robotmodel.py", "test_motion.py", "test_rapid2py.py", "test_quality.py"]
 pythonpath = ["."]
 
 [tool.ruff]
@@ -111,6 +111,7 @@ files = [
     "test_rapid2py.py",
     "test_rapidvalidate.py",
     "test_robotmodel.py",
+    "test_motion.py",
     "test/server.py",
 ]
 # rapid_ast.py is generated and untyped: its constructors may be called from typed code

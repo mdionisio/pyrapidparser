@@ -415,7 +415,7 @@ class RobotModel:
             normal = np.array([lower[1], -lower[0]])
             behind_lower_arm = float(normal @ center) < 0
             negative5 = values[5] < 0
-            cfx = 4 * behind_axis1 + 2 * behind_lower_arm + negative5
+            cfx = int(4 * behind_axis1 + 2 * behind_lower_arm + negative5)
         return (cf1, cf4, cf6, cfx)
 
     def matches(self, axes: Vector, conf: tuple[int, int, int, int]) -> bool:

@@ -330,11 +330,18 @@ class Builtins:
                     )
 
         for name, sym in symbols.global_symbol.items():
-            if sym.type in (pyrapid.Symbol.SYM_TYPE_CONST_VAR, pyrapid.Symbol.SYM_TYPE_VAR):
+            if sym.type in (
+                pyrapid.Symbol.SYM_TYPE_CONST_VAR,
+                pyrapid.Symbol.SYM_TYPE_VAR,
+                pyrapid.Symbol.SYM_TYPE_PERS_VAR,
+            ):
                 vartype = getattr(sym, "vartype", None)
                 vname = class_names.get(vartype, "") if isinstance(vartype, type) else ""
                 tinfo = self.objects.get(vname.lower())
-                kind = "CONST" if sym.type == pyrapid.Symbol.SYM_TYPE_CONST_VAR else "VAR"
+                kind = {
+                    pyrapid.Symbol.SYM_TYPE_CONST_VAR: "CONST",
+                    pyrapid.Symbol.SYM_TYPE_PERS_VAR: "PERS",
+                }.get(sym.type, "VAR")
                 self.objects[name.lower()] = DataObject(
                     name,
                     kind,

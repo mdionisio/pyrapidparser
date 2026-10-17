@@ -83,15 +83,19 @@ EXEC_FILES = sorted(glob.glob(os.path.join(EXEC_DIR, "*.mod")))
 
 @pytest.mark.parametrize("path", EXEC_FILES, ids=os.path.basename)
 def test_rapid2py_execution(path: str, tmp_path: pathlib.Path) -> None:
-    """translate test/exec/<name>.mod, run its main and compare stdout with <name>.out"""
+    """translate test/exec/<name>.mod, run its main and compare stdout with <name>.out
+    (the programs with a robot, !robot:, use the motion instructions of standard.sys)"""
     name = os.path.splitext(os.path.basename(path))[0]
     with open(path, "r") as f:
-        if "!robot:" in f.read():
-            pytest.importorskip("pinocchio")
+        robot = "!robot:" in f.read()
+    if robot:
+        # the motion instructions are in default/standard.sys
+        pytest.importorskip("pinocchio")
     outdir = os.fspath(tmp_path)
     result = subprocess.run(
-        [sys.executable, "rapid2py.py", "-s", "-e", name + ".main"]
-        + ["-i", path, "-d", outdir, "-f", "program.py"],
+        [sys.executable, "rapid2py.py"]
+        + ([] if robot else ["-s"])
+        + ["-e", name + ".main", "-i", path, "-d", outdir, "-f", "program.py"],
         cwd=PROJECT_DIR,
         capture_output=True,
         text=True,
@@ -100,6 +104,9 @@ def test_rapid2py_execution(path: str, tmp_path: pathlib.Path) -> None:
 
     env = dict(os.environ)
     env["PYTHONPATH"] = os.pathsep.join([os.path.join(PROJECT_DIR, "run"), PROJECT_DIR])
+    # one line for each motion instruction, no viewer
+    env["PYRAPID_MOTION_LOG"] = "1"
+    env.pop("PYRAPID_VIEWER", None)
     run = subprocess.run(
         [sys.executable, "program.py"],
         cwd=outdir,

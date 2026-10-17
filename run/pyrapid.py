@@ -1224,7 +1224,50 @@ Symbols().AddGlobalSym("tooldata", Symbol.CreateDataType(rapid_tooldata))
 # SP_MODE1
 # SP_MODE2
 
-# todo define wobjdata
+
+class rapid_wobjdata(rapid_struct):
+    def __init__(self, val: Any = None) -> None:
+        rapid_struct.__init__(
+            self,
+            ["robhold", "ufprog", "ufmec", "uframe", "oframe"],
+            [rapid_bool, rapid_bool, rapid_string, rapid_pose, rapid_pose],
+        )
+        if not (val is None):
+            self.Set(val)
+
+    def Set(self, val: Any) -> None:
+        if isinstance(val, rapid_wobjdata):
+            self.val = deepcopy(val.val)
+        else:
+            rapid_struct.Set(self, val)
+
+
+Symbols().AddGlobalSym("wobjdata", Symbol.CreateDataType(rapid_wobjdata))
+
+# predefined data of the motion instructions (RAPID instructions manual: loaddata,
+# tooldata, wobjdata)
+Symbols().AddGlobalSym(
+    "load0",
+    Symbol.CreatePers(
+        rapid_loaddata, rapid_loaddata([0.001, [0, 0, 0.001], [1, 0, 0, 0], 0, 0, 0])
+    ),
+)
+Symbols().AddGlobalSym(
+    "tool0",
+    Symbol.CreatePers(
+        rapid_tooldata,
+        rapid_tooldata(
+            [True, [[0, 0, 0], [1, 0, 0, 0]], [0.001, [0, 0, 0.001], [1, 0, 0, 0], 0, 0, 0]]
+        ),
+    ),
+)
+Symbols().AddGlobalSym(
+    "wobj0",
+    Symbol.CreatePers(
+        rapid_wobjdata,
+        rapid_wobjdata([False, True, "", [[0, 0, 0], [1, 0, 0, 0]], [[0, 0, 0], [1, 0, 0, 0]]]),
+    ),
+)
 
 # todo define wzstationary
 
