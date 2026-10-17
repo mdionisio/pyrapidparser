@@ -264,18 +264,33 @@ class Viewer:
 
         self.robot = robot
         self.visualizer = MeshcatVisualizer(robot.model, robot.collision_model, robot.visual_model)
+        # MeshCat prints the URL of the viewer
         self.visualizer.initViewer(open=False)
         self.visualizer.loadViewerModel()
-        print("viewer: %s" % (self.visualizer.viewer.url(),), file=sys.stderr)
         self.start_wall: Optional[float] = None
         self.start_sim = 0.0
         self.next_frame = 0.0
+        # path of the TCP
+        self.trace: list[Any] = []
 
     def show(self, axes: Any) -> None:
         self.visualizer.display(self.robot.configuration(axes))
 
-    def play(self, trajectory: Trajectory, start: float) -> None:
-        """display the samples at the time of the simulation"""
+    def show_trace(self) -> None:
+        import meshcat.geometry as geometry
+
+        if len(self.trace) < 2:
+            return
+        points = np.array(self.trace).T
+        self.visualizer.viewer["pyrapid/trace"].set_object(
+            geometry.Line(
+                geometry.PointsGeometry(points), geometry.LineBasicMaterial(color=0xFF8800)
+            )
+        )
+
+    def play(self, trajectory: Trajectory, start: float, tcp: Callable[[Any], Any]) -> None:
+        """display the samples at the time of the simulation, tcp(axes) is the position
+        of the TCP"""
         if self.start_wall is None:
             self.start_wall = time.monotonic()
             self.start_sim = start
@@ -287,6 +302,8 @@ class Viewer:
             if delay > 0:
                 time.sleep(delay)
             self.show(sample.axes)
+            self.trace.append(tcp(sample.axes))
+            self.show_trace()
             self.next_frame = sim + 1.0 / VIEWER_RATE
 
     def wait(self, duration: float, start: float) -> None:
@@ -310,6 +327,7 @@ class Controller:
         self.log = os.environ.get("PYRAPID_MOTION_LOG", "") not in ("", "0")
         self.viewer: Optional[Viewer] = None
         self.payload: Optional[tuple[float, ...]] = None
+        self.tool = Tool(pin.SE3.Identity(), 0.0, np.zeros(3), np.zeros(3))
         self.max_torque: Any = None
 
     def use_robot(self, name: str) -> None:
@@ -337,6 +355,7 @@ class Controller:
 
     def set_tool(self, tool: Tool) -> None:
         robot = self.require_robot()
+        self.tool = tool
         payload = (tool.mass, *tool.cog, *tool.inertia)
         if payload != self.payload and robot.has_dynamics:
             robot.set_payload(tool.mass, tool.cog, tool.inertia)
@@ -457,7 +476,10 @@ class Controller:
                     file=sys.stderr,
                 )
         if self.viewer is not None:
-            self.viewer.play(trajectory, self.time)
+            tool = self.tool
+            self.viewer.play(
+                trajectory, self.time, lambda axes: self.tcp(axes, tool).translation.copy()
+            )
         self.axes = trajectory.samples[-1].axes.copy()
         self.time += trajectory.duration
         if self.log:

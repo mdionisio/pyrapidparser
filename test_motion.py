@@ -266,3 +266,27 @@ def test_no_robot(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(motion, "CONTROLLER", motion.Controller())
     with pytest.raises(motion.MotionError, match="!robot:"):
         motion.MoveAbsJ(jointtarget([0, 0, 0, 0, 0, 0]), speed(100), -1, -1, TOOL0)
+
+
+def test_viewer(monkeypatch: pytest.MonkeyPatch) -> None:
+    """PYRAPID_VIEWER=meshcat: the robot and the path of the TCP in the browser"""
+    pytest.importorskip("meshcat")
+    monkeypatch.setenv("PYRAPID_VIEWER", "meshcat")
+    monkeypatch.setenv("PYRAPID_VIEWER_HOLD", "0")
+    monkeypatch.setattr(motion, "CONTROLLER", motion.Controller())
+    sleeps: list[float] = []
+    monkeypatch.setattr("time.sleep", sleeps.append)
+    motion.UseRobot("irb120_3_58")
+    viewer = motion.CONTROLLER.viewer
+    assert viewer is not None
+    assert viewer.robot.visual_model.ngeoms > 0
+    motion.MoveAbsJ(jointtarget([30, 0, 0, 0, 30, 0]), speed(1000), -1, -1, TOOL0)
+    motion.WaitTime(0.5)
+    motion.MoveAbsJ(jointtarget([0, 0, 0, 0, 30, 0]), speed(1000), -1, -1, TOOL0)
+    # real time: the viewer waited for the movements
+    assert sum(sleeps) > 0.5
+    assert len(viewer.trace) > 10
+    assert np.allclose(
+        viewer.trace[-1],
+        motion.CONTROLLER.tcp(motion.CONTROLLER.axes, motion.CONTROLLER.tool).translation,
+    )
