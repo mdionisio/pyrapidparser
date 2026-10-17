@@ -557,7 +557,7 @@ class rapid_num:
         if isinstance(val, float) or isinstance(val, int):
             self.val = val
         elif isinstance(val, rapid_num):
-            self.val = val.val
+            self.val = deepcopy(val.val)
         else:
             raise Exception("type unsupported val=%s has to be a number" % (str(val)))
 
@@ -581,7 +581,7 @@ class rapid_byte:
         if isinstance(val, int):
             self.val = val
         elif isinstance(val, rapid_byte):
-            self.val = val.val
+            self.val = deepcopy(val.val)
         else:
             raise Exception("type unsupported")
 
@@ -605,7 +605,7 @@ class rapid_clock:
         if isinstance(val, tuple):
             self.val = val
         elif isinstance(val, rapid_clock):
-            self.val = val.val
+            self.val = deepcopy(val.val)
         else:
             raise Exception("type unsupported")
 
@@ -629,7 +629,7 @@ class rapid_bool:
         if isinstance(val, bool):
             self.val = val
         elif isinstance(val, rapid_bool):
-            self.val = val.val
+            self.val = deepcopy(val.val)
         else:
             raise Exception("type unsupported: %s", type(val))
 
@@ -653,7 +653,7 @@ class rapid_string:
         if isinstance(val, str):
             self.val = val
         elif isinstance(val, rapid_string):
-            self.val = val.val
+            self.val = deepcopy(val.val)
         else:
             raise Exception("type unsupported")
 
@@ -677,7 +677,7 @@ class rapid_Confdata(rapid_struct):
 
     def Set(self, val: Any) -> None:
         if isinstance(val, rapid_Confdata):
-            self.val = val.val
+            self.val = deepcopy(val.val)
         else:
             rapid_struct.Set(self, val)
 
@@ -695,7 +695,7 @@ class rapid_dionum:
         if isinstance(val, int) and ((val == 1) or (val == 0)):
             self.val = val
         elif isinstance(val, rapid_dionum):
-            self.val = val.val
+            self.val = deepcopy(val.val)
         else:
             raise Exception("type unsupported")
 
@@ -724,7 +724,7 @@ class rapid_errnum:
         if isinstance(val, int):
             self.val = val
         elif isinstance(val, rapid_errnum):
-            self.val = val.val
+            self.val = deepcopy(val.val)
         else:
             raise Exception("type unsupported")
 
@@ -823,7 +823,7 @@ class rapid_extjoint(rapid_struct):
 
     def Set(self, val: Any) -> None:
         if isinstance(val, rapid_extjoint):
-            self.val = val.val
+            self.val = deepcopy(val.val)
         else:
             rapid_struct.Set(self, val)
 
@@ -841,7 +841,7 @@ class rapid_intnum:
         if isinstance(val, int):
             self.val = val
         elif isinstance(val, rapid_intnum):
-            self.val = val.val
+            self.val = deepcopy(val.val)
         else:
             raise Exception("type unsupported")
 
@@ -865,7 +865,7 @@ class rapid_iodev:
         if isinstance(val, str):
             self.val = val
         elif isinstance(val, rapid_iodev):
-            self.val = val.val
+            self.val = deepcopy(val.val)
         else:
             raise Exception("type unsupported")
 
@@ -887,7 +887,7 @@ class rapid_jointtarget(rapid_struct):
 
     def Set(self, val: Any) -> None:
         if isinstance(val, rapid_jointtarget):
-            self.val = val.val
+            self.val = deepcopy(val.val)
         else:
             rapid_struct.Set(self, val)
 
@@ -907,7 +907,7 @@ class rapid_loaddata(rapid_struct):
 
     def Set(self, val: Any) -> None:
         if isinstance(val, rapid_loaddata):
-            self.val = val.val
+            self.val = deepcopy(val.val)
         else:
             rapid_struct.Set(self, val)
 
@@ -927,7 +927,7 @@ class rapid_o_jointtarget(rapid_struct):
 
     def Set(self, val: Any) -> None:
         if isinstance(val, rapid_o_jointtarget):
-            self.val = val.val
+            self.val = deepcopy(val.val)
         else:
             rapid_struct.Set(self, val)
 
@@ -945,7 +945,7 @@ class rapid_orient(rapid_struct):
 
     def Set(self, val: Any) -> None:
         if isinstance(val, rapid_orient):
-            self.val = val.val
+            self.val = deepcopy(val.val)
         else:
             rapid_struct.Set(self, val)
 
@@ -965,7 +965,7 @@ class rapid_o_robtarget(rapid_struct):
 
     def Set(self, val: Any) -> None:
         if isinstance(val, rapid_o_robtarget):
-            self.val = val.val
+            self.val = deepcopy(val.val)
         else:
             rapid_struct.Set(self, val)
 
@@ -981,7 +981,7 @@ class rapid_pos(rapid_struct):
 
     def Set(self, val: Any) -> None:
         if isinstance(val, rapid_pos):
-            self.val = val.val
+            self.val = deepcopy(val.val)
         else:
             rapid_struct.Set(self, val)
 
@@ -997,7 +997,7 @@ class rapid_pose(rapid_struct):
 
     def Set(self, val: Any) -> None:
         if isinstance(val, rapid_pose):
-            self.val = val.val
+            self.val = deepcopy(val.val)
         else:
             rapid_struct.Set(self, val)
 
@@ -1013,7 +1013,7 @@ class rapid_progdisp(rapid_struct):
 
     def Set(self, val: Any) -> None:
         if isinstance(val, rapid_progdisp):
-            self.val = val.val
+            self.val = deepcopy(val.val)
         else:
             rapid_struct.Set(self, val)
 
@@ -1033,7 +1033,7 @@ class rapid_robjoint(rapid_struct):
 
     def Set(self, val: Any) -> None:
         if isinstance(val, rapid_robjoint):
-            self.val = val.val
+            self.val = deepcopy(val.val)
         else:
             rapid_struct.Set(self, val)
 
@@ -1053,7 +1053,7 @@ class rapid_robtarget(rapid_struct):
 
     def Set(self, val: Any) -> None:
         if isinstance(val, rapid_robtarget):
-            self.val = val.val
+            self.val = deepcopy(val.val)
         else:
             rapid_struct.Set(self, val)
 
@@ -1081,7 +1081,7 @@ class rapid_speeddata(rapid_struct):
 
     def Set(self, val: Any) -> None:
         if isinstance(val, rapid_speeddata):
-            self.val = val.val
+            self.val = deepcopy(val.val)
         else:
             rapid_struct.Set(self, val)
 
@@ -1198,7 +1198,7 @@ class rapid_tooldata(rapid_struct):
 
     def Set(self, val: Any) -> None:
         if isinstance(val, rapid_tooldata):
-            self.val = val.val
+            self.val = deepcopy(val.val)
         else:
             rapid_struct.Set(self, val)
 
@@ -1243,7 +1243,7 @@ class rapid_zonedata(rapid_struct):
 
     def Set(self, val: Any) -> None:
         if isinstance(val, rapid_zonedata):
-            self.val = val.val
+            self.val = deepcopy(val.val)
         else:
             rapid_struct.Set(self, val)
 
@@ -1318,7 +1318,7 @@ class rapid_socketdev:
         if isinstance(val, tuple):
             self.val = val
         elif isinstance(val, rapid_socketdev):
-            self.val = val.val
+            self.val = deepcopy(val.val)
         else:
             raise Exception("type unsupported")
 
@@ -1345,7 +1345,7 @@ class rapid_rawbytes:
         if isinstance(val, str):
             self.val = val
         elif isinstance(val, rapid_string):
-            self.val = val.val
+            self.val = deepcopy(val.val)
         else:
             raise Exception("type unsupported")
 
