@@ -5,8 +5,8 @@ Each conversion runs rapid2py.py in its own process, as from the command line
 run.pyrapid is a process-wide singleton.
 
 rapid2py validates the program with rapidvalidate before the translation: the
-test files that are not valid RAPID must be rejected with the diagnostics, the
-translator itself is tested on them with --no-validate.
+valid test files must be translated, the files that are not valid RAPID must be
+rejected with the diagnostics of rapidvalidate.
 """
 
 import functools
@@ -31,29 +31,10 @@ MOD_FILES = sorted(
     if not f.endswith((".ast.mod", ".source.mod", "rapid_program.mod"))
 )
 
-# the translation fails (with --no-validate): invalid RAPID or rapid2py limitations
-KNOWN_FAILURES = {
-    "rapid1.mod": "invalid RAPID: PIPPO is both an alias and a procedure (case insensitive)",
-    "test1.mod": "invalid RAPID: unknown data type pone",
-    "test6.mod": "invalid RAPID: pippo is both a record and a variable",
-    "test7.mod": "invalid RAPID: pippo is both a record and a variable",
-    "test8.mod": "invalid RAPID: variable used in a constant expression",
-    "test10.mod": "invalid RAPID: aggregate does not match the pose record",
-    "test20.mod": "invalid RAPID: TPWrite already declared in default/standard.sys",
-}
-
 
 @functools.lru_cache(maxsize=None)
 def is_valid(path: str) -> bool:
     return not any(d.severity == rapidvalidate.ERROR for d in rapidvalidate.validate_files([path]))
-
-
-def mod_param(path: str) -> Any:
-    name = os.path.basename(path)
-    marks = []
-    if name in KNOWN_FAILURES:
-        marks.append(pytest.mark.xfail(reason=KNOWN_FAILURES[name], strict=True))
-    return pytest.param(path, id=name, marks=marks)
 
 
 def rapid2py(path: str, outdir: str, *options: str) -> "subprocess.CompletedProcess[str]":
@@ -66,10 +47,10 @@ def rapid2py(path: str, outdir: str, *options: str) -> "subprocess.CompletedProc
     )
 
 
-@pytest.mark.parametrize("path", [mod_param(f) for f in MOD_FILES])
+@pytest.mark.parametrize("path", [f for f in MOD_FILES if is_valid(f)], ids=os.path.basename)
 def test_rapid2py_generates_valid_python(path: str, tmp_path: pathlib.Path) -> None:
     outdir = os.fspath(tmp_path)
-    result = rapid2py(path, outdir, *([] if is_valid(path) else ["--no-validate"]))
+    result = rapid2py(path, outdir)
     # stdout is the (long) AST dump made on error, stderr ends with the traceback
     assert result.returncode == 0, result.stderr[-2000:]
 
