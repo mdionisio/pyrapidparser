@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "pyrapidparser"
 version = "0.1.0"
 description = "Parser, AST tools and Python translator for the ABB RAPID language"
-readme = "readme.txt"
+readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
     "ply>=3.11",
@@ -31,7 +31,8 @@ include = [
 include = [
     "/*.py",
     "/_rapid_ast.cfg",
-    "/readme.txt",
+    "/README.md",
+    "/todo.md",
     "/run",
     "/test",
     "/default",
