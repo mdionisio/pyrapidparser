@@ -181,7 +181,7 @@ run/pyrapid.py        runtime of the generated code
 default/standard.sys  declarations and implementations of the standard types and routines
 test/                 RAPID test modules
 test/exec/            programs translated and run, with the expected output (.out)
-Pallettizer/          example of a real program
+examples/pallettizer/ example of a real program (palletizer, no motion yet)
 doc/abb/official/     ABB manuals (not in the repository, see below)
 ```
 

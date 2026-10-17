@@ -1,6 +1,6 @@
 MODULE MAINTASK
-!python rapid2py.py -i Pallettizer/schema.mod -s -f schema.py
-!python rapid2py.py -e MAIN -i Pallettizer/settings.mod -i Pallettizer/gloadschema.mod -i Pallettizer/schema.mod -i Pallettizer/maintask.mod -f pallettizer.py -r
+!python rapid2py.py -i examples/pallettizer/schema.mod -s -f schema.py
+!python rapid2py.py -e MAIN -i examples/pallettizer/settings.mod -i examples/pallettizer/gloadschema.mod -i examples/pallettizer/schema.mod -i examples/pallettizer/maintask.mod -f pallettizer.py -r
 !
 !
 
