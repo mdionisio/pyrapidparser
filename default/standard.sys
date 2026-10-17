@@ -637,7 +637,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
     
     FUNC num Pow (num Base, num Exponent)
         VAR num ret;
-        !TODO non gestito errore
+        !TODO errors not handled
         !python:import math
         !python:base = pyrapid.Symbols().GetSymbol("Base").data.Get()
         !python:exponent = pyrapid.Symbols().GetSymbol("Exponent").data.Get()

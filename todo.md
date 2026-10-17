@@ -1,52 +1,51 @@
 # TODO
 
-Riferimenti: manuali ABB in `doc/abb/official/` (non nel repository):
+References: ABB manuals in `doc/abb/official/` (not in the repository):
 kernel = 3HAC050946-001, overview = 3HAC050947-001,
 instructions = 3HAC050917-001.
 
 ## rapid2py / runtime
 
-- [ ] **Punti di recupero con long jump** `ERROR (56, ERR_DIVZERO)` (kernel 7.2): rapid2py
-  traduce il gestore ma ignora la lista dei numeri di errore, quindi il long jump non è
-  implementato.
-- [ ] **CONNECT / interrupt / TRAP** (kernel 4.13, 8): rapid2py solleva
+- [ ] **Recovery points with long jump** `ERROR (56, ERR_DIVZERO)` (kernel 7.2): rapid2py
+  translates the handler but ignores the list of error numbers, so the long jump is not
+  implemented.
+- [ ] **CONNECT / interrupts / TRAP** (kernel 4.13, 8): rapid2py raises
   "Connect not yet supported".
-- [ ] **Gestori BACKWARD e UNDO** (kernel 6, 7.2): verificare la semantica del codice
-  generato, nessun test li esegue.
-- [ ] **`pi` e `dnum`**: il validatore li conosce (sono predefiniti in RAPID), ma il
-  runtime `run/pyrapid.py` no: un programma che usa `pi` passa la validazione e poi
-  fallisce in esecuzione.
-- [ ] **DIV e MOD con operandi negativi**: rapid2py usa `//` e `%`, che in Python
-  arrotondano verso -infinito. Verificare sul manuale delle istruzioni il risultato RAPID
-  e correggere se diverso.
-- [ ] **Late binding** `% expr % args;` (kernel 4.6): verificare il codice generato e la
-  risoluzione `"modulo:procedura"`.
-- [ ] **Istruzioni installate mancanti** in `default/standard.sys` (MoveJ, MoveC, ...):
-  oggi rapidvalidate e rapid2py le rifiutano come procedure non definite.
+- [ ] **BACKWARD and UNDO handlers** (kernel 6, 7.2): check the semantics of the generated
+  code, no test runs them.
+- [ ] **`pi` and `dnum`**: the validator knows them (they are predefined in RAPID), the
+  runtime `run/pyrapid.py` does not: a program that uses `pi` passes the validation and
+  then fails at run time.
+- [ ] **DIV and MOD with negative operands**: rapid2py uses `//` and `%`, which in Python
+  round towards minus infinity. Check the RAPID result in the instructions manual and fix
+  it if different.
+- [ ] **Late binding** `% expr % args;` (kernel 4.6): check the generated code and the
+  resolution of `"module:procedure"`.
+- [ ] **Missing installed instructions** in `default/standard.sys` (MoveJ, MoveC, ...):
+  today rapidvalidate and rapid2py reject them as undefined procedures.
 
 ## Parser / lexer
 
-- [ ] **Commenti dentro RECORD** (kernel 2.10, 2.14): sono ammessi a fine riga e
-  sull'ultima riga, ma il parser rifiuta qualsiasi commento dentro un RECORD.
-- [ ] **Letterali ottali** `0o17` (kernel 2.5): il token `INT_CONST_OCT` è dichiarato ma
-  non c'è la regola del lexer.
-- [ ] **Range dei letterali numerici** (kernel 2.5, IEEE 754): non controllato.
-- [ ] **Codice ereditato da pycparser** nel lexer (costanti carattere, `t_UNMATCHED_QUOTE`,
-  `t_BAD_CHAR_CONST`): non esiste in RAPID, si può togliere.
+- [ ] **Comments inside RECORD** (kernel 2.10, 2.14): they are allowed at the end of a line
+  and on the last line, but the parser rejects any comment inside a RECORD.
+- [ ] **Octal literals** `0o17` (kernel 2.5): the token `INT_CONST_OCT` is declared but
+  there is no lexer rule.
+- [ ] **Range of numeric literals** (kernel 2.5, IEEE 754): not checked.
+- [ ] **Code inherited from pycparser** in the lexer (character constants,
+  `t_UNMATCHED_QUOTE`, `t_BAD_CHAR_CONST`): it does not exist in RAPID, it can be removed.
 
 ## rapidvalidate
 
-- [ ] **Routine d'ingresso senza parametri** (kernel 9.1, "Entry routines cannot have
-  parameters"): si potrebbe controllare la procedura passata a `rapid2py -e`.
-- [ ] **Late binding** (kernel 5.4): le procedure chiamate dallo stesso statement devono
-  avere parametri compatibili. Oggi si controlla solo che il nome sia una stringa.
-- [ ] **Tipi installati e semi-value** (kernel 2.16): signaldi, signaldo, ecc. non sono nel
-  catalogo, quindi le espressioni che li usano non vengono controllate (serve il catalogo
-  dal manuale delle istruzioni 3HAC050917).
-- [ ] **TEST con valori CASE ripetuti** (kernel 4.18, "only the first is recognized"):
-  potrebbe essere un warning.
-- [ ] **Uso di un parametro opzionale non presente** (kernel 5.2): è un errore di
-  esecuzione, staticamente si potrebbe segnalare solo l'uso fuori da `IF Present(...)`
-  (warning).
-- [ ] **Placeholder** (`<SMT>`, `<EXP>`, ...): sintatticamente validi, ma rapid2py non li
-  può tradurre. Valutare un warning.
+- [ ] **Entry routine without parameters** (kernel 9.1, "Entry routines cannot have
+  parameters"): the procedure passed to `rapid2py -e` could be checked.
+- [ ] **Late binding** (kernel 5.4): the procedures called by the same statement must have
+  compatible parameters. Today only the name is checked to be a string.
+- [ ] **Installed and semi-value types** (kernel 2.16): signaldi, signaldo, etc. are not in
+  the catalog, so the expressions that use them are not checked (the catalog from the
+  instructions manual 3HAC050917 is needed).
+- [ ] **TEST with repeated CASE values** (kernel 4.18, "only the first is recognized"):
+  it could be a warning.
+- [ ] **Use of an optional parameter that is not present** (kernel 5.2): it is a run time
+  error, statically only the use outside `IF Present(...)` could be reported (warning).
+- [ ] **Placeholders** (`<SMT>`, `<EXP>`, ...): syntactically valid, but rapid2py cannot
+  translate them. Consider a warning.

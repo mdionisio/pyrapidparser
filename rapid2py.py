@@ -551,7 +551,7 @@ class rapid_%s (pyrapid.rapid_struct):
     def visit_ParameterDefinitionAST(
         self, node: rapid_ast.ParameterDefinitionAST, **kwargs: Any
     ) -> None:
-        # parameter_type stringa
+        # parameter_type string
         # type IdentifierAST
         # name IdentifierAST
         # size int or None

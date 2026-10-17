@@ -368,7 +368,7 @@ MODULE MAINTASK
             
             ! todo delete schema
         ENDFOR
-        ! todo gestione errore del delete schema
+        ! todo handle the errors of delete schema
     ENDPROC
     
     PROC ALoadSchemas()
