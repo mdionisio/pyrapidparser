@@ -21,8 +21,28 @@ instructions = 3HAC050917-001.
   it if different.
 - [ ] **Late binding** `% expr % args;` (kernel 4.6): check the generated code and the
   resolution of `"module:procedure"`.
-- [ ] **Missing installed instructions** in `default/standard.sys` (MoveJ, MoveC, ...):
-  today rapidvalidate and rapid2py reject them as undefined procedures.
+- [ ] **Missing installed instructions** in `default/standard.sys`: the motion
+  instructions other than MoveAbsJ, MoveJ, MoveL, MoveC (MoveExtJ, the Sync and DO
+  variants, SearchL, TriggL, ...) and the I/O instructions.
+
+## Motion (run/pyrapid_motion.py, robotmodel.py)
+
+- [ ] **Zones**: the corner paths (`zonedata` other than `fine`) are run as fine points.
+- [ ] **External axes** (`extax`, `v_leax`, `v_reax`) are ignored.
+- [ ] **ConfL supervision**: the RAPID manual (confdata) checks that the axes 1, 4, 6 do
+  not move more than 180 degrees and that cfx does not change; today only the
+  configuration of the end point is compared.
+- [ ] **Stationary tool** and **work object held by the robot** (`robhold`) are not
+  supported.
+- [ ] **cfx of the 6 axis models with numeric inverse kinematics** (CRB 15000, IRB 5400,
+  IRB 6640): cfx is always 0.
+- [ ] **Acceleration and torque limits**: no model has them; add `models/<model>.json`
+  when the data is available (ABB does not publish it).
+- [ ] **IRB 460**: the model is approximate (link lengths estimated from the data sheet,
+  no inertial data, axis 3 measured from the horizontal); replace it with a real model.
+- [ ] **Palletizer example**: write the movements of `examples/pallettizer`.
+- [ ] **Interruption**: a motion error stops the program with a Python exception; ABB
+  raises recoverable errors for some of them (ERR_ROBLIMIT with `\ErrorNumber`).
 
 ## Parser / lexer
 
