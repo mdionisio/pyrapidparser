@@ -12,6 +12,10 @@ from rapid_lexer import decode_string
 from collections import OrderedDict
 
 
+# value returned by the translated error handler for RETURN (1 is RETRY, 2 is TRYNEXT)
+RETURN_FROM_HANDLER = 4
+
+
 def parameter_name(parameters: Any, name: str) -> str:
     """the declared name of a parameter: RAPID is not case sensitive"""
     for key in parameters:
@@ -32,6 +36,7 @@ class TraslateRapidToPython(rapid_ast.NodeVisitor):
         self.declared_routines: set[tuple[Optional[str], str]] = set()
         # statement lists with labels (unique names of the dispatch loop variables)
         self.goto_lists = 0
+        self.in_error_handler = False
         # FOR statements (unique names of the loop variables)
         self.for_loops = 0
         self.indent_module = 0
@@ -602,7 +607,11 @@ class rapid_%s (pyrapid.rapid_struct):
     def visit_RoutineErrorAST(self, node: rapid_ast.RoutineErrorAST, **kwargs: Any) -> None:
         # error_number_list (error recovery point for long jump) is not supported
         # by the runtime: only the statements of the handler are translated
-        self.write_statement_list(node.statement_list, **kwargs)
+        self.in_error_handler = True
+        try:
+            self.write_statement_list(node.statement_list, **kwargs)
+        finally:
+            self.in_error_handler = False
 
     def visit_ExpressionAST(self, node: rapid_ast.ExpressionAST, **kwargs: Any) -> None:
         # expr is None or AggregateAST or Operator1AST or Operator2AST or FunctionCallAST or VariableAST or ExpressionAST or LiteralATS
@@ -749,6 +758,10 @@ class rapid_%s (pyrapid.rapid_struct):
                         self.writemodule("elif error_manager == 2:")  # trynext
                         with self.ModuleScope():
                             self.writemodule("pass")  # trynext
+                        # RETURN in the error handler: return to the caller (kernel manual 7.1)
+                        self.writemodule("elif isinstance(error_manager, tuple):")
+                        with self.ModuleScope():
+                            self.writemodule("return error_manager[1]")
                         self.writemodule("else:")  # propagate exception
                         with self.ModuleScope():
                             # execute undo
@@ -761,7 +774,7 @@ class rapid_%s (pyrapid.rapid_struct):
                                 self.writemodule("undo_manager_call()")
                             # self.writemodule("raise")
                             self.writemodule(
-                                "raise pyrapid.RapidException(ex.code, ex.message+' %s(%%d) -'%%(pyrapid.lineno(),))"
+                                "raise pyrapid.RapidException(ex.code, str(ex)+' %s(%%d) -'%%(pyrapid.lineno(),))"
                                 % (self.function_name,)
                             )  # propagate exception
                     self.writemodule("else:")
@@ -776,7 +789,7 @@ class rapid_%s (pyrapid.rapid_struct):
                             self.writemodule("undo_manager_call()")
                         # self.writemodule("raise")
                         self.writemodule(
-                            "raise pyrapid.RapidException(ex.code, ex.message+' %s(%%d) -'%%(pyrapid.lineno(),))"
+                            "raise pyrapid.RapidException(ex.code, str(ex)+' %s(%%d) -'%%(pyrapid.lineno(),))"
                             % (self.function_name,)
                         )  # propagate exception
                     self.writemodule("pyrapid.Symbols().GetSymbol(symbolname='ERRNO').data.Set(-1)")
@@ -904,16 +917,23 @@ class rapid_%s (pyrapid.rapid_struct):
             self.writemodule("# Line %s" % (str(node.coord),))
         self.simple_writeindent()
 
+        # in the error handler RETURN returns (RETURN_FROM_HANDLER, value): the routine returns
+        # the value to its caller
+        handler = self.in_error_handler
         if node.result is None:
             if not (self.return_type is None):
                 raise Exception("function %s return nothing" % (self.function_name,))
-            self.simple_writemodule("return ")
+            self.simple_writemodule(
+                "return (%d, None)" % RETURN_FROM_HANDLER if handler else "return "
+            )
         else:
             if self.return_type is None:
                 raise Exception("procedure %s return a type" % (self.function_name,))
-            self.simple_writemodule("return ( ")
+            self.simple_writemodule(
+                "return (%d, ( " % RETURN_FROM_HANDLER if handler else "return ( "
+            )
             self.visit(node.result, **kwargs)
-            self.simple_writemodule(" )")
+            self.simple_writemodule(" ))" if handler else " )")
         self.simple_writemodule()
 
     def visit_ExitStatementAST(self, node: rapid_ast.ExitStatementAST, **kwargs: Any) -> None:

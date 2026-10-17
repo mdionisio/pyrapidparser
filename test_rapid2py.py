@@ -98,7 +98,12 @@ def test_rapid2py_execution(path: str, tmp_path: pathlib.Path) -> None:
     env = dict(os.environ)
     env["PYTHONPATH"] = os.pathsep.join([os.path.join(PROJECT_DIR, "run"), PROJECT_DIR])
     run = subprocess.run(
-        [sys.executable, "program.py"], cwd=outdir, capture_output=True, text=True, env=env
+        [sys.executable, "program.py"],
+        cwd=outdir,
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=60,
     )
     assert run.returncode == 0, run.stderr[-2000:]
     with open(os.path.join(EXEC_DIR, name + ".out"), "r") as f:
