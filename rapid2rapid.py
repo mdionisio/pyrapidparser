@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from typing import Any, TextIO
 
-from browse_rapid_ast import ensure_dir
 import rapid_ast
 import rapid_parser
 import os
@@ -684,6 +683,7 @@ if __name__ == "__main__":
 
     allmodule = rapid_ast.ModulesAST(attriblist)
 
+    os.makedirs(options.directory, exist_ok=True)
     filename = os.path.join(options.directory, options.filename)
     with open(filename, "w+t") as f:
         traslate = WriteRapid(filew=f)

@@ -118,3 +118,36 @@ def test_rapid2py_execution(path: str, tmp_path: pathlib.Path) -> None:
     assert run.returncode == 0, run.stderr[-2000:]
     with open(os.path.join(EXEC_DIR, name + ".out"), "r") as f:
         assert run.stdout == f.read()
+
+
+def test_rapid2py_run(tmp_path: pathlib.Path) -> None:
+    """-r runs the translated program; -d creates the output folder"""
+    path = os.path.join(EXEC_DIR, "operators.mod")
+    outdir = os.path.join(os.fspath(tmp_path), "a", "b")
+    env = dict(os.environ)
+    env.pop("PYTHONPATH", None)
+    result = subprocess.run(
+        [sys.executable, "rapid2py.py", "-s", "-r", "-e", "operators.main"]
+        + ["-i", path, "-d", outdir, "-f", "program.py"],
+        cwd=PROJECT_DIR,
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=60,
+    )
+    assert result.returncode == 0, result.stderr[-2000:]
+    with open(os.path.join(EXEC_DIR, "operators.out"), "r") as f:
+        assert result.stdout.endswith(f.read())
+
+
+def test_rapid2rapid_creates_folder(tmp_path: pathlib.Path) -> None:
+    outdir = os.path.join(os.fspath(tmp_path), "a", "b")
+    result = subprocess.run(
+        [sys.executable, "rapid2rapid.py", "-i", os.path.join(TEST_DIR, "test2.mod")]
+        + ["-d", outdir, "-f", "test2.mod"],
+        cwd=PROJECT_DIR,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr[-2000:]
+    assert os.path.exists(os.path.join(outdir, "test2.mod"))

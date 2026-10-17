@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from browse_rapid_ast import EvaluateRapidExpression, ensure_dir
+from browse_rapid_ast import EvaluateRapidExpression
 from typing import Any, Callable, ContextManager, Optional, TextIO
 
 import rapid_ast
@@ -41,7 +41,7 @@ class TraslateRapidToPython(rapid_ast.NodeVisitor):
         self.for_loops = 0
         self.indent_module = 0
         self.directory = out_folder
-        ensure_dir(self.directory)
+        os.makedirs(self.directory, exist_ok=True)
         self.file_module_name: str = os.path.join(self.directory, out_filename)
         self.file_module = open(self.file_module_name, "w")
         self.writemodule("#this file is an automatic traslation of rapid code")
@@ -2044,12 +2044,18 @@ if __name__ == "__main__":
     if options.run:
         import subprocess
 
-        a = subprocess.Popen(
-            ["python", os.path.basename(traslate.file_module_name)],
-            shell=False,
-            cwd=os.path.dirname(traslate.file_module_name),
+        # the program imports pyrapid (run/) and the modules of the project
+        project = os.path.dirname(os.path.abspath(__file__))
+        env = dict(os.environ)
+        paths = [os.path.join(project, "run"), project]
+        if env.get("PYTHONPATH"):
+            paths.append(env["PYTHONPATH"])
+        env["PYTHONPATH"] = os.pathsep.join(paths)
+        program = os.path.abspath(traslate.file_module_name)
+        sys.stdout.flush()
+        result = subprocess.run(
+            [sys.executable, os.path.basename(program)], cwd=os.path.dirname(program), env=env
         )
-        a.wait()
-        print("End")
+        sys.exit(result.returncode)
         #
         #
