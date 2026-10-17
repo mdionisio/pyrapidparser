@@ -454,3 +454,9 @@ def test_file(name: str) -> None:
         if d.severity == rapidvalidate.ERROR
     ]
     assert sorted(found) == sorted(INVALID_FILES.get(name, []))
+
+
+def test_standard_modules() -> None:
+    """default/*.sys must be valid RAPID: they are loaded with every program"""
+    found = rapidvalidate.validate(standard_modules())
+    assert found == [], "\n".join(str(d) for d in found)

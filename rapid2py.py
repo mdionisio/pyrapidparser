@@ -369,10 +369,6 @@ class rapid_%s (pyrapid.rapid_struct):
                 )
             else:
                 # function declaration it is in the Scope of the function
-                print(
-                    "warning: variable %s is local to the function %s"
-                    % (varinstance_name, self.function_name)
-                )
                 pyrapid.Symbols().AddScopeSym(varinstance_name, getvar)
                 self.writemodule(
                     "pyrapid.Symbols().AddScopeSym(%s, %s)" % (repr(varinstance_name), sgetvar)
@@ -408,10 +404,6 @@ class rapid_%s (pyrapid.rapid_struct):
                 )
             else:
                 # function declaration it is in the Scope of the function
-                print(
-                    "warning: variable %s is local to the function %s"
-                    % (varinstance_name, self.function_name)
-                )
                 pyrapid.Symbols().AddScopeSym(varinstance_name, getvar)
                 self.writemodule(
                     "pyrapid.Symbols().AddScopeSym(%s, %s)" % (repr(varinstance_name), sgetvar)

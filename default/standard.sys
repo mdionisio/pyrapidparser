@@ -89,7 +89,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:RawData.Set( RawData.Get()[:FromIndex] )
     ENDPROC
     
-    PROC CopyRawBytes (rawbytes FromRawData, num FromIndex, VAR rawbytes ToRawData, num ToIndex \num NoOfBytes)
+    PROC CopyRawBytes (VAR rawbytes FromRawData, num FromIndex, VAR rawbytes ToRawData, num ToIndex \num NoOfBytes)
     ENDPROC
     
     PROC PackRawBytes (anytype Value, VAR rawbytes RawData \switch Network, num StartIndex \switch Hex1 | num IntX | switch Float4 | switch ASCII)
@@ -235,7 +235,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
     ! PackDNHeader Service Path RawData
     ! RawBytesLen (RawData)
     FUNC num RawBytesLen(VAR rawbytes RawData)
-        LOCAL VAR num ret;
+        VAR num ret;
         !python:RawData = pyrapid.Symbols().GetSymbol("RawData").data.Get()
         !python:pyrapid.Symbols().GetSymbol("ret").data.Set(len(RawData))
         RETURN ret;
@@ -243,7 +243,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
     
 
     FUNC string GetSysInfo( \switch SerialNo | switch SWVersion | switch RobotType | switch CtrlId | switch LanIp | switch CtrlLang)
-        LOCAL VAR string ret;
+        VAR string ret;
         IF Present(LanIp) THEN
             !python:pyrapid.Symbols().GetSymbol("ret").data.Set("0.0.0.0")
         ENDIF
@@ -252,8 +252,8 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! SOCKET !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
-    FUNC socketstatus SocketGetStatus( socketdev Socket )
-        LOCAL VAR socketstatus ret;
+    FUNC socketstatus SocketGetStatus( VAR socketdev Socket )
+        VAR socketstatus ret;
         !python:import socket
         !python:lstate, lsocket = pyrapid.Symbols().GetSymbol("Socket").data.Get()
         !python:pyrapid.Symbols().GetSymbol("ret").data.Set(lstate)
@@ -463,21 +463,21 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:print( "'"+val+"'" )
     ENDPROC
     
-    PROC ClkStart( INOUT clock Clock )
+    PROC ClkStart( VAR clock Clock )
         !python:import datetime
         !python:val = pyrapid.Symbols().GetSymbol("Clock").data.Get()
         !python:val = (val[0], None, True)
         !python:pyrapid.Symbols().GetSymbol("Clock").data.Set(val)
     ENDPROC
     
-    PROC ClkStop( INOUT clock Clock )
+    PROC ClkStop( VAR clock Clock )
         !python:import datetime
         !python:val = pyrapid.Symbols().GetSymbol("Clock").data.Get()
         !python:val = (val[0], datetime.datetime.now(), False)
         !python:pyrapid.Symbols().GetSymbol("Clock").data.Set(val)
     ENDPROC
     
-    PROC ClkReset( INOUT clock Clock )
+    PROC ClkReset( VAR clock Clock )
         !python:import datetime
         !python:val = (datetime.datetime.now(), None, False)
         !python:try:
@@ -488,8 +488,8 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:pyrapid.Symbols().GetSymbol("Clock").data.Set(val)
     ENDPROC
     
-    FUNC num ClkRead( clock Clock )
-        LOCAL VAR num ret;
+    FUNC num ClkRead( VAR clock Clock )
+        VAR num ret;
         !python:import datetime
         !python:val = pyrapid.Symbols().GetSymbol("Clock").data.Get()
         !python:starttime = datetime.datetime.now()
@@ -503,7 +503,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
     ENDFUNC
     
     PROC UnLoad( string FilePath )
-        LOCAL VAR bool ret;
+        VAR bool ret;
         TPWrite("UnLoad it is unsafe");
         !python:FilePath = pyrapid.Symbols().GetSymbol("FilePath").data.Get()
         !python:FilePath = FilePath.split('/')[-1].split('.')[0].upper()
