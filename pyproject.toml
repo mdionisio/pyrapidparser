@@ -12,6 +12,19 @@ dependencies = [
     "ply>=3.11",
 ]
 
+[project.optional-dependencies]
+# robot models, kinematics and motion instructions (robotmodel.py, run/pyrapid_motion.py)
+motion = [
+    "pin>=3",
+    "numpy",
+    "xacro",
+]
+# real time 3D view of the robot in the browser
+view = [
+    "pyrapidparser[motion]",
+    "meshcat",
+]
+
 [tool.hatch.build]
 # the sources are flat top-level modules, so list them explicitly
 [tool.hatch.build.targets.wheel]
@@ -24,6 +37,8 @@ include = [
     "/rapid_lexer.py",
     "/rapid_parser.py",
     "/rapidvalidate.py",
+    "/robotmodel.py",
+    "/models",
     "/run",
 ]
 
@@ -42,6 +57,7 @@ include = [
 [tool.hatch.build.hooks.custom]
 
 [tool.hatch.envs.default]
+features = ["view"]
 dependencies = [
     "pytest",
     "pytest-cov",
@@ -62,14 +78,14 @@ format-check = "ruff format --check --diff {args}"
 dependencies = ["ply>=3.11"]
 
 [tool.pytest.ini_options]
-testpaths = ["test_rapid.py", "test_case_insensitive.py", "test_expressions.py", "test_strings.py", "test_roundtrip.py", "test_rapidvalidate.py", "test_rapid2py.py", "test_quality.py"]
+testpaths = ["test_rapid.py", "test_case_insensitive.py", "test_expressions.py", "test_strings.py", "test_roundtrip.py", "test_rapidvalidate.py", "test_robotmodel.py", "test_rapid2py.py", "test_quality.py"]
 pythonpath = ["."]
 
 [tool.ruff]
 line-length = 100
 target-version = "py39"
 # generated files (rapid_ast.py from _rapid_ast.cfg, PLY tables)
-extend-exclude = ["rapid_ast.py", "lextab.py", "yacctab.py", "parsetab.py"]
+extend-exclude = ["rapid_ast.py", "lextab.py", "yacctab.py", "parsetab.py", "third_party"]
 
 [tool.mypy]
 strict = true
@@ -84,6 +100,7 @@ files = [
     "rapid_lexer.py",
     "rapid_parser.py",
     "rapidvalidate.py",
+    "robotmodel.py",
     "run",
     "test_quality.py",
     "test_case_insensitive.py",
@@ -93,6 +110,7 @@ files = [
     "test_roundtrip.py",
     "test_rapid2py.py",
     "test_rapidvalidate.py",
+    "test_robotmodel.py",
     "test/server.py",
 ]
 # rapid_ast.py is generated and untyped: its constructors may be called from typed code
@@ -105,5 +123,5 @@ ignore_errors = true
 implicit_reexport = true
 
 [[tool.mypy.overrides]]
-module = ["ply", "ply.*"]
+module = ["ply", "ply.*", "pinocchio", "pinocchio.*", "xacro", "meshcat", "meshcat.*", "ament_index_python.*"]
 ignore_missing_imports = true

@@ -1,0 +1,18 @@
+{
+    "description": "ABB IRB 460-110/2.4, 4 axis palletizer (approximate kinematic model)",
+    "approximate": "link lengths estimated from the ABB data sheet (reach 2403 mm, height 1786 mm), boxes instead of the CAD geometry",
+    "rapid_axes": [1, 2, 3, 6],
+    "joints": {
+        "joint_1": {"1": 1},
+        "joint_2": {"2": 1},
+        "joint_3": {"2": -1, "3": 1},
+        "joint_4": {"3": -1},
+        "joint_6": {"6": 1}
+    },
+    "axis_limits": {
+        "1": [-165, 165, 145],
+        "2": [-40, 85, 110],
+        "3": [-20, 120, 120],
+        "6": [-300, 300, 400]
+    }
+}

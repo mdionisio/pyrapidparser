@@ -1,0 +1,5 @@
+[submodule "third_party/abb"]
+	path = third_party/abb
+	url = https://github.com/ros-industrial/abb.git
+	branch = noetic-devel
+	shallow = true
