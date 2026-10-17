@@ -85,6 +85,9 @@ CASES = [
     # --- 2.3 Identifiers, 2.4 Reserved words
     ("identifier too long", module("    VAR num %s;" % ("a" * 33)), ["identifier-too-long"]),
     ("reserved word", module("    VAR num test;"), ["reserved-word"]),
+    # --- 2.13 The type string
+    ("string of 80 characters", module('    VAR string s := "%s";' % ("x" * 80)), []),
+    ("string too long", module('    VAR string s := "%s";' % ("x" * 81)), ["string-too-long"]),
     # --- 2.12, 2.20, 5.3 scope rules
     (
         "duplicate module object",
@@ -460,3 +463,11 @@ def test_standard_modules() -> None:
     """default/*.sys must be valid RAPID: they are loaded with every program"""
     found = rapidvalidate.validate(standard_modules())
     assert found == [], "\n".join(str(d) for d in found)
+
+
+def test_command_line(capsys: pytest.CaptureFixture[str]) -> None:
+    assert rapidvalidate.main([os.path.join(TEST_DIR, "test2.mod")]) == 0
+    assert rapidvalidate.main([os.path.join(TEST_DIR, "test6.mod")]) == 1
+    out = capsys.readouterr().out
+    assert "test6.mod:9: error: 'pippo' is already declared" in out
+    assert out.rstrip().endswith("[duplicate-name]")

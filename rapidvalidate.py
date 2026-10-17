@@ -15,6 +15,7 @@
 # -----------------------------------------------------------------
 import glob
 import os
+import re
 import sys
 from dataclasses import dataclass, field
 from typing import Any, Iterator, Optional, Sequence, Union
@@ -83,6 +84,9 @@ KERNEL_ERRORS = (
 # 4.9 The Raise statement: "error number ... in the range from 1 to 90"
 MIN_ERROR_NUMBER = 1
 MAX_ERROR_NUMBER = 90
+
+# 2.13 The type string: "A string may consist of 0 to 80 characters"
+MAX_STRING_LENGTH = 80
 
 # 2.22 Variable declarations: "an array (of degree 1, 2, or 3)"
 MAX_ARRAY_DEGREE = 3
@@ -253,6 +257,12 @@ def unwrap(node: Any) -> Any:
     while isinstance(node, (rapid_ast.ExpressionAST, rapid_ast.ConstExpressionAST)):
         node = node.expr if isinstance(node, rapid_ast.ExpressionAST) else node.expression
     return node
+
+
+def string_length(raw: str) -> int:
+    """characters of a string literal as written between the quotes: a character code
+    \\hh, a doubled back slash or double quote are one character (2.7)"""
+    return len(re.sub(r'\\[0-9A-Fa-f]{2}|\\\\|""', "x", raw))
 
 
 def identifier_name(node: Any) -> Optional[str]:
@@ -1684,6 +1694,14 @@ class Validator:
             if isinstance(value, bool):
                 return self.builtins.type("bool")
             if isinstance(value, str):
+                # 2.13 "A string may consist of 0 to 80 characters"
+                if string_length(value) > MAX_STRING_LENGTH:
+                    self.report(
+                        node,
+                        "string-too-long",
+                        "string literal of %d characters, the maximum is %d"
+                        % (string_length(value), MAX_STRING_LENGTH),
+                    )
                 return self.builtins.type("string")
             if expected is not None and expected.base.name.lower() == "dnum" and not expected.dims:
                 return expected
