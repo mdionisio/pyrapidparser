@@ -151,3 +151,25 @@ def test_rapid2rapid_creates_folder(tmp_path: pathlib.Path) -> None:
     )
     assert result.returncode == 0, result.stderr[-2000:]
     assert os.path.exists(os.path.join(outdir, "test2.mod"))
+
+
+def test_example_irb120(tmp_path: pathlib.Path) -> None:
+    """examples/irb120/demo.mod runs to the end"""
+    pytest.importorskip("pinocchio")
+    env = dict(os.environ)
+    env["PYRAPID_MOTION_LOG"] = "1"
+    env.pop("PYRAPID_VIEWER", None)
+    result = subprocess.run(
+        [sys.executable, "rapid2py.py", "-r", "-e", "demo.main"]
+        + ["-i", os.path.join("examples", "irb120", "demo.mod")]
+        + ["-d", os.fspath(tmp_path), "-f", "demo.py"],
+        cwd=PROJECT_DIR,
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=120,
+    )
+    assert result.returncode == 0, result.stderr[-2000:]
+    moves = [line.split()[0] for line in result.stdout.splitlines() if " s  axes " in line]
+    assert moves.count("MoveL") == 9 and moves.count("MoveC") == 2
+    assert "tilted pen at Pos: 75.0,75.0,50.0" in result.stdout
