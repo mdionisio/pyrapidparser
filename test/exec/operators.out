@@ -1,0 +1,6 @@
+a - b - c = 5
+a / b / c = 1.6667
+-a + b = -7
+a * (b + c) = 50
+NOT f OR t = True
+NOT t AND f = True

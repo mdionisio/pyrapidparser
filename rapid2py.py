@@ -566,12 +566,13 @@ class rapid_%s (pyrapid.rapid_struct):
         self.simple_writemodule("]")
 
     def visit_Operator1AST(self, node: rapid_ast.Operator1AST, **kwargs: Any) -> None:
-        if not (node.operator is None):
-            self.simple_writemodule("( not ")
+        # operator is NOT or unary + / -
+        if node.operator is None:
+            self.visit(node.par1, **kwargs)
+        else:
+            self.simple_writemodule("( not " if node.operator == "NOT" else "( " + node.operator)
             self.visit(node.par1, **kwargs)
             self.simple_writemodule(" )")
-        else:
-            self.visit(node.par1, **kwargs)
 
     def visit_Operator2AST(self, node: rapid_ast.Operator2AST, **kwargs: Any) -> None:
         self.simple_writemodule("( ")

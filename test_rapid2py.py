@@ -59,3 +59,31 @@ def test_rapid2py_generates_valid_python(path: str, tmp_path: pathlib.Path) -> N
     with open(pyfile, "r") as f:
         source = f.read()
     compile(source, pyfile, "exec")
+
+
+EXEC_DIR = os.path.join(TEST_DIR, "exec")
+EXEC_FILES = sorted(glob.glob(os.path.join(EXEC_DIR, "*.mod")))
+
+
+@pytest.mark.parametrize("path", EXEC_FILES, ids=os.path.basename)
+def test_rapid2py_execution(path: str, tmp_path: pathlib.Path) -> None:
+    """translate test/exec/<name>.mod, run its main and compare stdout with <name>.out"""
+    name = os.path.splitext(os.path.basename(path))[0]
+    outdir = os.fspath(tmp_path)
+    result = subprocess.run(
+        [sys.executable, "rapid2py.py", "-s", "-e", name + ".main"]
+        + ["-i", path, "-d", outdir, "-f", "program.py"],
+        cwd=PROJECT_DIR,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 0, result.stderr[-2000:]
+
+    env = dict(os.environ)
+    env["PYTHONPATH"] = os.pathsep.join([os.path.join(PROJECT_DIR, "run"), PROJECT_DIR])
+    run = subprocess.run(
+        [sys.executable, "program.py"], cwd=outdir, capture_output=True, text=True, env=env
+    )
+    assert run.returncode == 0, run.stderr[-2000:]
+    with open(os.path.join(EXEC_DIR, name + ".out"), "r") as f:
+        assert run.stdout == f.read()
