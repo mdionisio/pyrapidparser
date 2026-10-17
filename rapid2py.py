@@ -1866,6 +1866,14 @@ if __name__ == "__main__":
         "-r", "--run", action="store_true", dest="run", default=False, help="run entry point"
     )
 
+    optparser.add_option(
+        "--no-validate",
+        action="store_false",
+        dest="validate",
+        default=True,
+        help="do not run the static semantic checks of rapidvalidate before the translation",
+    )
+
     (options, args) = optparser.parse_args()
 
     entrypoint = options.entrypoint
@@ -1893,6 +1901,16 @@ if __name__ == "__main__":
             start_from="module_declaration_list",
         )
         attriblist += parser.parse(text, fname, debuglevel=0).module_list
+
+    if options.validate:
+        import rapidvalidate
+
+        standard_files = [fname for fname, _ in ltext if fname not in options.infiles]
+        diagnostics = rapidvalidate.validate(attriblist, quiet_files=standard_files)
+        for d in diagnostics:
+            print(d, file=sys.stderr)
+        if any(d.severity == rapidvalidate.ERROR for d in diagnostics):
+            sys.exit(1)
 
     allmodule = rapid_ast.ModulesAST(attriblist)
 

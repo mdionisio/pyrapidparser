@@ -3,16 +3,24 @@
 Each conversion runs rapid2py.py in its own process, as from the command line
 (standard symbols of default/*.sys included), because the symbol table of
 run.pyrapid is a process-wide singleton.
+
+rapid2py validates the program with rapidvalidate before the translation: the
+test files that are not valid RAPID must be rejected with the diagnostics, the
+translator itself is tested on them with --no-validate.
 """
 
+import functools
 import glob
 import os
 import pathlib
+import re
 import subprocess
 import sys
 from typing import Any
 
 import pytest
+
+import rapidvalidate
 
 PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
 TEST_DIR = os.path.join(PROJECT_DIR, "test")
@@ -23,16 +31,21 @@ MOD_FILES = sorted(
     if not f.endswith((".ast.mod", ".source.mod", "rapid_program.mod"))
 )
 
-# known limitations of rapid2py: the conversion itself fails
+# the translation fails (with --no-validate): invalid RAPID or rapid2py limitations
 KNOWN_FAILURES = {
-    "test1.mod": "unknown data type (GetSymbol returns None)",
-    "test6.mod": "symbol pippo already defined",
-    "test7.mod": "symbol pippo already defined",
-    "test8.mod": "Symbol p1 has to be a constant variable",
-    "test10.mod": "rapid_struct.Set with a list of wrong size",
-    "test20.mod": "symbol TPWrite already defined (clash with default/standard.sys)",
+    "test1.mod": "invalid RAPID: unknown data type pone",
+    "test6.mod": "invalid RAPID: pippo is both a record and a variable",
+    "test7.mod": "invalid RAPID: pippo is both a record and a variable",
+    "test8.mod": "invalid RAPID: variable used in a constant expression",
+    "test10.mod": "invalid RAPID: aggregate does not match the pose record",
+    "test20.mod": "invalid RAPID: TPWrite already declared in default/standard.sys",
     "test41.mod": "procedure called before its declaration (forward reference)",
 }
+
+
+@functools.lru_cache(maxsize=None)
+def is_valid(path: str) -> bool:
+    return not any(d.severity == rapidvalidate.ERROR for d in rapidvalidate.validate_files([path]))
 
 
 def mod_param(path: str) -> Any:
@@ -43,15 +56,20 @@ def mod_param(path: str) -> Any:
     return pytest.param(path, id=name, marks=marks)
 
 
-@pytest.mark.parametrize("path", [mod_param(f) for f in MOD_FILES])
-def test_rapid2py_generates_valid_python(path: str, tmp_path: pathlib.Path) -> None:
-    outdir = os.fspath(tmp_path)
-    result = subprocess.run(
-        [sys.executable, "rapid2py.py", "-i", path, "-d", outdir, "-f", "rapid_program.py"],
+def rapid2py(path: str, outdir: str, *options: str) -> "subprocess.CompletedProcess[str]":
+    return subprocess.run(
+        [sys.executable, "rapid2py.py", *options, "-i", path, "-d", outdir]
+        + ["-f", "rapid_program.py"],
         cwd=PROJECT_DIR,
         capture_output=True,
         text=True,
     )
+
+
+@pytest.mark.parametrize("path", [mod_param(f) for f in MOD_FILES])
+def test_rapid2py_generates_valid_python(path: str, tmp_path: pathlib.Path) -> None:
+    outdir = os.fspath(tmp_path)
+    result = rapid2py(path, outdir, *([] if is_valid(path) else ["--no-validate"]))
     # stdout is the (long) AST dump made on error, stderr ends with the traceback
     assert result.returncode == 0, result.stderr[-2000:]
 
@@ -59,6 +77,23 @@ def test_rapid2py_generates_valid_python(path: str, tmp_path: pathlib.Path) -> N
     with open(pyfile, "r") as f:
         source = f.read()
     compile(source, pyfile, "exec")
+
+
+@pytest.mark.parametrize("path", [f for f in MOD_FILES if not is_valid(f)], ids=os.path.basename)
+def test_rapid2py_rejects_invalid_rapid(path: str, tmp_path: pathlib.Path) -> None:
+    result = rapid2py(path, os.fspath(tmp_path))
+    assert result.returncode == 1
+    assert "Traceback" not in result.stderr
+    expected = [
+        (d.line, d.code)
+        for d in rapidvalidate.validate_files([path])
+        if d.severity == rapidvalidate.ERROR
+    ]
+    found = [
+        (int(m.group(1)), m.group(2))
+        for m in re.finditer(r"^.*?:(\d+): error: .* \[([a-z-]+)\]$", result.stderr, re.M)
+    ]
+    assert found == expected, result.stderr
 
 
 EXEC_DIR = os.path.join(TEST_DIR, "exec")
