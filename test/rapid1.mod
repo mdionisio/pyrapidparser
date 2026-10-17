@@ -157,7 +157,7 @@ MODULE syun1
     
     
     PROC MAINPROC()
-    !python:print "main"
+    !python:print("main")
         VAR num pnum := 1;
         VAR num pvec{3} := [ 11, 21, 31 ];
         
@@ -206,11 +206,11 @@ MODULE syun1
         
         TEST pnum
         CASE 1,2,3 :
-        !python:print "test 1 2 3"
+        !python:print("test 1 2 3")
         CASE 4 :
-        !python:print "test 4"
+        !python:print("test 4")
         DEFAULT :
-        !python:print "test default"
+        !python:print("test default")
         ENDTEST
         
         TPWrite "WaitTime 10";

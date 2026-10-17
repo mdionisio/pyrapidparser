@@ -514,50 +514,34 @@ class EvaluateRapidExpression(rapid_ast.NodeVisitor):
             parse.visit(i)
             self.return_value.append(parse.GetReturn())
 
-    def visit_VariableAST(self, node: rapid_ast.VariableAST) -> None:
-        varindexlist = node.index
-        varcomponent = node.component
-        if varcomponent is None:
-            if len(varindexlist) == 0:
-                if isinstance(node.var, rapid_ast.VariableAST):
-                    parse = EvaluateRapidExpression(self.modulename, self.functionname)
-                    parse.visit(node.var)
-                    getvar = parse.GetReturn()
-                else:
-                    varname = node.var.name
-                    getvar = pyrapid.Symbols().GetSymbol(
-                        varname, self.modulename, self.functionname
-                    )
-                if getvar.type != pyrapid.Symbol.SYM_TYPE_CONST_VAR:
-                    raise Exception(
-                        "Symbol %s has to be a constant variable %d" % (varname, getvar.type)
-                    )
-                self.return_value = getvar.data.Get()
-            else:
-                index = []
-                for i in varindexlist:
-                    parse = EvaluateRapidExpression(self.modulename, self.functionname)
-                    parse.visit(i)
-                    index.append(parse.GetReturn())
-                if isinstance(node.var, rapid_ast.VariableAST):
-                    parse = EvaluateRapidExpression(self.modulename, self.functionname)
-                    parse.visit(node.var)
-                    getvar = parse.GetReturn()
-                else:
-                    varname = node.var.name
-                    getvar = pyrapid.Symbols().GetSymbol(
-                        varname, self.modulename, self.functionname
-                    )
-                if getvar.type != pyrapid.Symbol.SYM_TYPE_CONST_VAR:
-                    raise Exception(
-                        "Symbol %s has to be a constant variable %d" % (varname, getvar.type)
-                    )
-                self.return_value = getvar.data.GetElem(index).Get()
+    def _const_data(self, node: rapid_ast.VariableAST) -> Any:
+        """Return the data object (not its value) referenced by a constant variable:
+        name, name{index}, name.component and their combinations"""
+        if isinstance(node.var, rapid_ast.VariableAST):
+            data = self._const_data(node.var)
         else:
-            self.visit(node.var)
-            varcomponent = varcomponent.name
-            self.return_value = self.return_value.GetElem(varcomponent).Get()
-            # raise Exception("EvaluateRapidExpression with variable with component not yet supported")
+            varname = node.var.name
+            getvar = pyrapid.Symbols().GetSymbol(varname, self.modulename, self.functionname)
+            if getvar is None:
+                raise Exception("Symbol %s not defined" % (varname,))
+            if getvar.type != pyrapid.Symbol.SYM_TYPE_CONST_VAR:
+                raise Exception(
+                    "Symbol %s has to be a constant variable %d" % (varname, getvar.type)
+                )
+            data = getvar.data
+        if len(node.index) > 0:
+            index = []
+            for i in node.index:
+                parse = EvaluateRapidExpression(self.modulename, self.functionname)
+                parse.visit(i)
+                index.append(parse.GetReturn())
+            data = data.GetElem(index)
+        if node.component is not None:
+            data = data.GetElem(node.component.name)
+        return data
+
+    def visit_VariableAST(self, node: rapid_ast.VariableAST) -> None:
+        self.return_value = self._const_data(node).Get()
 
     def visit_LiteralATS(self, node: rapid_ast.LiteralATS) -> None:
         self.return_value = node.value

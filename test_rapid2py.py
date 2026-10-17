@@ -25,7 +25,6 @@ MOD_FILES = sorted(
 
 # known limitations of rapid2py: the conversion itself fails
 KNOWN_FAILURES = {
-    "rapid1.mod": "'list' object has no attribute 'GetElem'",
     "test1.mod": "unknown data type (GetSymbol returns None)",
     "test6.mod": "symbol pippo already defined",
     "test7.mod": "symbol pippo already defined",
