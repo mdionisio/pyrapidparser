@@ -1,0 +1,203 @@
+"""Build the model of the simulation, models/osj6.urdf, from the parts of parts.py.
+
+The robot of parts.robot() at the zero position gives everything: the joint frames
+(kinematics), the parts of each link (the meshes of the view, models/osj6/parts/, one
+file for each link and color, in the frame of the link) and the masses (the volumes of
+the printed parts, plus motors, balls and screws). Change the parts or the spacers of
+the arm (SHOULDER_SPACERS, MODULE_SPACERS, WRIST_SPACERS in parts.py), then:
+
+    hatch run cad:python examples/osj6/cad/build_model.py
+"""
+
+import math
+import os
+import sys
+
+import numpy as np
+import cadquery as cq
+from OCP.BRepGProp import BRepGProp
+from OCP.GProp import GProp_GProps
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+
+import parts as P  # noqa: E402
+
+MODELS = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(HERE))), "models")
+MESHES = os.path.join(MODELS, "osj6", "parts")
+URDF = os.path.join(MODELS, "osj6.urdf")
+
+# masses (g, mm)
+PLA = 1.24e-3  # g/mm^3
+FILL = 0.8  # printed fraction of the volume of the parts (solid walls, infill in the plates)
+LEGO_MOTOR = 54.0  # LEGO Medium Angular Motor
+LEGO_GEAR = 1.5
+BALL_MASS = 0.88  # steel ball of 6 mm (an airsoft BB: 0.2)
+HARDWARE = 30.0  # screws and inserts of a joint
+
+MATERIALS = {
+    "print": "0.95 0.55 0.1 1",
+    "ring": "0.2 0.45 0.85 1",
+    "bracket": "0.6 0.6 0.6 1",
+    "motor": "0.2 0.2 0.2 1",
+}
+
+
+def rpy(t: np.ndarray) -> tuple[float, float, float]:
+    """URDF roll, pitch, yaw of a rotation (R = Rz(yaw) Ry(pitch) Rx(roll))"""
+    r = t[:3, :3]
+    pitch = math.asin(max(-1.0, min(1.0, -r[2, 0])))
+    if abs(r[2, 0]) < 1 - 1e-9:
+        return math.atan2(r[2, 1], r[2, 2]), pitch, math.atan2(r[1, 0], r[0, 0])
+    return math.atan2(-r[1, 2], r[1, 1]), pitch, 0.0
+
+
+def origin(t: np.ndarray) -> str:
+    xyz = " ".join("%.9g" % (0.0 if abs(v) < 1e-9 else v * 0.001) for v in t[:3, 3])
+    angles = " ".join("%.9g" % (0.0 if abs(v) < 1e-12 else v) for v in rpy(t))
+    return '<origin xyz="%s" rpy="%s"/>' % (xyz, angles)
+
+
+def mass_properties(shape: cq.Shape) -> tuple[float, np.ndarray, np.ndarray]:
+    """volume (mm^3), center (mm), inertia at the center for density 1 (mm^5)"""
+    props = GProp_GProps()
+    BRepGProp.VolumeProperties_s(shape.wrapped, props)
+    c = props.CentreOfMass()
+    m = props.MatrixOfInertia()
+    inertia = np.array([[m.Value(i, j) for j in (1, 2, 3)] for i in (1, 2, 3)])
+    return props.Mass(), np.array([c.X(), c.Y(), c.Z()]), inertia
+
+
+class Body:
+    """mass properties of a link (g, mm), in the frame of the link"""
+
+    def __init__(self) -> None:
+        self.parts: list[tuple[float, np.ndarray, np.ndarray]] = []
+
+    def add(self, shape: cq.Shape, mass: float = 0.0) -> None:
+        """a part: mass from its volume (PLA), or the given mass"""
+        volume, center, inertia = mass_properties(shape)
+        density = mass / volume if mass else PLA * FILL
+        self.parts.append((volume * density, center, inertia * density))
+
+    def total(self) -> tuple[float, np.ndarray, np.ndarray]:
+        mass = sum(p[0] for p in self.parts)
+        center = sum(p[0] * p[1] for p in self.parts) / mass
+        inertia = np.zeros((3, 3))
+        for m, c, i in self.parts:
+            d = c - center
+            inertia += i + m * (d @ d * np.eye(3) - np.outer(d, d))
+        return mass, center, inertia
+
+
+def main() -> int:
+    robot = P.robot()
+    links = [np.eye(4)] + robot.joints  # link frames in the world
+    names = ["base_link"] + ["link_%d" % k for k in range(1, 7)]
+    os.makedirs(MESHES, exist_ok=True)
+    for old in os.listdir(MESHES):
+        if old.endswith(".stl"):
+            os.remove(os.path.join(MESHES, old))
+
+    bodies = [Body() for _ in names]
+    meshes: list[dict[str, list[cq.Shape]]] = [{} for _ in names]
+    for part in robot.parts:
+        shape = P.place(part.shape, np.linalg.inv(links[part.link]) @ part.frame)
+        meshes[part.link].setdefault(part.color, []).append(shape)
+        mass = {"lego_motor": LEGO_MOTOR, "lego_gear": LEGO_GEAR}.get(part.name, 0.0)
+        bodies[part.link].add(shape, mass)
+        if part.name == "outer_ring_lower":
+            # the balls and the screws of the joint, on the link with the motor
+            bodies[part.link].add(
+                P.place(P.balls(), np.linalg.inv(links[part.link]) @ part.frame),
+                BALL_MASS * P.ball_count(),
+            )
+            bodies[part.link].add(shape, HARDWARE)
+
+    text = [
+        '<?xml version="1.0"?>',
+        "<!--",
+        "  osj6: 6 axis robot with oblique swivel joints, the modular kit of",
+        "  examples/osj6/cad (tube %g mm, joints at 45 degrees, piece45 %g mm, spacer %g mm)."
+        % (P.D, P.PIECE45, P.SPACER),
+        "  Spacers: shoulder %d, modules %s, wrist %d."
+        % (P.SHOULDER_SPACERS, list(P.MODULE_SPACERS), P.WRIST_SPACERS),
+        "  Generated by examples/osj6/cad/build_model.py: do not edit, change the parts and",
+        "  run it. Masses: the printed parts (PLA, %g of the volume), LEGO motors, balls, screws."
+        % FILL,
+        "-->",
+        '<robot name="osj6">',
+    ]
+    text += ['  <material name="%s"><color rgba="%s"/></material>' % m for m in MATERIALS.items()]
+    text += [
+        '  <link name="base"/>',
+        '  <joint name="base_link-base" type="fixed">',
+        '    <parent link="base_link"/>',
+        '    <child link="base"/>',
+        '    <origin xyz="0 0 0" rpy="0 0 0"/>',
+        "  </joint>",
+    ]
+    total_mass = 0.0
+    for k, name in enumerate(names):
+        lines = ['  <link name="%s">' % name]
+        for color, shapes in meshes[k].items():
+            mesh = "%s_%s.stl" % (name, color)
+            cq.exporters.export(
+                cq.Compound.makeCompound(shapes),
+                os.path.join(MESHES, mesh),
+                tolerance=1.0,
+                angularTolerance=0.6,
+            )
+            lines += [
+                "    <visual>",
+                '      <origin xyz="0 0 0" rpy="0 0 0"/>',
+                '      <geometry><mesh filename="package://osj6/parts/%s" scale="%s"/></geometry>'
+                % (mesh, "0.001 0.001 0.001"),
+                '      <material name="%s"/>' % color,
+                "    </visual>",
+            ]
+        mass, center, inertia = bodies[k].total()
+        total_mass += mass
+        i = inertia * 1e-9  # g mm^2 -> kg m^2
+        lines += [
+            "    <inertial>",
+            '      <origin xyz="%s" rpy="0 0 0"/>' % " ".join("%.6g" % (v * 0.001) for v in center),
+            '      <mass value="%.4f"/>' % (mass * 0.001),
+            '      <inertia ixx="%.4g" ixy="%.4g" ixz="%.4g" iyy="%.4g" iyz="%.4g" izz="%.4g"/>'
+            % (i[0, 0], i[0, 1], i[0, 2], i[1, 1], i[1, 2], i[2, 2]),
+            "    </inertial>",
+            "  </link>",
+        ]
+        text += lines
+        if k < 6:
+            text += [
+                '  <joint name="joint_%d" type="revolute">' % (k + 1),
+                '    <parent link="%s"/>' % name,
+                '    <child link="%s"/>' % names[k + 1],
+                "    " + origin(np.linalg.inv(links[k]) @ links[k + 1]),
+                '    <axis xyz="0 0 1"/>',
+                '    <limit lower="-3.14159265" upper="3.14159265" velocity="1.0" effort="0"/>',
+                "  </joint>",
+            ]
+        print("%-10s %6.0f g" % (name, mass))
+    text += [
+        '  <link name="tool0"/>',
+        '  <joint name="joint_6-tool0" type="fixed">',
+        '    <parent link="link_6"/>',
+        '    <child link="tool0"/>',
+        "    " + origin(np.linalg.inv(links[6]) @ robot.tool),
+        "  </joint>",
+        "</robot>",
+        "",
+    ]
+    with open(URDF, "w") as f:
+        f.write("\n".join(text))
+    print(
+        "%s: %.0f g, tool0 at %s mm"
+        % (os.path.relpath(URDF), total_mass, np.round(robot.tool[:3, 3], 1))
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

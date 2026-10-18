@@ -76,6 +76,22 @@ typecheck = ["gen-ast", "mypy {args}"]
 format = "ruff format {args}"
 format-check = "ruff format --check --diff {args}"
 
+# design of the parts of osj6 (examples/osj6/cad) and their view: not needed at run time.
+#   hatch run cad:python examples/osj6/cad/parts.py        the parts (STEP, STL)
+#   hatch run cad:python examples/osj6/cad/build_model.py  models/osj6.urdf from the parts
+#   hatch run cad:viewer                                   the viewer in the browser
+#   hatch run cad:python examples/osj6/cad/show.py ...     show parts in the viewer
+[tool.hatch.envs.cad]
+dependencies = [
+    "cadquery",
+    "numpy",
+    "ocp_vscode",
+    "ocp_viewer",
+]
+
+[tool.hatch.envs.cad.scripts]
+viewer = "python -m ocp_viewer --port 3939"
+
 [tool.hatch.envs.hatch-test]
 dependencies = ["ply>=3.11"]
 

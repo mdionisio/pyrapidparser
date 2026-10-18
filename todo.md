@@ -66,12 +66,12 @@ instructions = 3HAC050917-001.
   write a message; the positions of `cell.py` repeat the points of `environment.mod`.
 - [ ] **I/O**: interrupts on signals (`ISignalDI`), the cross connections
   and the device mapping of EIO.cfg are not supported.
-- [ ] **osj6**: the parts are a first design, not printed yet. The hatches have no
-  fixing, the gear is only keyed on the spigot (no axial screw), there is no reference
-  for the zero of the axes (the N20 encoders are incremental), the motor torques are not
-  in the model (`effort`). The confdata of the ABB arms does not describe its solutions:
-  a configuration of its own (e.g. the signs of the oblique joints) would let MoveJ
-  choose the solution.
+- [ ] **osj6**: the kit of `examples/osj6/cad` is not printed yet (clearances of the
+  rings, of the gears and of the holes to test). No reference for the zero of the axes
+  (hall sensors), no motor torque limits in the model (`effort`): the LEGO motors are too
+  weak for the axes 2 - 4 of the whole arm. The confdata of the ABB arms does not describe
+  its solutions: a configuration of its own (e.g. the signs of the oblique joints) would
+  let MoveJ choose the solution.
 - [ ] **SingArea \Off**: ABB passes near a singularity sweeping the axes at a lower TCP
   speed; here the program stops (`the path crosses a singularity`,
   `test/exec/motion_singular.mod`); `\LockAxis4` is missing.

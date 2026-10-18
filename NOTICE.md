@@ -45,7 +45,7 @@ come from [pycparser](https://github.com/eliben/pycparser) by Eli Bendersky (BSD
 | numpy | BSD |
 | [xacro](https://github.com/ros/xacro) | BSD |
 | [MeshCat](https://github.com/meshcat-dev/meshcat-python) | MIT |
-| development: hatch (MIT), mypy (MIT), ruff (MIT), pytest (MIT), cadquery (Apache-2.0), manifold3d (Apache-2.0) | |
+| development: hatch (MIT), mypy (MIT), ruff (MIT), pytest (MIT), cadquery (Apache-2.0), ocp_vscode and ocp_viewer (Apache-2.0) | |
 
 All of them can be combined with a BSD-3-Clause project. gmsh (GPL), used only by the
 optional script `models/irb460_110_240/build_cad.py`, is not a dependency: it is

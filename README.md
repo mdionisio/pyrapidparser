@@ -297,9 +297,9 @@ one:
   shows the real robot.
 
 - `osj6` in `models/`: a 6 axis robot to build with a 3D printer, with oblique swivel
-  joints (a tube cut at 45 degrees). `models/osj6/build.py` (needs `pip install
-  manifold3d`) generates the printable parts and the model, with the masses of the parts.
-  See [examples/osj6](examples/osj6/README.md).
+  joints (a tube cut at 45 degrees). The model is generated from the printable parts
+  (CadQuery, hatch environment `cad`): kinematics, meshes and masses. See
+  [examples/osj6](examples/osj6/README.md) and [examples/osj6/cad](examples/osj6/cad/README.md).
 
 The models contain the geometry, the limits and the maximum speed of the axes (from the ABB
 data sheets). The other data is often missing, and the loading prints a warning for each

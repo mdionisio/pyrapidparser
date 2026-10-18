@@ -11,7 +11,7 @@ MODULE demo
     ! pen: 100 mm long along z of the flange, 20 g
     PERS tooldata tpen := [TRUE, [[0, 0, 100], [1, 0, 0, 0]], [0.02, [0, 0, 50], [1, 0, 0, 0], 0, 0, 0]];
     ! table: the corner of the drawing area, 50 mm above the floor
-    PERS wobjdata wtable := [FALSE, TRUE, "", [[180, -50, 50], [1, 0, 0, 0]], [[0, 0, 0], [1, 0, 0, 0]]];
+    PERS wobjdata wtable := [FALSE, TRUE, "", [[250, -50, 50], [1, 0, 0, 0]], [[0, 0, 0], [1, 0, 0, 0]]];
 
     ! the tube straight up: a singular position (all the joint axes in one plane)
     CONST jointtarget jstraight := [[0, 0, 0, 0, 0, 0], [9E9, 9E9, 9E9, 9E9, 9E9, 9E9]];
@@ -23,7 +23,7 @@ MODULE demo
     CONST jointtarget jspiral := [[0, -90, -90, -90, -90, 0], [9E9, 9E9, 9E9, 9E9, 9E9, 9E9]];
     ! above the table: a solution of the inverse kinematics that draws the square and the
     ! circle without crossing a singularity or a limit of the axes
-    CONST jointtarget jready := [[0, -12, 77, -179, -91, -16], [9E9, 9E9, 9E9, 9E9, 9E9, 9E9]];
+    CONST jointtarget jready := [[-40, 2, 79, -91, 102, -56], [9E9, 9E9, 9E9, 9E9, 9E9, 9E9]];
     ! corners of a 100 mm square on the table, the pen pointing down
     CONST robtarget pa := [[0, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0], [9E9, 9E9, 9E9, 9E9, 9E9, 9E9]];
     CONST robtarget pb := [[100, 0, 0], [0, 0, 1, 0], [0, 0, 0, 0], [9E9, 9E9, 9E9, 9E9, 9E9, 9E9]];

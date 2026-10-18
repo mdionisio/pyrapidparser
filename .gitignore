@@ -24,3 +24,7 @@ models/*/cad/
 # RAPID programs of other projects, downloaded by test_public_programs.py (their licenses
 # are their own, they are not redistributed)
 test/public/
+
+# parts of osj6 built by examples/osj6/cad/parts.py (STEP and STL, large)
+examples/osj6/cad/step/
+examples/osj6/cad/stl/
