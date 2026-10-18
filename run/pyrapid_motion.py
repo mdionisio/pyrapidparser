@@ -315,6 +315,47 @@ def path_trajectory(
 
 
 @dataclass
+class Trigger:
+    """an output set during a movement (TriggIO, TriggEquip)"""
+
+    distance: float  # m before the end (from the start with at_start); s with by_time
+    at_start: bool
+    by_time: bool
+    lag: float  # s: the signal is set earlier (the equipment needs this time)
+    delay: float  # s: the signal is set later (DODelay)
+    signal: str
+    value: Any
+    time: float = 0.0  # time from the start of the movement when the signal is set
+    fired: bool = False
+
+    @classmethod
+    def of(cls, record: Any) -> "Trigger":
+        def field_of(name: str) -> Any:
+            return component(record, name).Get()
+
+        by_time = bool(field_of("bytime"))
+        return cls(
+            float(field_of("distance")) / (1.0 if by_time else 1000.0),
+            bool(field_of("atstart")),
+            by_time,
+            float(field_of("lag")),
+            float(field_of("delay")),
+            str(field_of("signal")),
+            field_of("value"),
+        )
+
+    def schedule(self, segment: "Segment") -> None:
+        """the time of the segment when the signal is set"""
+        if self.by_time:
+            moment = segment.duration - self.distance
+        elif self.at_start:
+            moment = segment.time_at_remaining(max(segment.length - self.distance, 0.0))
+        else:
+            moment = segment.time_at_remaining(self.distance)
+        self.time = min(max(moment - self.lag + self.delay, 0.0), segment.duration)
+
+
+@dataclass
 class Watch:
     """the search of a signal during a movement (SearchL)"""
 
@@ -373,6 +414,7 @@ class Segment:
     corner_failure: bool = False
     torque: Any = None
     watch: Optional[Watch] = None
+    triggers: list[Trigger] = field(default_factory=list)
 
     @classmethod
     def of(cls, trajectory: Trajectory, zone: Zone, tcp: Callable[[Any], Any]) -> "Segment":
@@ -622,6 +664,7 @@ class Controller:
         # timed events: (time, sequence, action)
         self.events: list[tuple[float, int, Callable[[], Any]]] = []
         self.sequence = 0
+        self.pending_triggers: list[Trigger] = []
         self.world = World(self)
 
     def use_robot(self, name: str, io: Any = None) -> None:
@@ -678,6 +721,10 @@ class Controller:
 
     def submit(self, segment: Segment, conc: bool) -> None:
         """queue a planned movement and wait as the zone requires"""
+        for trigger in self.pending_triggers:
+            trigger.schedule(segment)
+        segment.triggers = self.pending_triggers
+        self.pending_triggers = []
         with self.condition:
             if conc:
                 self.block(lambda: len(self.queue) < MAX_CONC)
@@ -851,6 +898,7 @@ class Controller:
         for step_action in self.world.step_actions:
             step_action(self.world)
         self.poll_watches(now)
+        self.fire_triggers(now)
         if self.viewer is not None and self.viewer.update(
             now,
             self.axes,
@@ -859,6 +907,15 @@ class Controller:
         ):
             for frame_action in self.world.frame_actions:
                 frame_action(self.world)
+
+    def fire_triggers(self, now: float) -> None:
+        """set the outputs of the triggers of the active movements (called with the lock)"""
+        for segment in self.active:
+            assert segment.start is not None
+            for trigger in segment.triggers:
+                if not trigger.fired and now >= segment.start + trigger.time - 1e-9:
+                    trigger.fired = True
+                    self.world.require_io().set(trigger.signal, trigger.value)
 
     def poll_watches(self, now: float) -> None:
         """the searches of the active movements: stop the movement at a hit (called with
@@ -1290,6 +1347,15 @@ def MoveC(
         confdata_of(robtarget),
     )
     CONTROLLER.submit(segment, conc)
+
+
+def Triggered(records: list[Any], movement: Callable[..., None], *arguments: Any) -> None:
+    """a movement instruction with the triggers of the triggdata records (TriggL, ...)"""
+    CONTROLLER.pending_triggers = [Trigger.of(r) for r in records]
+    try:
+        movement(*arguments)
+    finally:
+        CONTROLLER.pending_triggers = []
 
 
 def ConfJ(on: bool) -> None:

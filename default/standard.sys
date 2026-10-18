@@ -1688,6 +1688,135 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:pyrapid_motion.MoveC(_s("mv_conc").data.Get(), _s("CirPoint").data, _s("ToPoint").data, _s("Speed").data, _s("mv_v").data.Get(), _s("mv_t").data.Get(), _s("Zone").data, _s("mv_z").data.Get(), _s("Tool").data, _s("mv_wobj").data)
     ENDPROC
 
+    RECORD triggdata
+        num distance;
+        bool atstart;
+        bool bytime;
+        num lag;
+        num delay;
+        string signal;
+        num value;
+    ENDRECORD
+
+    PROC TriggIO(VAR triggdata TriggData, num Distance \switch Start \switch Time, \VAR signaldo DOp | VAR signalgo GOp | VAR signalao AOp | num ProcID, num SetValue \num DODelay)
+        ! the output is set when the TCP is Distance mm before the end of the next
+        ! movement (\Start: after the start; \Time: seconds before the end)
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:_t = _s("TriggData").data
+        !python:_t.Set([_s("Distance").data.Get(), pyrapid.Symbols().IsInScope("Start"), pyrapid.Symbols().IsInScope("Time"), 0, _s("DODelay").data.Get() if pyrapid.Symbols().IsInScope("DODelay") else 0, "", _s("SetValue").data.Get()])
+        !python:_name = [_s(n).data.name for n in ("DOp", "GOp", "AOp") if pyrapid.Symbols().IsInScope(n)]
+        !python:_t.GetElem("signal").Set(_name[0] if _name else "")
+    ENDPROC
+
+    PROC TriggEquip(VAR triggdata TriggData, num Distance \switch Start, num EquipLag \VAR signaldo DOp | VAR signalgo GOp | VAR signalao AOp | num ProcID, num SetValue \switch TriggOn \switch InPos)
+        ! like TriggIO, the output is set EquipLag seconds earlier
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:_t = _s("TriggData").data
+        !python:_t.Set([_s("Distance").data.Get(), pyrapid.Symbols().IsInScope("Start"), False, _s("EquipLag").data.Get(), 0, "", _s("SetValue").data.Get()])
+        !python:_name = [_s(n).data.name for n in ("DOp", "GOp", "AOp") if pyrapid.Symbols().IsInScope(n)]
+        !python:_t.GetElem("signal").Set(_name[0] if _name else "")
+    ENDPROC
+
+    PROC TriggL(\switch Conc, robtarget ToPoint, speeddata Speed \num T, triggdata Trigg_1 \triggdata T2 \triggdata T3 \triggdata T4 \triggdata T5 \triggdata T6 \triggdata T7 \triggdata T8, zonedata Zone \num Z, tooldata Tool \wobjdata WObj)
+        VAR num mv_v := -1;
+        VAR num mv_t := -1;
+        VAR num mv_z := -1;
+        VAR bool mv_conc := FALSE;
+        VAR wobjdata mv_wobj;
+        mv_wobj := wobj0;
+        IF Present(T) THEN
+            mv_t := T;
+        ENDIF
+        IF Present(Z) THEN
+            mv_z := Z;
+        ENDIF
+        IF Present(Conc) THEN
+            mv_conc := TRUE;
+        ENDIF
+        IF Present(WObj) THEN
+            mv_wobj := WObj;
+        ENDIF
+        !python:import pyrapid_motion
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:_triggers = [_s(n).data for n in ("Trigg_1", "T2", "T3", "T4", "T5", "T6", "T7", "T8") if pyrapid.Symbols().IsInScope(n)]
+        !python:pyrapid_motion.Triggered(_triggers, pyrapid_motion.MoveL, _s("mv_conc").data.Get(), _s("ToPoint").data, _s("Speed").data, _s("mv_v").data.Get(), _s("mv_t").data.Get(), _s("Zone").data, _s("mv_z").data.Get(), _s("Tool").data, _s("mv_wobj").data)
+    ENDPROC
+
+    PROC TriggJ(\switch Conc, robtarget ToPoint, speeddata Speed \num T, triggdata Trigg_1 \triggdata T2 \triggdata T3 \triggdata T4 \triggdata T5 \triggdata T6 \triggdata T7 \triggdata T8, zonedata Zone \num Z, tooldata Tool \wobjdata WObj)
+        VAR num mv_v := -1;
+        VAR num mv_t := -1;
+        VAR num mv_z := -1;
+        VAR bool mv_conc := FALSE;
+        VAR wobjdata mv_wobj;
+        mv_wobj := wobj0;
+        IF Present(T) THEN
+            mv_t := T;
+        ENDIF
+        IF Present(Z) THEN
+            mv_z := Z;
+        ENDIF
+        IF Present(Conc) THEN
+            mv_conc := TRUE;
+        ENDIF
+        IF Present(WObj) THEN
+            mv_wobj := WObj;
+        ENDIF
+        !python:import pyrapid_motion
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:_triggers = [_s(n).data for n in ("Trigg_1", "T2", "T3", "T4", "T5", "T6", "T7", "T8") if pyrapid.Symbols().IsInScope(n)]
+        !python:pyrapid_motion.Triggered(_triggers, pyrapid_motion.MoveJ, _s("mv_conc").data.Get(), _s("ToPoint").data, _s("Speed").data, _s("mv_v").data.Get(), _s("mv_t").data.Get(), _s("Zone").data, _s("mv_z").data.Get(), _s("Tool").data, _s("mv_wobj").data)
+    ENDPROC
+
+    PROC TriggC(\switch Conc, robtarget CirPoint, robtarget ToPoint, speeddata Speed \num T, triggdata Trigg_1 \triggdata T2 \triggdata T3 \triggdata T4 \triggdata T5 \triggdata T6 \triggdata T7 \triggdata T8, zonedata Zone \num Z, tooldata Tool \wobjdata WObj)
+        VAR num mv_v := -1;
+        VAR num mv_t := -1;
+        VAR num mv_z := -1;
+        VAR bool mv_conc := FALSE;
+        VAR wobjdata mv_wobj;
+        mv_wobj := wobj0;
+        IF Present(T) THEN
+            mv_t := T;
+        ENDIF
+        IF Present(Z) THEN
+            mv_z := Z;
+        ENDIF
+        IF Present(Conc) THEN
+            mv_conc := TRUE;
+        ENDIF
+        IF Present(WObj) THEN
+            mv_wobj := WObj;
+        ENDIF
+        !python:import pyrapid_motion
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:_triggers = [_s(n).data for n in ("Trigg_1", "T2", "T3", "T4", "T5", "T6", "T7", "T8") if pyrapid.Symbols().IsInScope(n)]
+        !python:pyrapid_motion.Triggered(_triggers, pyrapid_motion.MoveC, _s("mv_conc").data.Get(), _s("CirPoint").data, _s("ToPoint").data, _s("Speed").data, _s("mv_v").data.Get(), _s("mv_t").data.Get(), _s("Zone").data, _s("mv_z").data.Get(), _s("Tool").data, _s("mv_wobj").data)
+    ENDPROC
+
+    PROC TriggAbsJ(\switch Conc, jointtarget ToJointPos, speeddata Speed \num T, triggdata Trigg_1 \triggdata T2 \triggdata T3 \triggdata T4 \triggdata T5 \triggdata T6 \triggdata T7 \triggdata T8, zonedata Zone \num Z, tooldata Tool \wobjdata WObj)
+        VAR num mv_v := -1;
+        VAR num mv_t := -1;
+        VAR num mv_z := -1;
+        VAR bool mv_conc := FALSE;
+        VAR wobjdata mv_wobj;
+        mv_wobj := wobj0;
+        IF Present(T) THEN
+            mv_t := T;
+        ENDIF
+        IF Present(Z) THEN
+            mv_z := Z;
+        ENDIF
+        IF Present(Conc) THEN
+            mv_conc := TRUE;
+        ENDIF
+        IF Present(WObj) THEN
+            mv_wobj := WObj;
+        ENDIF
+        !python:import pyrapid_motion
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:_triggers = [_s(n).data for n in ("Trigg_1", "T2", "T3", "T4", "T5", "T6", "T7", "T8") if pyrapid.Symbols().IsInScope(n)]
+        !python:pyrapid_motion.Triggered(_triggers, pyrapid_motion.MoveAbsJ, _s("mv_conc").data.Get(), _s("ToJointPos").data, _s("Speed").data, _s("mv_v").data.Get(), _s("mv_t").data.Get(), _s("Zone").data, _s("mv_z").data.Get(), _s("Tool").data)
+    ENDPROC
+
     PROC WaitRob(\switch InPos | switch ZeroSpeed)
         ! wait until the robot has completed its movements
         !python:import pyrapid_motion

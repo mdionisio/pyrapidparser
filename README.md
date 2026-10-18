@@ -270,6 +270,7 @@ limits of the axes, coupled joints, meshes of a CAD model (see the comment at th
 | `MoveJ`                            | to a `robtarget`, with its `confdata` (`ConfJ \On`)      |
 | `MoveL`, `MoveC`                   | straight line and circle of the TCP                      |
 | `SearchL`                          | linear search on a `signaldi` (see below)                |
+| `TriggL`, `TriggJ`, `TriggC`, `TriggAbsJ` | movements with `TriggIO` and `TriggEquip` (outputs set along the path, see below) |
 | `ConfJ`, `ConfL`                   | configuration supervision on or off                      |
 | `WaitTime`, `WaitRob`              | `\InPos`: wait for the robot to stop                     |
 | `CJointT`, `CRobT`                 | current position                                         |
@@ -289,6 +290,14 @@ search). `ERR_WHLSEARCH` is raised when the signal does not change, `ERR_SIGSUPS
 when it is already active at the start (the robot does not move). The signal is the one of
 the I/O configuration (`--eio`), set by the simulation of the cell
 (see [I/O signals](#io-signals)); `test/exec/search.mod` and `search.sim.py` are an example.
+
+`TriggIO triggdata, Distance [\Start] [\Time] \DOp | \GOp | \AOp, SetValue [\DODelay]` and
+`TriggEquip triggdata, Distance [\Start], EquipLag \DOp | ..., SetValue` define an output set
+`Distance` mm before the end of the movement (after the start with `\Start`, seconds before
+the end with `\Time`; `TriggEquip` sets it `EquipLag` seconds earlier). `TriggL`,
+`TriggJ`, `TriggC` and `TriggAbsJ` take up to 8 `triggdata` (`Trigg_1`, `\T2`, ... `\T8`)
+and set the outputs in the time of the robot (`test/exec/trigger.mod`). `TriggInt` and
+`TriggRampAO` need interrupts or ramps and are missing.
 
 ### Program and robot
 

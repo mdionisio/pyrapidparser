@@ -30,8 +30,7 @@ instructions = 3HAC050917-001.
 - [ ] **Movements that stop on a condition and the path control**: `SearchC`, `SearchL` on a
   persistent variable (`PersBool`) and `\Sup` (more than one hit is not counted
   after the movement stops), `StopMove`, `StartMove`, `StorePath`,
-  `RestoPath`, `ClearPath`, `TriggL`/`TriggJ`/`TriggC` with `TriggIO`/`TriggEquip`,
-  `MoveLDO`/`MoveJDO`, `MoveExtJ`, `PDispSet`/`PDispOn` (program displacement),
+  `RestoPath`, `ClearPath`, `TriggInt`, `TriggRampAO`, `TriggCheckIO`, `MoveLDO`/`MoveJDO`, `MoveExtJ`, `PDispSet`/`PDispOn` (program displacement),
   `AccSet`, `VelSet`, `PathResol`, `CirPathMode`.
 - [ ] **Math and general functions**: the `dnum` versions (`AbsDnum`, `BitAndDnum`, ...),
   `StrFormat`, `StrDigCmp`/`StrDigCalc`, `ValidIO`, `RobName`, `OpMode`, `RunMode`;

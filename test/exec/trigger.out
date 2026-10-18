@@ -1,0 +1,9 @@
+   0.50 s  MoveAbsJ fine      axes [0.0, 20.0, 10.0, 0.0, 40.0, 0.0] deg  max torque [0.0, 17.0, 8.3, 0.0, 0.1, 0.0] Nm
+doPaint = 1 at x = 435
+doGlue = 1 at x = 485
+   1.71 s  MoveL    fine      axes [0.0, 42.1, -22.2, 0.0, 50.1, 0.0] deg  max torque [0.0, 18.7, 6.4, 0.0, 0.0, 0.0] Nm
+first movement
+doPaint = 0 at x = 465
+doGlue = 0 at x = 425
+   2.91 s  MoveL    fine      axes [0.0, 20.0, 10.0, 0.0, 40.0, 0.0] deg  max torque [0.0, 18.7, 6.4, 0.0, 0.0, 0.0] Nm
+second movement
