@@ -11,7 +11,11 @@ irb460_110_240.urdf (see "cad_meshes" in irb460_110_240.json).
 The conversion needs gmsh (OpenCASCADE), not a dependency of the project:
 
     pip install gmsh
-    python models/irb460_110_240/build_cad.py
+    python models/irb460_110_240/build_cad.py [--zip FILE] [--detail N]
+
+--zip uses an archive downloaded by hand from the ABB Library instead of downloading
+it; --detail sets the size of the triangles (the size of the part / N, default 40:
+higher is finer and larger).
 """
 
 import io
@@ -70,12 +74,23 @@ def convert(step: str, stl: str, parts: int = 40) -> None:
 
 
 def main() -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="ABB CAD model of the IRB 460 to meshes")
+    parser.add_argument("--zip", help="the archive of the CAD model, already downloaded")
+    parser.add_argument("--detail", type=int, default=40, help="triangles: part size / N")
+    args = parser.parse_args()
     try:
         import gmsh
     except ImportError:
         print("the conversion needs gmsh: pip install gmsh", file=sys.stderr)
         return 1
-    archive = zipfile.ZipFile(io.BytesIO(download(URL)))
+    if args.zip:
+        with open(args.zip, "rb") as f:
+            data = f.read()
+    else:
+        data = download(URL)
+    archive = zipfile.ZipFile(io.BytesIO(data))
     os.makedirs(OUTPUT, exist_ok=True)
     gmsh.initialize()
     gmsh.option.setNumber("General.Terminal", 0)
@@ -87,9 +102,15 @@ def main() -> int:
                 if part not in PARTS:
                     continue
                 stl = os.path.join(OUTPUT, PARTS[part] + ".stl")
-                convert(os.path.join(root, name), stl)
+                convert(os.path.join(root, name), stl, args.detail)
                 print("%-12s -> %s" % (part, os.path.relpath(stl, os.getcwd())))
     gmsh.finalize()
+    missing = [
+        mesh for mesh in PARTS.values() if not os.path.exists(os.path.join(OUTPUT, mesh + ".stl"))
+    ]
+    if missing:
+        print("parts missing in the archive: %s" % (", ".join(missing),), file=sys.stderr)
+        return 1
     return 0
 
 

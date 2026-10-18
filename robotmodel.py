@@ -774,6 +774,13 @@ def main() -> None:
         "kinematics: %s" % ("closed form" if robot.analytic else "numeric (damped least squares)",)
     )
     print("dynamics:   %s" % ("yes" if robot.has_dynamics else "no"))
+    cad = _load_options(robot.name).get("cad_meshes")
+    if cad:
+        files = list(cad.get("links", {}).values())
+        found = sum(os.path.exists(os.path.join(MODELS_DIR, f)) for f in files)
+        print(
+            "view:       CAD meshes %d of %d%s" % (found, len(files), "" if found else " (boxes)")
+        )
     for i, axis in enumerate(robot.rapid_axes):
         print(
             "  axis %d: %8.1f .. %6.1f deg  %6.1f deg/s  %7.1f deg/s^2%s"

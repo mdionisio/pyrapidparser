@@ -85,13 +85,70 @@ for the real time without the viewer.
 
 ## The robot with the ABB CAD model
 
-Without the CAD model the robot is drawn with boxes. ABB publishes the CAD model of the
-IRB 460 (ABB Library, document 9AKK107992A7905); it is ABB copyright and not in the
-repository. To download it and convert it to meshes (in `models/irb460_110_240/cad/`):
+The robot model is `models/irb460_110_240.urdf`: the lengths come from the ABB CAD
+model, the geometry is made of boxes. ABB publishes the CAD model of the IRB 460-110/2.4
+in the ABB Library (document 9AKK107992A7905, "CAD Model, STEP, IRB 460, ALL, 110-240,
+IRC5, rev01, joint"): it is ABB copyright, so it is not in the repository. The script
+`models/irb460_110_240/build_cad.py` downloads it and converts it to meshes for the
+viewer; from then on the viewer shows the real robot, with the two parallelograms of the
+arm moving.
+
+### Build the meshes
+
+The conversion uses [gmsh](https://gmsh.info) (OpenCASCADE reads the STEP files); it is
+not a dependency of the project, it is needed only once:
 
 ```sh
 pip install gmsh
 python models/irb460_110_240/build_cad.py
 ```
 
-From then on the viewer shows the real robot, with the parallel linkage moving.
+```
+download https://search.abb.com/library/Download.aspx?DocumentID=9AKK107992A7905&...
+DISK         -> models/irb460_110_240/cad/disk.stl
+FOOT         -> models/irb460_110_240/cad/foot.stl
+...
+UPPER LINK   -> models/irb460_110_240/cad/upper_link.stl
+```
+
+The script downloads the archive (about 5 MB of STEP files, one for each part, the robot
+at the zero position), meshes each part and writes 11 STL files (about 6 MB) in
+`models/irb460_110_240/cad/`, a folder ignored by git. It takes about 20 seconds.
+
+| Option        | Effect                                                                   |
+| ------------- | ------------------------------------------------------------------------ |
+| `--zip FILE`  | use an archive already downloaded (no network, or the ABB address changed) |
+| `--detail N`  | size of the triangles: the size of each part / N (default 40); higher is finer and the files are larger |
+
+Without the network, download the archive from the [ABB Library](https://library.abb.com)
+(search "CAD Model STEP IRB 460 joint") and give it with `--zip`. The script ends with an
+error if a part is missing in the archive.
+
+### Check
+
+```sh
+python robotmodel.py irb460_110_240
+```
+
+prints `view:       CAD meshes 11 of 11` when the meshes are there (`0 of 11 (boxes)`
+otherwise). The meshes are used only by the viewer: the kinematics and the simulation are
+the same with and without them. Delete the folder `models/irb460_110_240/cad/` to go back
+to the boxes, run the script again to rebuild the meshes.
+
+### How the meshes are placed
+
+`models/irb460_110_240.json` lists the mesh of each link (`cad_meshes`). The parts of the
+CAD model are in the base frame of the robot at the zero position, in mm: `robotmodel.py`
+scales them to m and places each one in its link with the inverse of the placement of the
+link at the zero position. The links of the parallel linkage (`p_arm`, `p_link`,
+`lower_link`, `link_plate`, `upper_link`) are joints of the URDF coupled to the axes, so
+the rods move with the arm.
+
+### Limits of the model
+
+- The combined limits of the axes 2 and 3 of the parallel linkage are not modeled, only
+  the range of each axis: the model reaches 2446 mm (axis 2 at +85, axis 3 at 0) where the
+  ABB data sheet says 2403 mm, so a point a little out of the real working range can be
+  reachable in the simulation. The top of the working range (1786 mm) is the one of the
+  data sheet.
+- There is no inertial data: the joint torques are not computed.
