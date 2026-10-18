@@ -665,6 +665,10 @@ class Controller:
         self.events: list[tuple[float, int, Callable[[], Any]]] = []
         self.sequence = 0
         self.pending_triggers: list[Trigger] = []
+        # AccSet: factor of the accelerations; VelSet: factor of the speeds, maximum TCP speed (m/s)
+        self.acc_factor = 1.0
+        self.vel_override = 1.0
+        self.vel_max: Optional[float] = None
         self.world = World(self)
 
     def use_robot(self, name: str, io: Any = None) -> None:
@@ -886,6 +890,8 @@ class Controller:
                     segment.torque = (
                         torque if segment.torque is None else np.maximum(segment.torque, torque)
                     )
+        # the triggers at the end of a movement fire before it is removed
+        self.fire_triggers(now)
         for segment in list(self.active):
             assert segment.start is not None
             if now >= segment.start + segment.duration - 1e-9:
@@ -898,7 +904,6 @@ class Controller:
         for step_action in self.world.step_actions:
             step_action(self.world)
         self.poll_watches(now)
-        self.fire_triggers(now)
         if self.viewer is not None and self.viewer.update(
             now,
             self.axes,
@@ -929,7 +934,7 @@ class Controller:
                 # a hard stop is shorter than a stop on the path
                 factor = 2.0 if watch.stop == "stop" else 1.0
                 robot = self.require_robot()
-                segment.stop_at(now - segment.start, robot.acceleration * factor)
+                segment.stop_at(now - segment.start, self.accelerations() * factor)
                 watch.finished = True
 
     def report(self, segment: Segment) -> None:
@@ -999,17 +1004,30 @@ class Controller:
             solutions = matching
         return solutions[0].axes
 
+    def accelerations(self) -> Any:
+        """the accelerations of the axes with AccSet"""
+        return self.require_robot().acceleration * self.acc_factor
+
+    def scaled(self, speed: Speed) -> Speed:
+        """the speed with VelSet: the override of the speeds and the maximum TCP speed"""
+        tcp = speed.tcp * self.vel_override
+        if self.vel_max is not None:
+            tcp = min(tcp, self.vel_max)
+        time = None if speed.time is None else speed.time / max(self.vel_override, 1e-6)
+        return Speed(tcp, speed.orientation * self.vel_override, time)
+
     def joint_move(
         self, instruction: str, start: Any, end: Any, speed: Speed, zone: Zone, tool: Tool
     ) -> Segment:
         robot = self.require_robot()
+        speed = self.scaled(speed)
         if not robot.within_limits(end):
             raise JointLimit("%s: joint position outside the limits of the axes" % (instruction,))
         begin, finish = self.tcp(start, tool), self.tcp(end, tool)
         distance = float(np.linalg.norm(finish.translation - begin.translation))
         angle = float(np.linalg.norm(pin.log3(begin.rotation.T @ finish.rotation)))
         minimum = speed.time or max(distance / speed.tcp, angle / speed.orientation)
-        total, ramp = joint_timing(end - start, robot.velocity, robot.acceleration, minimum)
+        total, ramp = joint_timing(end - start, robot.velocity, self.accelerations(), minimum)
         trajectory = joint_trajectory(instruction, start, end, total, ramp)
         return Segment.of(trajectory, zone, lambda a: self.tcp(a, tool).translation.copy())
 
@@ -1028,6 +1046,7 @@ class Controller:
         """linear or circular movement of the TCP: path(s) is the TCP placement in the
         base frame for s from 0 to 1"""
         robot = self.require_robot()
+        speed = self.scaled(speed)
         count = max(20, int(math.ceil(max(length / 0.002, angle / 0.01))))
         path_axes = [start.copy()]
         for k in range(1, count + 1):
@@ -1060,7 +1079,7 @@ class Controller:
                 max(float(np.max(np.abs(s.velocity) / robot.velocity)) for s in trajectory.samples),
                 math.sqrt(
                     max(
-                        float(np.max(np.abs(s.acceleration) / robot.acceleration))
+                        float(np.max(np.abs(s.acceleration) / self.accelerations()))
                         for s in trajectory.samples
                     )
                 ),
@@ -1352,6 +1371,31 @@ def MoveC(
 def Triggered(records: list[Any], movement: Callable[..., None], *arguments: Any) -> None:
     """a movement instruction with the triggers of the triggdata records (TriggL, ...)"""
     CONTROLLER.pending_triggers = [Trigger.of(r) for r in records]
+    try:
+        movement(*arguments)
+    finally:
+        CONTROLLER.pending_triggers = []
+
+
+def AccSet(acc: float, ramp: float) -> None:
+    """acceleration in percent of the maximum (20 to 100); the ramp is not simulated"""
+    if not 20 <= acc <= 100:
+        raise MotionError("AccSet: the acceleration is 20 to 100 percent")
+    CONTROLLER.acc_factor = acc / 100.0
+
+
+def VelSet(override: float, maximum: float) -> None:
+    """speeds in percent of the programmed ones (0 to 100) and maximum TCP speed (mm/s)"""
+    if not 0 < override <= 100:
+        raise MotionError("VelSet: the override is more than 0 and at most 100 percent")
+    CONTROLLER.vel_override = override / 100.0
+    CONTROLLER.vel_max = maximum / 1000.0 if maximum > 0 else None
+
+
+def MoveWithOutput(signal: str, value: Any, movement: Callable[..., None], *arguments: Any) -> None:
+    """MoveLDO, ...: the movement sets the output at its end (at the middle of the
+    corner path for a fly-by point)"""
+    CONTROLLER.pending_triggers = [Trigger(0.0, False, False, 0.0, 0.0, signal, value)]
     try:
         movement(*arguments)
     finally:

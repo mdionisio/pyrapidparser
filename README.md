@@ -271,6 +271,8 @@ limits of the axes, coupled joints, meshes of a CAD model (see the comment at th
 | `MoveL`, `MoveC`                   | straight line and circle of the TCP                      |
 | `SearchL`                          | linear search on a `signaldi` (see below)                |
 | `TriggL`, `TriggJ`, `TriggC`, `TriggAbsJ` | movements with `TriggIO` and `TriggEquip` (outputs set along the path, see below) |
+| `MoveJDO`, `MoveLDO`, `MoveCDO`, `MoveJGO`, ... `MoveCAO` | movement that sets an output at its end (at the corner of a fly-by point) |
+| `AccSet`, `VelSet`                 | accelerations in percent, speeds in percent and maximum speed of the TCP |
 | `ConfJ`, `ConfL`                   | configuration supervision on or off                      |
 | `WaitTime`, `WaitRob`              | `\InPos`: wait for the robot to stop                     |
 | `CJointT`, `CRobT`                 | current position                                         |

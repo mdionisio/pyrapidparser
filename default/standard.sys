@@ -1817,6 +1817,124 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:pyrapid_motion.Triggered(_triggers, pyrapid_motion.MoveAbsJ, _s("mv_conc").data.Get(), _s("ToJointPos").data, _s("Speed").data, _s("mv_v").data.Get(), _s("mv_t").data.Get(), _s("Zone").data, _s("mv_z").data.Get(), _s("Tool").data)
     ENDPROC
 
+    PROC AccSet(num Acc, num Ramp)
+        !python:import pyrapid_motion
+        !python:pyrapid_motion.AccSet(pyrapid.Symbols().GetSymbol("Acc").data.Get(), pyrapid.Symbols().GetSymbol("Ramp").data.Get())
+    ENDPROC
+
+    PROC VelSet(num Override, num Max)
+        !python:import pyrapid_motion
+        !python:pyrapid_motion.VelSet(pyrapid.Symbols().GetSymbol("Override").data.Get(), pyrapid.Symbols().GetSymbol("Max").data.Get())
+    ENDPROC
+
+    PROC MoveJDO(robtarget ToPoint, speeddata Speed, zonedata Zone, tooldata Tool \wobjdata WObj, VAR signaldo Signal, dionum Value)
+        ! the output is set at the end of the movement (middle of the corner path)
+        VAR wobjdata mv_wobj;
+        mv_wobj := wobj0;
+        IF Present(WObj) THEN
+            mv_wobj := WObj;
+        ENDIF
+        !python:import pyrapid_motion
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_motion.MoveWithOutput(_s("Signal").data.name, _s("Value").data.Get(), pyrapid_motion.MoveJ, False, _s("ToPoint").data, _s("Speed").data, -1, -1, _s("Zone").data, -1, _s("Tool").data, _s("mv_wobj").data)
+    ENDPROC
+
+    PROC MoveJGO(robtarget ToPoint, speeddata Speed, zonedata Zone, tooldata Tool \wobjdata WObj, VAR signalgo Signal, num Value)
+        ! the output is set at the end of the movement (middle of the corner path)
+        VAR wobjdata mv_wobj;
+        mv_wobj := wobj0;
+        IF Present(WObj) THEN
+            mv_wobj := WObj;
+        ENDIF
+        !python:import pyrapid_motion
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_motion.MoveWithOutput(_s("Signal").data.name, _s("Value").data.Get(), pyrapid_motion.MoveJ, False, _s("ToPoint").data, _s("Speed").data, -1, -1, _s("Zone").data, -1, _s("Tool").data, _s("mv_wobj").data)
+    ENDPROC
+
+    PROC MoveJAO(robtarget ToPoint, speeddata Speed, zonedata Zone, tooldata Tool \wobjdata WObj, VAR signalao Signal, num Value)
+        ! the output is set at the end of the movement (middle of the corner path)
+        VAR wobjdata mv_wobj;
+        mv_wobj := wobj0;
+        IF Present(WObj) THEN
+            mv_wobj := WObj;
+        ENDIF
+        !python:import pyrapid_motion
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_motion.MoveWithOutput(_s("Signal").data.name, _s("Value").data.Get(), pyrapid_motion.MoveJ, False, _s("ToPoint").data, _s("Speed").data, -1, -1, _s("Zone").data, -1, _s("Tool").data, _s("mv_wobj").data)
+    ENDPROC
+
+    PROC MoveLDO(robtarget ToPoint, speeddata Speed, zonedata Zone, tooldata Tool \wobjdata WObj, VAR signaldo Signal, dionum Value)
+        ! the output is set at the end of the movement (middle of the corner path)
+        VAR wobjdata mv_wobj;
+        mv_wobj := wobj0;
+        IF Present(WObj) THEN
+            mv_wobj := WObj;
+        ENDIF
+        !python:import pyrapid_motion
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_motion.MoveWithOutput(_s("Signal").data.name, _s("Value").data.Get(), pyrapid_motion.MoveL, False, _s("ToPoint").data, _s("Speed").data, -1, -1, _s("Zone").data, -1, _s("Tool").data, _s("mv_wobj").data)
+    ENDPROC
+
+    PROC MoveLGO(robtarget ToPoint, speeddata Speed, zonedata Zone, tooldata Tool \wobjdata WObj, VAR signalgo Signal, num Value)
+        ! the output is set at the end of the movement (middle of the corner path)
+        VAR wobjdata mv_wobj;
+        mv_wobj := wobj0;
+        IF Present(WObj) THEN
+            mv_wobj := WObj;
+        ENDIF
+        !python:import pyrapid_motion
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_motion.MoveWithOutput(_s("Signal").data.name, _s("Value").data.Get(), pyrapid_motion.MoveL, False, _s("ToPoint").data, _s("Speed").data, -1, -1, _s("Zone").data, -1, _s("Tool").data, _s("mv_wobj").data)
+    ENDPROC
+
+    PROC MoveLAO(robtarget ToPoint, speeddata Speed, zonedata Zone, tooldata Tool \wobjdata WObj, VAR signalao Signal, num Value)
+        ! the output is set at the end of the movement (middle of the corner path)
+        VAR wobjdata mv_wobj;
+        mv_wobj := wobj0;
+        IF Present(WObj) THEN
+            mv_wobj := WObj;
+        ENDIF
+        !python:import pyrapid_motion
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_motion.MoveWithOutput(_s("Signal").data.name, _s("Value").data.Get(), pyrapid_motion.MoveL, False, _s("ToPoint").data, _s("Speed").data, -1, -1, _s("Zone").data, -1, _s("Tool").data, _s("mv_wobj").data)
+    ENDPROC
+
+    PROC MoveCDO(robtarget CirPoint, robtarget ToPoint, speeddata Speed, zonedata Zone, tooldata Tool \wobjdata WObj, VAR signaldo Signal, dionum Value)
+        ! the output is set at the end of the movement (middle of the corner path)
+        VAR wobjdata mv_wobj;
+        mv_wobj := wobj0;
+        IF Present(WObj) THEN
+            mv_wobj := WObj;
+        ENDIF
+        !python:import pyrapid_motion
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_motion.MoveWithOutput(_s("Signal").data.name, _s("Value").data.Get(), pyrapid_motion.MoveC, False, _s("CirPoint").data, _s("ToPoint").data, _s("Speed").data, -1, -1, _s("Zone").data, -1, _s("Tool").data, _s("mv_wobj").data)
+    ENDPROC
+
+    PROC MoveCGO(robtarget CirPoint, robtarget ToPoint, speeddata Speed, zonedata Zone, tooldata Tool \wobjdata WObj, VAR signalgo Signal, num Value)
+        ! the output is set at the end of the movement (middle of the corner path)
+        VAR wobjdata mv_wobj;
+        mv_wobj := wobj0;
+        IF Present(WObj) THEN
+            mv_wobj := WObj;
+        ENDIF
+        !python:import pyrapid_motion
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_motion.MoveWithOutput(_s("Signal").data.name, _s("Value").data.Get(), pyrapid_motion.MoveC, False, _s("CirPoint").data, _s("ToPoint").data, _s("Speed").data, -1, -1, _s("Zone").data, -1, _s("Tool").data, _s("mv_wobj").data)
+    ENDPROC
+
+    PROC MoveCAO(robtarget CirPoint, robtarget ToPoint, speeddata Speed, zonedata Zone, tooldata Tool \wobjdata WObj, VAR signalao Signal, num Value)
+        ! the output is set at the end of the movement (middle of the corner path)
+        VAR wobjdata mv_wobj;
+        mv_wobj := wobj0;
+        IF Present(WObj) THEN
+            mv_wobj := WObj;
+        ENDIF
+        !python:import pyrapid_motion
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_motion.MoveWithOutput(_s("Signal").data.name, _s("Value").data.Get(), pyrapid_motion.MoveC, False, _s("CirPoint").data, _s("ToPoint").data, _s("Speed").data, -1, -1, _s("Zone").data, -1, _s("Tool").data, _s("mv_wobj").data)
+    ENDPROC
+
     PROC WaitRob(\switch InPos | switch ZeroSpeed)
         ! wait until the robot has completed its movements
         !python:import pyrapid_motion

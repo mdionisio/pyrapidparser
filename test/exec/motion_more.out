@@ -1,0 +1,16 @@
+   0.50 s  MoveAbsJ fine      axes [0.0, 20.0, 10.0, 0.0, 40.0, 0.0] deg  max torque [0.0, 17.0, 8.3, 0.0, 0.1, 0.0] Nm
+   1.01 s  MoveL    fine      axes [0.0, 32.6, -7.7, 0.0, 45.0, 0.0] deg  max torque [0.0, 17.2, 6.5, 0.0, 0.0, 0.0] Nm
+   1.51 s  MoveL    fine      axes [0.0, 20.0, 10.0, 0.0, 40.0, 0.0] deg  max torque [0.0, 17.2, 6.5, 0.0, 0.0, 0.0] Nm
+   2.31 s  MoveL    fine      axes [0.0, 32.6, -7.7, 0.0, 45.0, 0.0] deg  max torque [0.0, 16.4, 6.4, 0.0, 0.0, 0.0] Nm
+   3.11 s  MoveL    fine      axes [0.0, 20.0, 10.0, 0.0, 40.0, 0.0] deg  max torque [0.0, 16.4, 6.4, 0.0, 0.0, 0.0] Nm
+   3.91 s  MoveL    fine      axes [0.0, 32.6, -7.7, 0.0, 45.0, 0.0] deg  max torque [0.0, 16.4, 6.4, 0.0, 0.0, 0.0] Nm
+   4.66 s  MoveL    fine      axes [0.0, 20.0, 10.0, 0.0, 40.0, 0.0] deg  max torque [0.0, 16.3, 6.4, 0.0, 0.0, 0.0] Nm
+doGlue = 1 at x = 475
+   5.16 s  MoveL    fine      axes [0.0, 32.6, -7.7, 0.0, 45.0, 0.0] deg  max torque [0.0, 17.2, 6.5, 0.0, 0.0, 0.0] Nm
+after MoveLDO
+doPaint = 1 at x = 470
+   5.36 s  MoveL    z20       axes [2.6, 32.7, -7.8, -1.2, 45.1, 3.3] deg  max torque [2.6, 17.2, 6.5, 0.0, 0.0, 0.0] Nm
+   5.78 s  MoveL    fine      axes [0.0, 20.0, 10.0, 0.0, 40.0, 0.0] deg  max torque [2.6, 17.2, 6.5, 0.0, 0.0, 0.0] Nm
+after the fly-by point
+doGlue = 0 at x = 415
+   5.78 s  MoveJ    fine      axes [0.0, 20.0, 10.0, 0.0, 40.0, 0.0] deg  max torque [0.0, 12.3, 6.4, 0.0, 0.0, 0.0] Nm
