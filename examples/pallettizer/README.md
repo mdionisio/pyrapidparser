@@ -140,19 +140,17 @@ rebuild the meshes.
 ### The stylized parts
 
 Without the CAD model the viewer shows the stylized parts of
-`models/irb460_110_240/stylized/` (in the repository, about 350 KB): low polygon shapes
-with the outline and the size of the real parts, so the geometry and the space taken by
-the robot are clear. Each part of the CAD model is cut in a few cells (along its two
-longest dimensions) and every cell is replaced by its convex hull, with the vertices
-snapped to a 12 mm grid. They are built from the CAD meshes by:
+`models/irb460_110_240/stylized/` (in the repository, about 450 KB): simple shapes (boxes,
+cylinders, extruded profiles) with the outline and the size of the real parts, so the
+geometry and the space taken by the robot are clear. They are drawn from scratch with
+[CadQuery](https://cadquery.readthedocs.io), starting from the lengths of the kinematic
+model: they are not made from the ABB CAD model. To change them edit
+`models/irb460_110_240/build_parts.py` and run:
 
 ```sh
-pip install scipy
-python models/irb460_110_240/build_stylized.py
+pip install cadquery
+python models/irb460_110_240/build_parts.py
 ```
-
-`PARTS` in the script sets the number of cells of each part (more cells: closer to the
-real shape, more triangles).
 
 ### How the meshes are placed
 

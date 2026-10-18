@@ -42,7 +42,7 @@ come from [pycparser](https://github.com/eliben/pycparser) by Eli Bendersky (BSD
 | ------- | ------- |
 | [PLY](https://github.com/dabeaz/ply) | BSD |
 | [Pinocchio](https://github.com/stack-of-tasks/pinocchio) (`pin`) | BSD-2-Clause |
-| numpy, scipy | BSD |
+| numpy | BSD |
 | [xacro](https://github.com/ros/xacro) | BSD |
 | [MeshCat](https://github.com/meshcat-dev/meshcat-python) | MIT |
 | development: hatch (MIT), mypy (MIT), ruff (MIT), pytest (MIT), cadquery (Apache-2.0), manifold3d (Apache-2.0) | |

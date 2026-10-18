@@ -21,11 +21,11 @@
   real working range can be reachable in the simulation. The top of the working range
   (1786 mm) is the one of the data sheet.
 
-  The geometry is stylized (irb460_110_240/stylized/, low polygon shapes with the
-  outline and the size of the parts, built by build_stylized.py);
-  irb460_110_240/build_cad.py downloads the ABB CAD model and converts it to meshes
-  (not distributed: ABB copyright), then they replace the stylized parts. No
-  inertial data.
+  The geometry is stylized (irb460_110_240/stylized/, simple shapes with the outline and
+  the size of the parts, drawn with CadQuery by build_parts.py: they are not a copy of
+  any model of ABB); irb460_110_240/build_cad.py downloads the ABB CAD model and converts
+  it to meshes (not distributed: ABB copyright), then they replace the stylized parts.
+  No inertial data.
 -->
 <robot name="irb460_110_240">
   <material name="robot_white">
