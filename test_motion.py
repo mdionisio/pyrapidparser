@@ -397,3 +397,56 @@ def test_orient_zyx() -> None:
     motion.OrientZYX(result, 0, 180, 0)
     q = [result.GetElem(c).Get() for c in ("q1", "q2", "q3", "q4")]
     assert q == pytest.approx([0, 0, 1, 0], abs=1e-9)
+
+
+SIMULATION = """
+def setup(world):
+    world.log = []
+    world.steps = 0
+
+    def on_signal(world, name, value):
+        world.log.append((round(world.time, 2), name, value))
+        if name == "doStart" and value == 1:
+            # the equipment answers after 0.5 s
+            world.after(0.5, lambda: world.set_signal("diDone", 1))
+
+    def on_step(world):
+        world.steps += 1
+
+    world.on_signal(on_signal)
+    world.on_step(on_step)
+    world.on_finish(lambda world: world.log.append("finish"))
+"""
+
+
+def test_simulation(monkeypatch: pytest.MonkeyPatch, tmp_path: Any) -> None:
+    """PYRAPID_SIMULATION: the cell answers to the signals in the time of the robot"""
+    simulation = tmp_path / "cell.py"
+    simulation.write_text(SIMULATION)
+    monkeypatch.delenv("PYRAPID_VIEWER", raising=False)
+    monkeypatch.delenv("PYRAPID_REALTIME", raising=False)
+    monkeypatch.setenv("PYRAPID_SIMULATION", str(simulation))
+    monkeypatch.setattr(motion, "CONTROLLER", motion.Controller())
+    io = pyrapid.IOSystem()
+    io.declare("doStart", "signaldo")
+    io.declare("diDone", "signaldi")
+    motion.UseRobot("irb120_3_58", io)
+    controller: Any = motion.CONTROLLER
+    world = controller.world
+    assert io.clock is controller
+    start = controller.time
+    io.set("doStart", 1)
+    # the program waits for the input: the time of the robot advances
+    assert io.wait(lambda: io.get("diDone") == 1)
+    assert controller.time - start == pytest.approx(0.5, abs=0.011)
+    assert world.log == [(0.0, "doStart", 1), (0.5, "diDone", 1)]
+    # timeout in the time of the robot
+    assert not io.wait(lambda: io.get("diDone") == 0, 0.3)
+    assert controller.time - start == pytest.approx(0.8, abs=0.011)
+    # a pulse ends after its length
+    io.pulse("doStart", 0.2)
+    io.wait(lambda: io.get("doStart") == 0)
+    assert world.log[-1] == (pytest.approx(1.0, abs=0.011), "doStart", 0)
+    assert world.steps > 0
+    controller.finish()
+    assert world.log[-1] == "finish"

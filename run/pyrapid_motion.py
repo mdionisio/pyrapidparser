@@ -38,6 +38,8 @@ Environment variables:
 
 import atexit
 import collections
+import heapq
+import importlib.util
 import math
 import os
 import sys
@@ -62,6 +64,8 @@ PREFETCH_TIME = 0.1
 MAX_CONC = 5
 # frames per second of the viewer
 VIEWER_RATE = 30.0
+# points of the path of the TCP shown by the viewer
+TRACE_POINTS = 1500
 # largest change of an axis between two points of a cartesian path (rad): more means
 # that the path crosses a singularity
 MAX_PATH_STEP = 0.2
@@ -410,15 +414,109 @@ class Viewer:
             )
         )
 
-    def update(self, now: float, axes: Any, tcp: Any, moving: bool) -> None:
+    def update(self, now: float, axes: Any, tcp: Any, moving: bool) -> bool:
         """a frame every 1 / VIEWER_RATE seconds of the robot time"""
         if now < self.next_frame:
-            return
+            return False
         self.next_frame = now + 1.0 / VIEWER_RATE
         self.show(axes)
         if moving:
             self.trace.append(tcp)
+            del self.trace[:-TRACE_POINTS]
             self.show_trace()
+        return True
+
+
+# ------------------------------------------------------------------ simulation of the cell
+
+
+class World:
+    """what the simulation of the cell (PYRAPID_SIMULATION=file.py) sees of the robot
+    controller. The simulation is a Python file with a function setup(world): it
+    registers its actions and uses the viewer to draw. The actions run with the lock
+    of the controller, the step and frame actions in the robot thread.
+
+    - world.robot, world.time, world.axes(), world.flange(): the robot and its flange
+      (pin.SE3 in the base frame, m);
+    - world.viewer(): the MeshCat viewer (meshcat.Visualizer) or None;
+    - world.signal(name), world.set_signal(name, value): the I/O signals of the
+      program (the simulation sets the inputs, reads the outputs);
+    - world.on_step(action), world.on_frame(action): action(world) after every
+      sample of the robot, at every frame of the viewer;
+    - world.on_signal(action): action(world, name, value) when a signal changes;
+    - world.on_finish(action): action(world) at the end of the program;
+    - world.after(delay, action): action() after delay seconds of the robot time.
+    """
+
+    def __init__(self, controller: "Controller") -> None:
+        self.controller = controller
+        self.io: Any = None
+        self.step_actions: list[Callable[["World"], Any]] = []
+        self.frame_actions: list[Callable[["World"], Any]] = []
+        self.finish_actions: list[Callable[["World"], Any]] = []
+
+    @property
+    def robot(self) -> robotmodel.RobotModel:
+        return self.controller.require_robot()
+
+    @property
+    def time(self) -> float:
+        return float(self.controller.time)
+
+    def axes(self) -> Any:
+        return self.controller.axes.copy()
+
+    def flange(self) -> Any:
+        return self.robot.fk(self.controller.axes)
+
+    def viewer(self) -> Any:
+        viewer = self.controller.viewer
+        return None if viewer is None else viewer.visualizer.viewer
+
+    def require_io(self) -> Any:
+        if self.io is None:
+            raise MotionError("the program has no I/O signals (rapid2py --eio)")
+        return self.io
+
+    def signal(self, name: str) -> Any:
+        return self.require_io().get(name)
+
+    def set_signal(self, name: str, value: Any) -> None:
+        with self.controller.condition:
+            self.require_io().set(name, value)
+            self.controller.condition.notify_all()
+
+    def on_step(self, action: Callable[["World"], Any]) -> None:
+        self.step_actions.append(action)
+
+    def on_frame(self, action: Callable[["World"], Any]) -> None:
+        self.frame_actions.append(action)
+
+    def on_finish(self, action: Callable[["World"], Any]) -> None:
+        self.finish_actions.append(action)
+
+    def on_signal(self, action: Callable[["World", str, Any], Any]) -> None:
+        def listener(name: str, value: Any) -> None:
+            with self.controller.condition:
+                action(self, name, value)
+
+        self.require_io().listeners.append(listener)
+
+    def after(self, delay: float, action: Callable[[], Any]) -> None:
+        self.controller.after(delay, action)
+
+
+def load_simulation(path: str, world: World) -> None:
+    """the simulation of the cell: a Python file with setup(world)"""
+    spec = importlib.util.spec_from_file_location("pyrapid_simulation", path)
+    if spec is None or spec.loader is None or not os.path.exists(path):
+        raise MotionError("simulation %s not found" % (path,))
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    setup = getattr(module, "setup", None)
+    if setup is None:
+        raise MotionError("simulation %s has no function setup(world)" % (path,))
+    setup(world)
 
 
 # ------------------------------------------------------------------ controller
@@ -451,8 +549,12 @@ class Controller:
         self.viewer: Optional[Viewer] = None
         self.tool = Tool(pin.SE3.Identity(), 0.0, np.zeros(3), np.zeros(3))
         self.payload: Optional[tuple[float, ...]] = None
+        # timed events: (time, sequence, action)
+        self.events: list[tuple[float, int, Callable[[], Any]]] = []
+        self.sequence = 0
+        self.world = World(self)
 
-    def use_robot(self, name: str) -> None:
+    def use_robot(self, name: str, io: Any = None) -> None:
         if self.robot is not None and self.robot.name.lower() == name.lower():
             return
         if self.robot is not None:
@@ -471,6 +573,13 @@ class Controller:
         if viewer == "meshcat":
             self.viewer = Viewer(self.robot)
             self.viewer.show(self.axes)
+        if io is not None:
+            # the I/O instructions wait in the time of the robot
+            self.world.io = io
+            io.clock = self
+        simulation = os.environ.get("PYRAPID_SIMULATION", "")
+        if simulation:
+            load_simulation(simulation, self.world)
         install_exit_hooks(viewer == "meshcat")
         self.thread = threading.Thread(target=self.run, name="robot", daemon=True)
         self.thread.start()
@@ -482,7 +591,7 @@ class Controller:
 
     # ---------------------------------------------------------- program thread
 
-    def wait_until(self, condition: Callable[[], bool]) -> None:
+    def block(self, condition: Callable[[], bool]) -> None:
         """block the program until the condition is true (called with the lock)"""
         while True:
             if self.error is not None:
@@ -501,16 +610,16 @@ class Controller:
         """queue a planned movement and wait as the zone requires"""
         with self.condition:
             if conc:
-                self.wait_until(lambda: len(self.queue) < MAX_CONC)
+                self.block(lambda: len(self.queue) < MAX_CONC)
             self.queue.append(segment)
             self.planned = segment.axes[-1].copy()
             self.condition.notify_all()
             if conc:
                 return
             if segment.zone.radius is None:
-                self.wait_until(lambda: segment.done)
+                self.block(lambda: segment.done)
             else:
-                self.wait_until(
+                self.block(
                     lambda: (
                         segment.done
                         or (
@@ -523,13 +632,13 @@ class Controller:
     def wait_time(self, duration: float, inpos: bool) -> None:
         with self.condition:
             if inpos:
-                self.wait_until(self.idle)
+                self.block(self.idle)
             end = self.time + duration
-            self.wait_until(lambda: self.time >= end - 1e-9)
+            self.block(lambda: self.time >= end - 1e-9)
 
     def wait_robot(self) -> None:
         with self.condition:
-            self.wait_until(self.idle)
+            self.block(self.idle)
 
     def finish(self) -> None:
         """end of the program: the robot completes the queued movements"""
@@ -537,7 +646,30 @@ class Controller:
             return
         with self.condition:
             self.finished = True
-            self.wait_until(self.idle)
+            self.block(self.idle)
+            for action in self.world.finish_actions:
+                action(self.world)
+
+    # ---------------------------------------------------------- clock of the I/O
+    # (pyrapid.IO.clock): the waits of the I/O instructions and the timed events
+    # follow the time of the robot
+
+    def now(self) -> float:
+        return self.time
+
+    def wait_until(self, condition: Callable[[], bool], max_time: Optional[float] = None) -> bool:
+        """the program waits until condition() is true; False when max_time expires"""
+        with self.condition:
+            end = None if max_time is None else self.time + max_time
+            self.block(lambda: condition() or (end is not None and self.time >= end - 1e-9))
+            return bool(condition())
+
+    def after(self, delay: float, action: Callable[[], Any]) -> None:
+        """action() after delay seconds of the robot time (in the robot thread)"""
+        with self.condition:
+            self.sequence += 1
+            heapq.heappush(self.events, (self.time + delay, self.sequence, action))
+            self.condition.notify_all()
 
     def current(self) -> Any:
         with self.condition:
@@ -626,6 +758,9 @@ class Controller:
                 velocity += v
                 acceleration += a
         self.time = now
+        while self.events and self.events[0][0] <= now + 1e-9:
+            _, _, action = heapq.heappop(self.events)
+            action()
         if axes is not None:
             self.axes, self.velocity = axes, velocity
             if robot.has_dynamics:
@@ -643,13 +778,16 @@ class Controller:
                 self.report(segment)
         if not self.active and not self.queue:
             self.velocity = np.zeros(robot.naxes)
-        if self.viewer is not None:
-            self.viewer.update(
-                now,
-                self.axes,
-                self.tcp(self.axes, self.tool).translation.copy(),
-                bool(self.active),
-            )
+        for step_action in self.world.step_actions:
+            step_action(self.world)
+        if self.viewer is not None and self.viewer.update(
+            now,
+            self.axes,
+            self.tcp(self.axes, self.tool).translation.copy(),
+            bool(self.active),
+        ):
+            for frame_action in self.world.frame_actions:
+                frame_action(self.world)
 
     def report(self, segment: Segment) -> None:
         robot = self.require_robot()
@@ -837,9 +975,10 @@ def hold_viewer() -> None:
 # ------------------------------------------------------------------ RAPID interface
 
 
-def UseRobot(name: str) -> None:
-    """the robot model of the task (comment !robot: <model>)"""
-    CONTROLLER.use_robot(name)
+def UseRobot(name: str, io: Any = None) -> None:
+    """the robot model of the task (comment !robot: <model>); io is pyrapid.IO, the I/O
+    signals of the program"""
+    CONTROLLER.use_robot(name, io)
 
 
 def axes_of(jointtarget: Any) -> Any:

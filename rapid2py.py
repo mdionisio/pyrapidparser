@@ -233,7 +233,8 @@ class TraslateRapidToPython(rapid_ast.NodeVisitor):
             # robot model of the task (rapidvalidate checks the name)
             model = node.comment.strip()[len(const_robot_start) :].strip()
             self.writemodule("import pyrapid_motion")
-            self.writemodule("pyrapid_motion.UseRobot(%s)" % (repr(model),))
+            # the robot controller gives its clock to the I/O instructions
+            self.writemodule("pyrapid_motion.UseRobot(%s, pyrapid.IO)" % (repr(model),))
         else:
             self.writemodule("# ## COMMENT:" + node.comment + " ##")
 
