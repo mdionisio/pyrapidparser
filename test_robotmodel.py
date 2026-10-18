@@ -7,7 +7,7 @@ from typing import Any
 import pytest
 
 np = pytest.importorskip("numpy")
-pytest.importorskip("pinocchio")
+pin = pytest.importorskip("pinocchio")
 
 import robotmodel  # noqa: E402
 
@@ -104,6 +104,29 @@ def test_irb460() -> None:
             world("lower_link", [0, 0, 0.945]), world("link_plate", [-0.2649, 0, 0.1408])
         )
         assert np.allclose(world("upper_link", [1.025, 0, 0]), world("link_4", [0.2298, 0, 0.1928]))
+
+
+def test_osj6() -> None:
+    """the oblique swivel joint robot: the tube straight up is singular (the joint axes
+    in one plane); the numeric inverse kinematics finds the pen-down positions from the
+    home position (random starting positions); the parts of the view are found"""
+    robot = robotmodel.load("osj6", geometry=True, verbose=False)
+    assert robot.analytic is None
+    assert np.allclose(robot.fk(np.zeros(6)).translation, [0, 0, 0.6])
+    q = robot.configuration(np.zeros(6))
+    jacobian = pin.computeFrameJacobian(
+        robot.model, robot.data, q, robot.flange_frame, pin.ReferenceFrame.LOCAL
+    )
+    assert np.linalg.matrix_rank(jacobian, tol=1e-6) == 3
+    # a 180 degree turn of an oblique joint bends the tube by 90 degrees
+    bent = robot.fk(np.radians([0, 180, 0, 0, 0, 0]))
+    assert np.allclose(bent.rotation @ [0, 0, 1], [0, -1, 0], atol=1e-6)
+    assert np.allclose(bent.translation, [0, -0.45, 0.15], atol=1e-6)
+    down = pin.SE3(np.diag([-1.0, 1.0, -1.0]), np.array([0.18, -0.05, 0.15]))
+    solutions = robot.ik(down, robot.home)
+    assert solutions
+    assert np.allclose(robot.fk(solutions[0].axes).homogeneous, down.homogeneous, atol=1e-5)
+    assert len(robot.visual_model.geometryObjects) > 20
 
 
 def test_cad_meshes(tmp_path: Any, monkeypatch: pytest.MonkeyPatch) -> None:

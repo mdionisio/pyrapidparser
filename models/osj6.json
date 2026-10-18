@@ -1,0 +1,14 @@
+{
+    "description": "6 axis oblique swivel joint robot: a 3D printed tube of 80 mm cut at 45 degrees (models/osj6/build.py)",
+    "approximate": "masses estimated from the volumes of the printed parts (PLA, solid) plus motors and bearings",
+    "axis_limits": {
+        "1": [-180, 180, 40],
+        "2": [-180, 180, 40],
+        "3": [-180, 180, 40],
+        "4": [-180, 180, 40],
+        "5": [-180, 180, 40],
+        "6": [-180, 180, 90]
+    },
+    "acceleration": [2.0, 2.0, 2.0, 2.0, 2.0, 3.0],
+    "home": [0, -90, -45, 45, 90, 0]
+}

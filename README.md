@@ -5,16 +5,16 @@ language of ABB robot controllers.
 
 The project contains:
 
-| Tool               | What it does                                                          |
-| ------------------ | --------------------------------------------------------------------- |
-| `rapid_parser.py`  | lexer and parser (PLY) that build the syntax tree (`rapid_ast`)       |
-| `rapidvalidate.py` | static semantic checks after parsing (names, types, arguments, ...)   |
-| `rapid2rapid.py`   | writes the tree back as RAPID (formatting and round-trip check)       |
-| `rapid2py.py`      | translates RAPID modules into an executable Python program            |
-| `run/pyrapid.py`   | runtime used by the generated code (symbols, types, scopes, errors)   |
-| `robotmodel.py`    | robot models (URDF) with kinematics and dynamics of Pinocchio         |
-| `run/pyrapid_motion.py` | simulated motion instructions, real time view with MeshCat       |
-| `eio.py`           | I/O signals of the controller configuration (EIO.cfg)                 |
+| Tool                    | What it does                                                          |
+| ----------------------- | --------------------------------------------------------------------- |
+| `rapid_parser.py`       | lexer and parser (PLY) that build the syntax tree (`rapid_ast`)       |
+| `rapidvalidate.py`      | static semantic checks after parsing (names, types, arguments, ...)   |
+| `rapid2rapid.py`        | writes the tree back as RAPID (formatting and round-trip check)       |
+| `rapid2py.py`           | translates RAPID modules into an executable Python program            |
+| `run/pyrapid.py`        | runtime used by the generated code (symbols, types, scopes, errors)   |
+| `robotmodel.py`         | robot models (URDF) with kinematics and dynamics of Pinocchio         |
+| `run/pyrapid_motion.py` | simulated motion instructions, real time view with MeshCat            |
+| `eio.py`                | I/O signals of the controller configuration (EIO.cfg)                 |
 
 The reference for syntax and semantics is the ABB *Technical reference manual - RAPID
 kernel* (3HAC050946-001), together with the *RAPID Overview* (3HAC050947-001) and
@@ -206,6 +206,11 @@ one:
   `models/irb460_110_240/cad/` (not in the repository: ABB copyright); then the viewer
   shows the real robot.
 
+- `osj6` in `models/`: a 6 axis robot to build with a 3D printer, with oblique swivel
+  joints (a tube cut at 45 degrees). `models/osj6/build.py` (needs `pip install
+  manifold3d`) generates the printable parts and the model, with the masses of the parts.
+  See [examples/osj6](examples/osj6/README.md).
+
 The models contain the geometry, the limits and the maximum speed of the axes (from the ABB
 data sheets). The other data is often missing, and the loading prints a warning for each
 default value used instead:
@@ -278,7 +283,8 @@ How the movements are computed:
   the time `\T`) is reduced when an axis would exceed its velocity or acceleration. The
   profile is trapezoidal; the joint movements move all the axes together.
 - **Kinematics**: the inverse kinematics is in closed form for the 6 axis arms with a
-  spherical wrist (most ABB models), numeric for the others. `confdata` (cf1, cf4, cf6,
+  spherical wrist (most ABB models), numeric for the others (from the current position,
+  the home position and, when they do not converge, 30 random positions). `confdata` (cf1, cf4, cf6,
   cfx) follows the RAPID instructions manual: `MoveJ` reaches the programmed configuration,
   `MoveL` and `MoveC` stop the program if the end point has another configuration (as
   `ConfL \On` on the robot).
@@ -353,7 +359,10 @@ Each example has a README with what it does and how to run it:
 - [examples/pallettizer](examples/pallettizer/README.md): an ABB IRB 460 fills two pallets
   at the same time with different products and schemas; the cell (conveyors, pallets,
   products, gripper) is simulated by `cell.py` and talks with the program through the I/O
-  signals; with the ABB CAD model the viewer shows the real robot.
+  signals; with the ABB CAD model the viewer shows the real robot;
+- [examples/osj6](examples/osj6/README.md): osj6, a 3D printed robot with oblique swivel
+  joints, folds its tube and draws on a table; the README describes the robot, its parts
+  and its motors.
 
 ```sh
 PYRAPID_MOTION_LOG=1 python rapid2py.py -e demo.main -i examples/irb120/demo.mod -d out -f demo.py -r
@@ -395,7 +404,7 @@ run/pyrapid.py        runtime of the generated code
 run/pyrapid_motion.py motion instructions, viewer, simulation of the cell
 robotmodel.py         robot models, kinematics, dynamics
 eio.py                I/O configuration (EIO.cfg)
-models/               robot models of this project (IRB 460) and data overrides
+models/               robot models of this project (IRB 460, osj6) and data overrides
 third_party/abb/      ABB robot models of ROS-Industrial (git submodule)
 default/standard.sys  declarations and implementations of the standard types and routines
 test/                 RAPID test modules

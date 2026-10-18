@@ -72,6 +72,9 @@ DEFAULT_ACCELERATION_TIME = 0.5
 DEFAULT_VELOCITY = 1.0
 # tolerance of the inverse kinematics solutions
 IK_TOLERANCE = 1e-6
+# random starting positions of the numeric inverse kinematics, when the reference and
+# the home position do not converge
+IK_RANDOM_SEEDS = 30
 
 
 class ModelError(Exception):
@@ -364,9 +367,21 @@ class RobotModel:
         return result
 
     def _ik_numeric(self, target: Any, reference: Vector) -> list[Solution]:
-        """damped least squares from the reference and from the home position"""
-        found: list[Solution] = []
+        """damped least squares from the reference and from the home position; when they
+        do not converge, from random positions (always the same: the result is
+        repeatable). The arms without a wrist, e.g. the oblique swivel joints of osj6,
+        need them."""
         seeds = [reference, self.home, np.clip(np.zeros(self.naxes), self.lower, self.upper)]
+        found = self._ik_seeds(target, seeds)
+        if not found:
+            random = np.random.default_rng(0)
+            found = self._ik_seeds(
+                target, list(random.uniform(self.lower, self.upper, (IK_RANDOM_SEEDS, self.naxes)))
+            )
+        return found
+
+    def _ik_seeds(self, target: Any, seeds: list[Vector]) -> list[Solution]:
+        found: list[Solution] = []
         for seed in seeds:
             axes = self._dls(target, seed)
             if axes is None:

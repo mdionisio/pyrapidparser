@@ -52,6 +52,12 @@ instructions = 3HAC050917-001.
   write a message; the positions of `cell.py` repeat the points of `environment.mod`.
 - [ ] **I/O**: `AliasIO`, interrupts on signals (`ISignalDI`), the cross connections
   and the device mapping of EIO.cfg are not supported.
+- [ ] **osj6**: the parts are a first design, not printed yet. The hatches have no
+  fixing, the gear is only keyed on the spigot (no axial screw), there is no reference
+  for the zero of the axes (the N20 encoders are incremental), the motor torques are not
+  in the model (`effort`). The confdata of the ABB arms does not describe its solutions:
+  a configuration of its own (e.g. the signs of the oblique joints) would let MoveJ
+  choose the solution.
 - [ ] **Interruption**: a motion error stops the program with a Python exception; ABB
   raises recoverable errors for some of them (ERR_ROBLIMIT with `\ErrorNumber`).
 
