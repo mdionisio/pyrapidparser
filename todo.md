@@ -27,8 +27,9 @@ instructions = 3HAC050917-001.
   `WriteAnyBin`, `FSSize`, `TryInit`, `ErrWrite`/`GetSysInfo` have no test.
 - [ ] **Sockets**: `SocketSend` and `SocketReceive` support only `\Str`; `\RawData`,
   `\Data` and `\NoOfBytes` are missing, and a message longer than 1024 bytes is cut.
-- [ ] **Movements that stop on a condition and the path control**: `SearchL`, `SearchC`
-  (stop on a signal, with `ERR_WHLSEARCH`), `StopMove`, `StartMove`, `StorePath`,
+- [ ] **Movements that stop on a condition and the path control**: `SearchC`, `SearchL` on a
+  persistent variable (`PersBool`) and `\Sup` (more than one hit is not counted
+  after the movement stops), `StopMove`, `StartMove`, `StorePath`,
   `RestoPath`, `ClearPath`, `TriggL`/`TriggJ`/`TriggC` with `TriggIO`/`TriggEquip`,
   `MoveLDO`/`MoveJDO`, `MoveExtJ`, `PDispSet`/`PDispOn` (program displacement),
   `AccSet`, `VelSet`, `PathResol`, `CirPathMode`.

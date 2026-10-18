@@ -1631,6 +1631,36 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:pyrapid_motion.MoveL(_s("mv_conc").data.Get(), _s("ToPoint").data, _s("Speed").data, _s("mv_v").data.Get(), _s("mv_t").data.Get(), _s("Zone").data, _s("mv_z").data.Get(), _s("Tool").data, _s("mv_wobj").data)
     ENDPROC
 
+    PROC SearchL(\switch Stop | switch PStop | switch SStop | switch Sup, VAR signaldi Signal \switch Flanks | switch PosFlank | switch NegFlank | switch HighLevel | switch LowLevel, INOUT robtarget SearchPoint, robtarget ToPoint, speeddata Speed \num V | num T, tooldata Tool \wobjdata WObj)
+        ! the signal is read in the time of the robot; the position of the first change is
+        ! stored in SearchPoint; \Stop, \PStop and \SStop stop the robot at the change
+        VAR num mv_v := -1;
+        VAR num mv_t := -1;
+        VAR num mv_result := 0;
+        VAR wobjdata mv_wobj;
+        mv_wobj := wobj0;
+        IF Present(V) THEN
+            mv_v := V;
+        ENDIF
+        IF Present(T) THEN
+            mv_t := T;
+        ENDIF
+        IF Present(WObj) THEN
+            mv_wobj := WObj;
+        ENDIF
+        !python:import pyrapid_motion
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:_stop = "stop" if pyrapid.Symbols().IsInScope("Stop") else "pstop" if pyrapid.Symbols().IsInScope("PStop") else "sstop" if pyrapid.Symbols().IsInScope("SStop") else ""
+        !python:_edge = "both" if pyrapid.Symbols().IsInScope("Flanks") else "neg" if pyrapid.Symbols().IsInScope("NegFlank") or pyrapid.Symbols().IsInScope("LowLevel") else "pos"
+        !python:_supervision = not (pyrapid.Symbols().IsInScope("Flanks") or pyrapid.Symbols().IsInScope("PosFlank") or pyrapid.Symbols().IsInScope("NegFlank"))
+        !python:_s("mv_result").data.Set(pyrapid_motion.SearchL(_stop, pyrapid.Symbols().IsInScope("Sup"), _s("Signal").data.name, _edge, _supervision, _s("SearchPoint").data, _s("ToPoint").data, _s("Speed").data, _s("mv_v").data.Get(), _s("mv_t").data.Get(), _s("Tool").data, _s("mv_wobj").data))
+        IF mv_result = 1 THEN
+            RAISE ERR_WHLSEARCH;
+        ELSEIF mv_result = 2 THEN
+            RAISE ERR_SIGSUPSEARCH;
+        ENDIF
+    ENDPROC
+
     PROC MoveC(\switch Conc, robtarget CirPoint, robtarget ToPoint, speeddata Speed \num V | num T, zonedata Zone \num Z, tooldata Tool \wobjdata WObj)
         VAR num mv_v := -1;
         VAR num mv_t := -1;

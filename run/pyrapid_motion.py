@@ -315,6 +315,47 @@ def path_trajectory(
 
 
 @dataclass
+class Watch:
+    """the search of a signal during a movement (SearchL)"""
+
+    read: Callable[[], Any]  # the value of the signal
+    edge: str  # "pos", "neg", "both"
+    supervision: bool  # the signal at the start must not be active (pos and neg only)
+    stop: str  # "", "stop", "pstop", "sstop": the movement stops at the first hit
+    last: Any = None
+    hits: list[Any] = field(default_factory=list)  # the axes at each hit
+    error: str = ""  # "supervision": the signal was active at the start
+    finished: bool = False  # the movement is stopping
+
+    def poll(self, axes: Any) -> bool:
+        """called at every step; True at the first hit that stops the movement"""
+        if self.finished:
+            return False
+        value = self.read()
+        if self.last is None:
+            self.last = value
+            active = value if self.edge == "pos" else not value
+            if self.supervision and active:
+                self.error = "supervision"
+                return True
+            return False
+        changed = value != self.last
+        rising = bool(value) and not bool(self.last)
+        falling = bool(self.last) and not bool(value)
+        self.last = value
+        if not changed:
+            return False
+        if (
+            self.edge == "both"
+            or (self.edge == "pos" and rising)
+            or (self.edge == "neg" and falling)
+        ):
+            self.hits.append(axes.copy())
+            return bool(self.stop)
+        return False
+
+
+@dataclass
 class Segment:
     """a planned movement: the axes from rest to rest, sampled in time"""
 
@@ -331,6 +372,7 @@ class Segment:
     done: bool = False
     corner_failure: bool = False
     torque: Any = None
+    watch: Optional[Watch] = None
 
     @classmethod
     def of(cls, trajectory: Trajectory, zone: Zone, tcp: Callable[[Any], Any]) -> "Segment":
@@ -370,6 +412,21 @@ class Segment:
             self.velocity[i] * (1 - f) + self.velocity[i + 1] * f,
             self.acceleration[i] * (1 - f) + self.acceleration[i + 1] * f,
         )
+
+    def stop_at(self, t: float, deceleration: Any) -> None:
+        """the movement stops from the time t: the axes decelerate to rest"""
+        q, v, _ = self.at(t)
+        stop = max(float(np.max(np.abs(v) / deceleration)), SAMPLE_TIME)
+        count = max(1, int(math.ceil(stop / SAMPLE_TIME - 1e-9)))
+        tau = np.linspace(0.0, stop, count + 1)[1:, None]
+        keep = self.times <= t
+        self.times = np.concatenate([self.times[keep], t + tau[:, 0]])
+        self.axes = np.concatenate([self.axes[keep], q + v * tau - v * tau**2 / (2 * stop)])
+        self.velocity = np.concatenate([self.velocity[keep], v * (1 - tau / stop)])
+        self.acceleration = np.concatenate(
+            [self.acceleration[keep], np.tile(-v / stop, (count, 1))]
+        )
+        self.remaining = np.concatenate([self.remaining[keep], np.zeros(count)])
 
     def time_at_remaining(self, distance: float) -> float:
         """time from the start when the TCP is distance from the end of the path"""
@@ -793,6 +850,7 @@ class Controller:
             self.velocity = np.zeros(robot.naxes)
         for step_action in self.world.step_actions:
             step_action(self.world)
+        self.poll_watches(now)
         if self.viewer is not None and self.viewer.update(
             now,
             self.axes,
@@ -801,6 +859,21 @@ class Controller:
         ):
             for frame_action in self.world.frame_actions:
                 frame_action(self.world)
+
+    def poll_watches(self, now: float) -> None:
+        """the searches of the active movements: stop the movement at a hit (called with
+        the lock)"""
+        for segment in self.active:
+            watch = segment.watch
+            if watch is None or self.axes is None:
+                continue
+            assert segment.start is not None
+            if watch.poll(self.axes):
+                # a hard stop is shorter than a stop on the path
+                factor = 2.0 if watch.stop == "stop" else 1.0
+                robot = self.require_robot()
+                segment.stop_at(now - segment.start, robot.acceleration * factor)
+                watch.finished = True
 
     def report(self, segment: Segment) -> None:
         robot = self.require_robot()
@@ -1064,6 +1137,42 @@ def MoveJ(
     CONTROLLER.submit(segment, conc)
 
 
+def linear_segment(
+    instruction: str,
+    robtarget: Any,
+    speeddata: Any,
+    v: float,
+    t: float,
+    zone: Zone,
+    tool: Tool,
+    wobjdata: Any,
+) -> Segment:
+    """the planned linear movement of the TCP from the end of the movements already
+    planned to the robtarget"""
+    axes = CONTROLLER.start_axes()
+    start = CONTROLLER.tcp(axes, tool)
+    end = wobj_of(wobjdata) * pose_of(robtarget)
+    rotation = pin.log3(start.rotation.T @ end.rotation)
+
+    def path(s: float) -> Any:
+        return pin.SE3(
+            start.rotation @ pin.exp3(s * rotation),
+            start.translation + s * (end.translation - start.translation),
+        )
+
+    return CONTROLLER.path_move(
+        instruction,
+        axes,
+        path,
+        float(np.linalg.norm(end.translation - start.translation)),
+        float(np.linalg.norm(rotation)),
+        Speed.of(speeddata, v, t),
+        zone,
+        tool,
+        confdata_of(robtarget),
+    )
+
+
 def MoveL(
     conc: bool,
     robtarget: Any,
@@ -1077,29 +1186,48 @@ def MoveL(
 ) -> None:
     tool = Tool.of(tooldata)
     CONTROLLER.set_tool(tool)
-    axes = CONTROLLER.start_axes()
-    start = CONTROLLER.tcp(axes, tool)
-    end = wobj_of(wobjdata) * pose_of(robtarget)
-    rotation = pin.log3(start.rotation.T @ end.rotation)
-
-    def path(s: float) -> Any:
-        return pin.SE3(
-            start.rotation @ pin.exp3(s * rotation),
-            start.translation + s * (end.translation - start.translation),
-        )
-
-    segment = CONTROLLER.path_move(
-        "MoveL",
-        axes,
-        path,
-        float(np.linalg.norm(end.translation - start.translation)),
-        float(np.linalg.norm(rotation)),
-        Speed.of(speeddata, v, t),
-        Zone.of(zonedata, z),
-        tool,
-        confdata_of(robtarget),
-    )
+    zone = Zone.of(zonedata, z)
+    segment = linear_segment("MoveL", robtarget, speeddata, v, t, zone, tool, wobjdata)
     CONTROLLER.submit(segment, conc)
+
+
+SEARCH_OK = 0
+SEARCH_NO_HIT = 1
+SEARCH_SUPERVISION = 2
+
+
+def SearchL(
+    stop: str,
+    sup: bool,
+    signal: str,
+    edge: str,
+    supervision: bool,
+    searchpoint: Any,
+    robtarget: Any,
+    speeddata: Any,
+    v: float,
+    t: float,
+    tooldata: Any,
+    wobjdata: Any,
+) -> int:
+    """linear movement to the robtarget that stores the position of the TCP (searchpoint)
+    when the signal changes. stop: "", "stop", "pstop" or "sstop" (the movement stops at
+    the hit); edge: "pos", "neg" or "both". Returns SEARCH_OK, SEARCH_NO_HIT (no change
+    of the signal, or more than one with sup) or SEARCH_SUPERVISION (the signal was
+    active at the start; the robot stops at once)."""
+    tool = Tool.of(tooldata)
+    CONTROLLER.set_tool(tool)
+    io = CONTROLLER.world.require_io()
+    segment = linear_segment("SearchL", robtarget, speeddata, v, t, Zone.fine(), tool, wobjdata)
+    watch = Watch(lambda: io.get(signal), edge, supervision, stop)
+    segment.watch = watch
+    CONTROLLER.submit(segment, False)
+    if watch.error:
+        return SEARCH_SUPERVISION
+    if not watch.hits or (sup and len(watch.hits) > 1):
+        return SEARCH_NO_HIT
+    searchpoint.Set(robtarget_values(watch.hits[0], tool, wobj_of(wobjdata)))
+    return SEARCH_OK
 
 
 def MoveC(

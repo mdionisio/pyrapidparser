@@ -269,6 +269,7 @@ limits of the axes, coupled joints, meshes of a CAD model (see the comment at th
 | `MoveAbsJ`                         | to a `jointtarget`                                       |
 | `MoveJ`                            | to a `robtarget`, with its `confdata` (`ConfJ \On`)      |
 | `MoveL`, `MoveC`                   | straight line and circle of the TCP                      |
+| `SearchL`                          | linear search on a `signaldi` (see below)                |
 | `ConfJ`, `ConfL`                   | configuration supervision on or off                      |
 | `WaitTime`, `WaitRob`              | `\InPos`: wait for the robot to stop                     |
 | `CJointT`, `CRobT`                 | current position                                         |
@@ -278,6 +279,16 @@ limits of the axes, coupled joints, meshes of a CAD model (see the comment at th
 The supported arguments are `\Conc`, `\V`, `\T`, `\Z` and `\WObj`; `tooldata` (TCP and load) and
 `wobjdata` (user and object frame) work as on the robot, `tool0`, `wobj0` and `load0` are
 predefined.
+
+`SearchL [\Stop | \PStop | \SStop | \Sup] Signal [\Flanks | \PosFlank | \NegFlank |
+\HighLevel | \LowLevel] SearchPoint, ToPoint, Speed, Tool` moves to `ToPoint` and stores in
+`SearchPoint` the position of the TCP where the signal changes. With `\Stop`, `\PStop` or
+`\SStop` the robot stops at the change, decelerating with the acceleration of the axes (in
+a few millimeters at 50 mm/s); without them it goes on to the destination (flying
+search). `ERR_WHLSEARCH` is raised when the signal does not change, `ERR_SIGSUPSEARCH`
+when it is already active at the start (the robot does not move). The signal is the one of
+the I/O configuration (`--eio`), set by the simulation of the cell
+(see [I/O signals](#io-signals)); `test/exec/search.mod` and `search.sim.py` are an example.
 
 ### Program and robot
 

@@ -118,6 +118,10 @@ def test_rapid2py_execution(path: str, tmp_path: pathlib.Path) -> None:
     env.pop("PYRAPID_VIEWER", None)
     # HOME: of the files of the program
     env["PYRAPID_HOME"] = outdir
+    # <name>.sim.py: the simulated cell of the program
+    simulation = os.path.splitext(path)[0] + ".sim.py"
+    if os.path.exists(simulation):
+        env["PYRAPID_SIMULATION"] = simulation
     run = subprocess.run(
         [sys.executable, "program.py"],
         cwd=outdir,
