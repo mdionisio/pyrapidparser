@@ -1222,6 +1222,11 @@ class rapid_%s (pyrapid.rapid_struct):
                     self.simple_writemodule("))")
 
             elif parameters_defined[argumentname][1] in ("VAR", "PERS", "INOUT"):
+                part = isinstance(node.argumentvalue, rapid_ast.VariableAST) and (
+                    len(node.argumentvalue.index) > 0 or node.argumentvalue.component is not None
+                )
+                if part:
+                    self.simple_writemodule("pyrapid.Symbol.CreateVar(")
                 self.visit(
                     node.argumentvalue,
                     parameters_defined=parameters_defined,
@@ -1231,6 +1236,8 @@ class rapid_%s (pyrapid.rapid_struct):
                     bsym_VariableAST=False,
                     **kwargs,
                 )
+                if part:
+                    self.simple_writemodule(")")
             else:
                 raise Exception(
                     "Only NORMAL, VAR, PERS, and INOUT are supported (%s) if the input is a variable (module name %s, function name %s, argument name %s)"
@@ -1374,6 +1381,13 @@ class rapid_%s (pyrapid.rapid_struct):
             elif parameters_defined[argumentname][1] in ("VAR", "PERS", "INOUT"):
                 self.simple_writeindent()
                 self.simple_writemodule("parameters_actual[%s] = " % (repr(argumentname),))
+                # an element of an array or a component of a record is data without
+                # symbol: the symbol that the routine uses refers to the same data
+                part = isinstance(node.argumentvalue, rapid_ast.VariableAST) and (
+                    len(node.argumentvalue.index) > 0 or node.argumentvalue.component is not None
+                )
+                if part:
+                    self.simple_writemodule("pyrapid.Symbol.CreateVar(")
                 self.visit(
                     node.argumentvalue,
                     parameters_defined=parameters_defined,
@@ -1383,6 +1397,8 @@ class rapid_%s (pyrapid.rapid_struct):
                     bsym_VariableAST=False,
                     **kwargs,
                 )
+                if part:
+                    self.simple_writemodule(")")
                 self.simple_writemodule()
             else:
                 raise Exception(

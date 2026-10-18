@@ -563,10 +563,14 @@ MODULE SYSTEMMODULE(SYSMODULE)
         RETURN ret;
     ENDFUNC
     
-    PROC UnLoad( string FilePath )
+    PROC UnLoad( string FilePath \string File )
         ! the modules translated with the program stay loaded
         VAR bool ret;
-        !python:ret = pyrapid.Symbols().UnLoadModuleFile(pyrapid.Symbols().GetSymbol("FilePath").data.Get())
+        !python:_path = pyrapid.Symbols().GetSymbol("FilePath").data.Get()
+        IF Present(File) THEN
+            !python:_path = _path + "/" + pyrapid.Symbols().GetSymbol("File").data.Get()
+        ENDIF
+        !python:ret = pyrapid.Symbols().UnLoadModuleFile(_path)
         !python:pyrapid.Symbols().GetSymbol("ret").data.Set( ret )
         IF ret = FALSE THEN
             RAISE ERR_UNLOAD ;
@@ -1256,6 +1260,30 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:if _found is None:
         !python:    raise pyrapid.RapidException(_s("ERR_SYM_ACCESS").data.Get(), "SetDataVal: no data " + _s("Object").data.Get())
         !python:_found.data.Set(_s("Value").data.Get())
+    ENDPROC
+
+    ALIAS string mecunit;
+    CONST mecunit ROB_1 := "ROB_1";
+
+    PROC SoftAct(\mecunit MechUnit, num Axis, num Softness \num Ramp)
+        ! the servo softness is not simulated: the robot keeps its stiff servo
+        !python:import sys
+        !python:print("warning: SoftAct: the servo softness is not simulated", file=sys.stderr)
+    ENDPROC
+
+    PROC SoftDeact(\mecunit MechUnit \num Ramp)
+        !python:pass
+    ENDPROC
+
+    FUNC bool ModExist(\switch Loaded, string ModuleName)
+        VAR bool ret;
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set(pyrapid.Symbols().HasModule(pyrapid.Symbols().GetSymbol("ModuleName").data.Get().upper()))
+        RETURN ret;
+    ENDFUNC
+
+    PROC EraseModule(string ModuleName)
+        ! the module is removed from the symbols of the program
+        !python:pyrapid.Symbols().UnLoadModule(pyrapid.Symbols().GetSymbol("ModuleName").data.Get().upper())
     ENDPROC
 
     !! Files and directories (run/pyrapid_files.py): the paths "HOME:/dir/file" are

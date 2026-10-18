@@ -20,3 +20,7 @@ out/
 
 # meshes of the ABB CAD models (ABB copyright), built by models/*/build_cad.py
 models/*/cad/
+
+# RAPID programs of other projects, downloaded by test_public_programs.py (their licenses
+# are their own, they are not redistributed)
+test/public/
