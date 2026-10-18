@@ -751,6 +751,9 @@ class rapid_%s (pyrapid.rapid_struct):
         if error_statement or undo_statement:
             self.visit(node.statement, **kwargs)
         else:
+            # the traps of the interrupts run between two statements
+            if not isinstance(node.statement, rapid_ast.LabelAST):
+                self.writemodule("pyrapid.INTERRUPTS.check()")
             self.writemodule("retry_stantment = True")
             self.writemodule("while retry_stantment:")
             with self.ModuleScope():
@@ -968,9 +971,31 @@ class rapid_%s (pyrapid.rapid_struct):
         self.writemodule("return 2")
 
     def visit_ConnectStatementAST(self, node: rapid_ast.ConnectStatementAST, **kwargs: Any) -> None:
+        # connect_taget* is a VariableAST (intnum), trap* an IdentifierAST
         if not (node.coord is None):
             self.writemodule("# Line %s" % (str(node.coord),))
-        raise Exception("Connect not yet supported")
+        self.simple_writeindent()
+        self.simple_writemodule("pyrapid.INTERRUPTS.connect(")
+        self.visit(node.connect_taget, bget_VariableAST=False, bsym_VariableAST=True, **kwargs)
+        self.simple_writemodule(
+            ", pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s).data)"
+            % (repr(node.trap.name), repr(self.module_name), repr(self.function_name))
+        )
+        self.simple_writemodule()
+
+    def visit_TrapDeclarationAST(self, node: rapid_ast.TrapDeclarationAST, **kwargs: Any) -> None:
+        # a trap routine is a procedure without parameters
+        procedure = rapid_ast.ProcedureDeclarationAST(
+            node.procedure_name,
+            [],
+            node.data_definitions,
+            node.statement_list,
+            None,
+            node.routine_error,
+            node.routine_undo,
+            coord=node.coord,
+        )
+        self.visit_ProcedureDeclarationAST(procedure, **kwargs)
 
     def visit_IfStatement(self, node: rapid_ast.IfStatement, **kwargs: Any) -> None:
         # condition*, statement_list**, elseif_list**, else_statement_list**

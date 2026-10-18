@@ -668,6 +668,7 @@ class Controller:
         self.sequence = 0
         self.pending_triggers: list[Trigger] = []
         # AccSet: factor of the accelerations; VelSet: factor of the speeds, maximum TCP speed (m/s)
+        self.interrupts: Any = None
         self.acc_factor = 1.0
         # program displacement: placement in the object frame of the displaced points
         self.displacement = pin.SE3.Identity()
@@ -698,6 +699,8 @@ class Controller:
             # the I/O instructions wait in the time of the robot
             self.world.io = io
             io.clock = self
+            self.interrupts = io.interrupts
+            io.interrupts.wake = self.wake_program
         simulation = os.environ.get("PYRAPID_SIMULATION", "")
         if simulation:
             load_simulation(simulation, self.world)
@@ -712,14 +715,28 @@ class Controller:
 
     # ---------------------------------------------------------- program thread
 
+    def wake_program(self) -> None:
+        """an interrupt is queued: the program that waits runs the trap"""
+        with self.condition:
+            self.condition.notify_all()
+
     def block(self, condition: Callable[[], bool]) -> None:
-        """block the program until the condition is true (called with the lock)"""
+        """block the program until the condition is true (called with the lock); the
+        traps of the interrupts run while it waits"""
+        interrupts = self.interrupts
         while True:
             if self.error is not None:
                 raise MotionError("robot: %s" % (self.error,))
+            if interrupts is not None and interrupts.ready():
+                self.waiting = None
+                interrupts.check()
+                continue
             if condition():
                 break
-            self.waiting = condition
+            if interrupts is not None:
+                self.waiting = lambda: condition() or interrupts.ready()
+            else:
+                self.waiting = condition
             self.condition.notify_all()
             self.condition.wait()
         self.waiting = None
@@ -924,7 +941,11 @@ class Controller:
             for trigger in segment.triggers:
                 if not trigger.fired and now >= segment.start + trigger.time - 1e-9:
                     trigger.fired = True
-                    self.world.require_io().set(trigger.signal, trigger.value)
+                    if trigger.signal.startswith("interrupt:"):
+                        # TriggInt: the trap runs
+                        self.world.require_io().interrupts.trigger(int(trigger.signal[10:]))
+                    else:
+                        self.world.require_io().set(trigger.signal, trigger.value)
 
     def poll_watches(self, now: float) -> None:
         """the searches of the active movements: stop the movement at a hit (called with

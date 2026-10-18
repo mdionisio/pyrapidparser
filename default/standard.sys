@@ -1336,6 +1336,56 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:pyrapid_lib.call(None, pyrapid_files.close_dir, pyrapid.Symbols().GetSymbol("Dev").data)
     ENDPROC
 
+    !! Interrupts (run/pyrapid.py, INTERRUPTS): CONNECT links an intnum to a trap routine.
+
+    PROC ISignalDI(\switch Single, VAR signaldi Signal, dionum TriggValue, VAR intnum Interrupt)
+        ! the trap runs when the signal changes to TriggValue (2: at any change)
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid.INTERRUPTS.signal(_s("Signal").data.name, None if _s("TriggValue").data.Get() == 2 else _s("TriggValue").data.Get(), _s("Interrupt").data.Get(), pyrapid.Symbols().IsInScope("Single"))
+    ENDPROC
+
+    PROC ISignalDO(\switch Single, VAR signaldo Signal, dionum TriggValue, VAR intnum Interrupt)
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid.INTERRUPTS.signal(_s("Signal").data.name, None if _s("TriggValue").data.Get() == 2 else _s("TriggValue").data.Get(), _s("Interrupt").data.Get(), pyrapid.Symbols().IsInScope("Single"))
+    ENDPROC
+
+    PROC ISignalGI(\switch Single, VAR signalgi Signal, VAR intnum Interrupt)
+        ! the trap runs at any change of the group
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid.INTERRUPTS.signal(_s("Signal").data.name, None, _s("Interrupt").data.Get(), pyrapid.Symbols().IsInScope("Single"))
+    ENDPROC
+
+    PROC ISignalGO(\switch Single, VAR signalgo Signal, VAR intnum Interrupt)
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid.INTERRUPTS.signal(_s("Signal").data.name, None, _s("Interrupt").data.Get(), pyrapid.Symbols().IsInScope("Single"))
+    ENDPROC
+
+    PROC ITimer(\switch Single, num Time, VAR intnum Interrupt)
+        ! the trap runs after Time seconds (every Time seconds without \Single)
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid.INTERRUPTS.timer(_s("Time").data.Get(), _s("Interrupt").data.Get(), pyrapid.Symbols().IsInScope("Single"))
+    ENDPROC
+
+    PROC IDelete(VAR intnum Interrupt)
+        !python:pyrapid.INTERRUPTS.delete(pyrapid.Symbols().GetSymbol("Interrupt").data.Get())
+    ENDPROC
+
+    PROC ISleep(VAR intnum Interrupt)
+        !python:pyrapid.INTERRUPTS.sleep(pyrapid.Symbols().GetSymbol("Interrupt").data.Get(), False)
+    ENDPROC
+
+    PROC IWatch(VAR intnum Interrupt)
+        !python:pyrapid.INTERRUPTS.sleep(pyrapid.Symbols().GetSymbol("Interrupt").data.Get(), True)
+    ENDPROC
+
+    PROC IDisable()
+        !python:pyrapid.INTERRUPTS.disabled = True
+    ENDPROC
+
+    PROC IEnable()
+        !python:pyrapid.INTERRUPTS.disabled = False
+    ENDPROC
+
     !! I/O instructions: the signals are in the I/O configuration (--eio of rapid2py),
     !! their values in pyrapid.IO; the simulation of the cell reads and sets them.
 
@@ -1706,6 +1756,14 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:_t.Set([_s("Distance").data.Get(), pyrapid.Symbols().IsInScope("Start"), pyrapid.Symbols().IsInScope("Time"), 0, _s("DODelay").data.Get() if pyrapid.Symbols().IsInScope("DODelay") else 0, "", _s("SetValue").data.Get()])
         !python:_name = [_s(n).data.name for n in ("DOp", "GOp", "AOp") if pyrapid.Symbols().IsInScope(n)]
         !python:_t.GetElem("signal").Set(_name[0] if _name else "")
+    ENDPROC
+
+    PROC TriggInt(VAR triggdata TriggData, num Distance \switch Start \switch Time, VAR intnum Interrupt)
+        ! the trap of Interrupt runs when the TCP is Distance mm before the end of the next
+        ! movement (\Start: after the start; \Time: seconds before the end)
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:_t = _s("TriggData").data
+        !python:_t.Set([_s("Distance").data.Get(), pyrapid.Symbols().IsInScope("Start"), pyrapid.Symbols().IsInScope("Time"), 0, 0, "interrupt:%d" % (_s("Interrupt").data.Get(),), 1])
     ENDPROC
 
     PROC TriggEquip(VAR triggdata TriggData, num Distance \switch Start, num EquipLag \VAR signaldo DOp | VAR signalgo GOp | VAR signalao AOp | num ProcID, num SetValue \switch TriggOn \switch InPos)

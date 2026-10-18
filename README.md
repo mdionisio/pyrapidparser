@@ -183,6 +183,7 @@ controller provides; `rapid2py.py` translates it with the program (`-s` leaves i
 | Bits                | `BitAnd`, `BitOr`, `BitXOr`, `BitNeg`, `BitLSh`, `BitRSh`, `BitCheck`, `BitSet`, `BitClear` on bytes (0 to 255) |
 | Strings             | `StrLen`, `StrPart`, `StrFind`, `StrMatch`, `StrMemb`, `StrOrder`, `StrMap`, `NumToStr`, `ValToStr`, `StrToVal`, `DecToHex`, `HexToDec`, `ByteToStr`, `StrToByte`; the constants `STR_DIGIT`, `STR_UPPER`, `STR_LOWER` (ASCII letters only), `STR_WHITE` |
 | Time and messages   | `GetTime`, `CTime`, `CDate`, `WaitTime`, `ClkReset`, `ClkStart`, `ClkStop`, `ClkRead`, `TPWrite`, `ErrWrite`, `TPErase`, `TPShow`, `TPReadNum`, `TPReadFK` (standard input), `Stop`, `Break`, `SystemStopAction` and `ExitCycle` (they end the program) |
+| Interrupts          | `CONNECT`, `TRAP`, `TriggInt`, `ISignalDI`, `ISignalDO`, `ISignalGI`, `ISignalGO`, `ITimer`, `IDelete`, `ISleep`, `IWatch`, `IDisable`, `IEnable`, `INTNO` |
 | Modules             | `Load`, `UnLoad` (the modules translated apart, `rapid2py -f <module>.py`) |
 | Files               | `Open` (`\Read`, `\Write`, `\Append`, `\Bin`), `Close`, `Rewind`, `Write`, `WriteBin`, `WriteStrBin`, `ReadStr` ("EOF" at the end), `ReadNum` (`EOF_NUM`), `ReadBin`, `ReadStrBin`, `ClearIOBuff`, `RemoveFile`, `RenameFile`, `CopyFile`, `MakeDir`, `RemoveDir`, `IsFile`, `FileSize`, `OpenDir`, `ReadDir`, `CloseDir` |
 | Raw data            | `ClearRawBytes`, `CopyRawBytes`, `PackRawBytes`, `UnPackRawBytes`, `RawBytesLen` |
@@ -191,11 +192,19 @@ The sockets are real: `SocketBind`, `SocketListen` and `SocketAccept` open a TCP
 the machine, so a program can talk with a real client (a PLC, a vision system, a test
 script). The data of `SocketSend` and `SocketReceive` are strings (`\Str`, one character
 for each byte, as latin-1); `\RawData` and the byte arrays `\Data` are not supported.
+The traps run in the program thread, between two statements and while the program waits
+(`WaitTime`, `WaitDI`, `WaitUntil`, a movement): in the time of the robot when the program
+moves one, so the result is the same at every run (`test/exec/interrupts_motion.mod`). An
+interrupt that occurs while a trap runs, or after `IDisable`, waits. After `IDelete` the
+interrupt must be connected again with `CONNECT`. Not supported: the analog signal
+interrupts (`ISignalAI`, `ISignalAO`), `IError`, `IPers`, `IVarValue`, `ITimer` with a
+time of day, the `GetTrapData`/`ReadErrData` functions.
+
 The paths of the files are those of the controller: `HOME:/dir/file` is relative to the
 folder `PYRAPID_HOME` (default: the current folder), `TEMP:/file` to the temporary folder.
 The errors are `ERR_FILEOPEN`, `ERR_FILEACC`, `ERR_FILEEXIST`. The serial channels
 (`com1:`) are not supported.
-`TryInit`, the interrupts and the other installed routines are missing: see
+`TryInit` and the other installed routines are missing: see
 [todo.md](todo.md).
 
 ## Robot motion
@@ -299,8 +308,8 @@ the I/O configuration (`--eio`), set by the simulation of the cell
 `Distance` mm before the end of the movement (after the start with `\Start`, seconds before
 the end with `\Time`; `TriggEquip` sets it `EquipLag` seconds earlier). `TriggL`,
 `TriggJ`, `TriggC` and `TriggAbsJ` take up to 8 `triggdata` (`Trigg_1`, `\T2`, ... `\T8`)
-and set the outputs in the time of the robot (`test/exec/trigger.mod`). `TriggInt` and
-`TriggRampAO` need interrupts or ramps and are missing.
+and set the outputs in the time of the robot (`test/exec/trigger.mod`). `TriggInt triggdata, Distance [\Start] [\Time], Interrupt` runs a trap at that point of
+the movement; `TriggRampAO` is missing.
 
 ### Program and robot
 
@@ -442,7 +451,6 @@ PYRAPID_VIEWER=meshcat python rapid2py.py -e demo.main -i examples/irb120/demo.m
 
 The missing features are listed in [todo.md](todo.md). Among them:
 
-- interrupts and `CONNECT`;
 - long jumps in error handlers;
 - semantics of `BACKWARD` and `UNDO`;
 - external axes, the reorientation zones and the other motion instructions;

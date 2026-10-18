@@ -3,6 +3,7 @@ from functools import reduce
 import operator
 from collections.abc import MutableMapping
 from typing import Any, Iterator, Optional
+import threading
 import time
 
 from run import Singleton
@@ -917,6 +918,7 @@ class rapid_intnum:
 
 
 Symbols().AddGlobalSym("intnum", Symbol.CreateDataType(rapid_intnum))
+Symbols().AddGlobalSym("INTNO", Symbol.CreateVar(rapid_intnum, rapid_intnum(0)))
 
 
 class rapid_iodev:
@@ -1152,6 +1154,116 @@ Symbols().AddGlobalSym("robtarget", Symbol.CreateDataType(rapid_robtarget))
 # ----------------------------------------------------------------- I/O signals
 
 
+class Interrupt:
+    """an interrupt order: the trap routine and what triggers it"""
+
+    def __init__(self, trap: Any) -> None:
+        self.trap = trap
+        self.active = True  # IWatch, not ISleep
+        self.single = False  # triggered once
+
+
+class InterruptSystem:
+    """interrupts (kernel manual 4.12, 8): CONNECT links an intnum variable to a trap
+    routine, the orders (ISignalDI, ITimer, ...) trigger it. The traps are queued and run
+    by the program thread between two statements, and while it waits (the I/O waits and
+    the movements): check() is called by the translated code before each statement."""
+
+    def __init__(self) -> None:
+        self.table: dict[int, Interrupt] = {}
+        self.pending: list[int] = []
+        self.counter = 0
+        self.disabled = False
+        self.running = False
+        # called when an interrupt is queued (to wake the program that waits)
+        self.wake: Any = None
+        self.signals: list[tuple[str, Any, int]] = []  # signal, value (None: any), interrupt
+        self.lock = threading.RLock()
+
+    def connect(self, variable: Any, trap: Any) -> None:
+        with self.lock:
+            self.counter += 1
+            variable.Set(self.counter)
+            self.table[self.counter] = Interrupt(trap)
+            self.signals = [s for s in self.signals if s[2] != self.counter]
+
+    def order(self, number: int) -> Interrupt:
+        interrupt = self.table.get(number)
+        if interrupt is None:
+            raise Exception("the interrupt %s is not connected (CONNECT)" % (number,))
+        return interrupt
+
+    def delete(self, number: int) -> None:
+        with self.lock:
+            self.table.pop(number, None)
+            self.signals = [s for s in self.signals if s[2] != number]
+            self.pending = [n for n in self.pending if n != number]
+
+    def sleep(self, number: int, active: bool) -> None:
+        with self.lock:
+            self.order(number).active = active
+
+    def signal(self, name: str, value: Any, number: int, single: bool) -> None:
+        """interrupt when the signal changes to the value (None: at any change)"""
+        with self.lock:
+            self.order(number).single = single
+            self.signals = [s for s in self.signals if s[2] != number]
+            self.signals.append((name, value, number))
+            if self.on_signal not in IO.listeners:
+                IO.listeners.append(self.on_signal)
+
+    def on_signal(self, name: str, value: Any) -> None:
+        for signal, wanted, number in list(self.signals):
+            if signal.lower() == name.lower() and (wanted is None or wanted == value):
+                self.trigger(number)
+
+    def timer(self, seconds: float, number: int, single: bool) -> None:
+        """interrupt after the time (every time when not single), in the time of the
+        clock of the I/O"""
+        with self.lock:
+            self.order(number).single = single
+
+        def expire() -> None:
+            if number in self.table:
+                self.trigger(number)
+                if not single:
+                    IO.clock.after(seconds, expire)
+
+        IO.clock.after(seconds, expire)
+
+    def trigger(self, number: int) -> None:
+        with self.lock:
+            interrupt = self.table.get(number)
+            if interrupt is None or not interrupt.active:
+                return
+            self.pending.append(number)
+            if interrupt.single:
+                self.signals = [s for s in self.signals if s[2] != number]
+        if self.wake is not None:
+            self.wake()
+
+    def ready(self) -> bool:
+        return bool(self.pending) and not self.disabled and not self.running
+
+    def check(self) -> None:
+        """run the queued traps (called by the program thread)"""
+        while self.ready():
+            with self.lock:
+                number = self.pending.pop(0)
+                interrupt = self.table.get(number)
+            if interrupt is None:
+                continue
+            Symbols().GetSymbol("INTNO").data.Set(number)
+            self.running = True
+            try:
+                interrupt.trap({})
+            finally:
+                self.running = False
+
+
+INTERRUPTS = InterruptSystem()
+
+
 class RealClock:
     """waits in real time (no robot): the I/O instructions use the clock of the robot
     controller when the program moves a robot"""
@@ -1162,11 +1274,13 @@ class RealClock:
     def wait_until(self, condition: Any, max_time: Optional[float] = None) -> bool:
         """wait until condition() is true; False when max_time (s) expires"""
         end = None if max_time is None else time.monotonic() + max_time
-        while not condition():
+        while True:
+            INTERRUPTS.check()
+            if condition():
+                return True
             if end is not None and time.monotonic() >= end:
                 return False
             time.sleep(0.01)
-        return True
 
     def after(self, delay: float, action: Any) -> None:
         import threading
@@ -1186,6 +1300,7 @@ class IOSystem:
         self.values: NoCaseDict = NoCaseDict()
         self.listeners: list[Any] = []
         self.clock: Any = RealClock()
+        self.interrupts = INTERRUPTS
 
     def declare(self, name: str, kind: str) -> None:
         self.types[name] = kind

@@ -9,8 +9,9 @@ instructions = 3HAC050917-001.
 - [ ] **Recovery points with long jump** `ERROR (56, ERR_DIVZERO)` (kernel 7.2): rapid2py
   translates the handler but ignores the list of error numbers, so the long jump is not
   implemented.
-- [ ] **CONNECT / interrupts / TRAP** (kernel 4.13, 8): rapid2py raises
-  "Connect not yet supported".
+- [ ] **Interrupts**: `ISignalAI`, `ISignalAO`, `IError`, `IPers`, `IVarValue`,
+  `GetTrapData`, `ReadErrData`; the priorities of the traps (`SYNC`, `ISleep` of the
+  ones that run) and the interrupts during the execution of the error handlers.
 - [ ] **BACKWARD and UNDO handlers** (kernel 6, 7.2): check the semantics of the generated
   code, no test runs them.
 - [ ] **`pi` and `dnum`**: the validator knows them (they are predefined in RAPID), the
@@ -30,7 +31,7 @@ instructions = 3HAC050917-001.
 - [ ] **Movements that stop on a condition and the path control**: `SearchC`, `SearchL` on a
   persistent variable (`PersBool`) and `\Sup` (more than one hit is not counted
   after the movement stops), `StopMove`, `StartMove`, `StorePath`,
-  `RestoPath`, `ClearPath`, `TriggInt`, `TriggRampAO`, `TriggCheckIO`, `MoveExtJ`, `EOffsSet`/`EOffsOn`,
+  `RestoPath`, `ClearPath`, `TriggRampAO`, `TriggCheckIO`, `MoveExtJ`, `EOffsSet`/`EOffsOn`,
   `DefDFrame`/`DefFrame`, `PathResol`, `MoveJSync`/`MoveLSync`, `PathAccLim`, `SpeedLimAxis`, `CirPathMode`.
 - [ ] **Math and general functions**: the `dnum` versions (`AbsDnum`, `BitAndDnum`, ...),
   `StrFormat`, `StrDigCmp`/`StrDigCalc`, `ValidIO`, `RobName`, `OpMode`, `RunMode`;
