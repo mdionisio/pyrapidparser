@@ -23,8 +23,8 @@ instructions = 3HAC050917-001.
   resolution of `"module:procedure"`.
 - [ ] **Missing installed instructions** in `default/standard.sys`: the motion
   instructions other than MoveAbsJ, MoveJ, MoveL, MoveC (MoveExtJ, the Sync and DO
-  variants, SearchL, TriggL, ...), the files and serial channels (`Open`, `Write`,
-  `Close`), `TryInit`, `ErrWrite`/`GetSysInfo` have no test.
+  variants, SearchL, TriggL, ...), the serial channels (`com1:`), `ReadAnyBin`,
+  `WriteAnyBin`, `FSSize`, `TryInit`, `ErrWrite`/`GetSysInfo` have no test.
 - [ ] **Sockets**: `SocketSend` and `SocketReceive` support only `\Str`; `\RawData`,
   `\Data` and `\NoOfBytes` are missing, and a message longer than 1024 bytes is cut.
 - [ ] **Movements that stop on a condition and the path control**: `SearchL`, `SearchC`

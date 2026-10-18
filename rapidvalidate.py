@@ -51,7 +51,7 @@ ROBOT_DIRECTIVE = "robot:"
 MODULE_ATTRIBUTES = ("SYSMODULE", "NOVIEW", "NOSTEPIN", "VIEWONLY", "READONLY")
 
 # 2.16 Data type value classes: installed types known to be non-value types
-NON_VALUE_TYPES = frozenset(("iodev", "socketdev", "clock", "rawbytes"))
+NON_VALUE_TYPES = frozenset(("iodev", "dir", "socketdev", "clock", "rawbytes"))
 
 # 2.16 semi-value types: the I/O signals, num in value context ("the associated type of
 # signaldi is num")

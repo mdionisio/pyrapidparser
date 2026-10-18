@@ -6,7 +6,8 @@ RAPID. The orientations are quaternions [q1, q2, q3, q4] = [w, x, y, z]."""
 import datetime
 import math
 import random
-from typing import Any, Callable, Sequence
+import sys
+from typing import Any, Callable, Optional, Sequence
 
 Vector = list[float]
 Quaternion = list[float]
@@ -20,10 +21,34 @@ def plain(data: Any) -> Any:
     return value
 
 
-def call(result: Any, function: Callable[..., Any], *arguments: Any) -> None:
-    """result := function(arguments) with the data of the RAPID arguments; an argument
-    that is None (optional and absent) is passed as it is"""
-    result.Set(function(*[plain(a) if a is not None else None for a in arguments]))
+class LibraryError(Exception):
+    """an error of a library function: the program receives the RAPID error name (for
+    example ERR_FILEOPEN), that an error handler can test with ERRNO"""
+
+    def __init__(self, name: str, message: str) -> None:
+        Exception.__init__(self, message)
+        self.name = name
+
+
+def rapid_exception(error: LibraryError) -> Exception:
+    """the RapidException of the program for the error of a library function (the
+    runtime is imported by the program as pyrapid or as run.pyrapid)"""
+    runtime = sys.modules.get("pyrapid") or sys.modules["run.pyrapid"]
+    code = runtime.Symbols().GetSymbol(error.name).data.Get()
+    exception: Exception = runtime.RapidException(code, str(error))
+    return exception
+
+
+def call(result: Optional[Any], function: Callable[..., Any], *arguments: Any) -> None:
+    """result := function(arguments) with the data of the RAPID arguments (nothing is
+    assigned when result is None); an argument that is None (optional and absent) is
+    passed as it is"""
+    try:
+        value = function(*[plain(a) if a is not None else None for a in arguments])
+    except LibraryError as error:
+        raise rapid_exception(error) from None
+    if result is not None:
+        result.Set(value)
 
 
 # ---------------------------------------------------------------- numbers

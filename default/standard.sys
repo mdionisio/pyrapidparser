@@ -752,7 +752,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC num Sin (num Angle)
         VAR num ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.sin, _s("Angle").data)
         RETURN ret;
@@ -760,7 +760,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC num Cos (num Angle)
         VAR num ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.cos, _s("Angle").data)
         RETURN ret;
@@ -768,7 +768,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC num Tan (num Angle)
         VAR num ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.tan, _s("Angle").data)
         RETURN ret;
@@ -776,7 +776,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC num ASin (num Value)
         VAR num ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.asin, _s("Value").data)
         RETURN ret;
@@ -784,7 +784,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC num ACos (num Value)
         VAR num ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.acos, _s("Value").data)
         RETURN ret;
@@ -792,7 +792,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC num ATan (num Value)
         VAR num ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.atan, _s("Value").data)
         RETURN ret;
@@ -800,7 +800,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC num ATan2 (num Y, num X)
         VAR num ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.atan2, _s("Y").data, _s("X").data)
         RETURN ret;
@@ -808,7 +808,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC num Max (num A, num B)
         VAR num ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.maximum, _s("A").data, _s("B").data)
         RETURN ret;
@@ -816,7 +816,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC num Min (num A, num B)
         VAR num ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.minimum, _s("A").data, _s("B").data)
         RETURN ret;
@@ -824,7 +824,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC num Distance (pos Point1, pos Point2)
         VAR num ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.distance, _s("Point1").data, _s("Point2").data)
         RETURN ret;
@@ -832,7 +832,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC num DotProd (pos Vector1, pos Vector2)
         VAR num ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.dot, _s("Vector1").data, _s("Vector2").data)
         RETURN ret;
@@ -840,7 +840,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC pos CrossProd (pos Vector1, pos Vector2)
         VAR pos ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.cross, _s("Vector1").data, _s("Vector2").data)
         RETURN ret;
@@ -848,7 +848,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC num VectMagn (pos Vector)
         VAR num ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.magnitude, _s("Vector").data)
         RETURN ret;
@@ -856,7 +856,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC pose PoseMult (pose Pose1, pose Pose2)
         VAR pose ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.pose_mult, _s("Pose1").data, _s("Pose2").data)
         RETURN ret;
@@ -864,7 +864,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC pose PoseInv (pose Pose1)
         VAR pose ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.pose_inv, _s("Pose1").data)
         RETURN ret;
@@ -872,7 +872,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC pos PoseVect (pose Pose1, pos Vector)
         VAR pos ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.pose_vect, _s("Pose1").data, _s("Vector").data)
         RETURN ret;
@@ -880,7 +880,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC orient NOrient (orient Rotation)
         VAR orient ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.normalize, _s("Rotation").data)
         RETURN ret;
@@ -888,7 +888,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC num BitAnd (num BitData1, num BitData2)
         VAR num ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.bit_and, _s("BitData1").data, _s("BitData2").data)
         RETURN ret;
@@ -896,7 +896,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC num BitOr (num BitData1, num BitData2)
         VAR num ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.bit_or, _s("BitData1").data, _s("BitData2").data)
         RETURN ret;
@@ -904,7 +904,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC num BitXOr (num BitData1, num BitData2)
         VAR num ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.bit_xor, _s("BitData1").data, _s("BitData2").data)
         RETURN ret;
@@ -912,7 +912,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC num BitNeg (num BitData)
         VAR num ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.bit_neg, _s("BitData").data)
         RETURN ret;
@@ -920,7 +920,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC num BitLSh (num BitData, num ShiftSteps)
         VAR num ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.bit_left, _s("BitData").data, _s("ShiftSteps").data)
         RETURN ret;
@@ -928,7 +928,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC num BitRSh (num BitData, num ShiftSteps)
         VAR num ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.bit_right, _s("BitData").data, _s("ShiftSteps").data)
         RETURN ret;
@@ -936,7 +936,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC bool BitCheck (num BitData, num BitPos)
         VAR bool ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.bit_check, _s("BitData").data, _s("BitPos").data)
         RETURN ret;
@@ -944,7 +944,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC string DecToHex (string Str)
         VAR string ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.dec_to_hex, _s("Str").data)
         RETURN ret;
@@ -952,7 +952,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC num HexToDec (string Str)
         VAR num ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.hex_to_dec, _s("Str").data)
         RETURN ret;
@@ -960,7 +960,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC bool StrMemb (string Str, num ChPos, string Set)
         VAR bool ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.str_memb, _s("Str").data, _s("ChPos").data, _s("Set").data)
         RETURN ret;
@@ -968,7 +968,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC bool StrOrder (string Str1, string Str2, string Order)
         VAR bool ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.str_order, _s("Str1").data, _s("Str2").data, _s("Order").data)
         RETURN ret;
@@ -976,7 +976,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC string StrMap (string Str, string FromMap, string ToMap)
         VAR string ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.str_map, _s("Str").data, _s("FromMap").data, _s("ToMap").data)
         RETURN ret;
@@ -984,7 +984,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC string CTime ()
         VAR string ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.c_time)
         RETURN ret;
@@ -992,7 +992,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC string CDate ()
         VAR string ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.c_date)
         RETURN ret;
@@ -1000,7 +1000,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC num EulerZYX (\switch X | switch Y | switch Z, orient Rotation)
         VAR num ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:axis = "z"
         IF Present(X) THEN
@@ -1014,7 +1014,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC num Rand (\switch Seed \num SeedEachNTime)
         VAR num ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:seed = pyrapid.Symbols().IsInScope("Seed")
         !python:each = None
@@ -1027,7 +1027,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC num GetTime (\switch WDay | switch Hour | switch Min | switch Sec | switch MSec)
         VAR num ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:field = "sec"
         IF Present(WDay) THEN
@@ -1045,7 +1045,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC string ByteToStr (num BitData \switch Hex | switch Okt | switch Bin | switch Char)
         VAR string ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:base = ""
         IF Present(Hex) THEN
@@ -1063,7 +1063,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
 
     FUNC num StrToByte (string ConStr \switch Hex | switch Okt | switch Bin | switch Char)
         VAR num ret;
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:base = ""
         IF Present(Hex) THEN
@@ -1080,15 +1080,206 @@ MODULE SYSTEMMODULE(SYSMODULE)
     ENDFUNC
 
     PROC BitSet (INOUT num BitData, num BitPos)
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("BitData").data, pyrapid_lib.bit_set, _s("BitData").data, _s("BitPos").data)
     ENDPROC
 
     PROC BitClear (INOUT num BitData, num BitPos)
-        !python:import pyrapid_lib
+        !python:from run import pyrapid_lib
         !python:_s = pyrapid.Symbols().GetSymbol
         !python:pyrapid_lib.call(_s("BitData").data, pyrapid_lib.bit_clear, _s("BitData").data, _s("BitPos").data)
+    ENDPROC
+
+    !! Files and directories (run/pyrapid_files.py): the paths "HOME:/dir/file" are
+    !! relative to PYRAPID_HOME (default: the current folder), "TEMP:" to the temporary
+    !! folder; the serial channels are not supported.
+
+    CONST num EOF_BIN := -1;
+    CONST num EOF_NUM := 9.998E36;
+
+    PROC Open (string Object, VAR iodev IODevice \switch File \switch Read | switch Write | switch Append \switch Bin)
+        !python:from run import pyrapid_lib, pyrapid_files
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:mode = "write"
+        IF Present(Read) THEN
+            !python:mode = "read"
+        ELSEIF Present(Append) THEN
+            !python:mode = "append"
+        ENDIF
+        !python:binary = pyrapid.Symbols().IsInScope("Bin")
+        !python:pyrapid_lib.call(_s("IODevice").data, lambda path: pyrapid_files.open_file(path, mode, binary), _s("Object").data)
+    ENDPROC
+
+    PROC Close (VAR iodev IODevice)
+        !python:from run import pyrapid_lib, pyrapid_files
+        !python:pyrapid_lib.call(None, pyrapid_files.close, pyrapid.Symbols().GetSymbol("IODevice").data)
+    ENDPROC
+
+    PROC Rewind (VAR iodev IODevice)
+        !python:from run import pyrapid_lib, pyrapid_files
+        !python:pyrapid_lib.call(None, pyrapid_files.rewind, pyrapid.Symbols().GetSymbol("IODevice").data)
+    ENDPROC
+
+    PROC ClearIOBuff (VAR iodev IODevice)
+        !python:from run import pyrapid_lib, pyrapid_files
+        !python:pyrapid_lib.call(None, pyrapid_files.clear_buffer, pyrapid.Symbols().GetSymbol("IODevice").data)
+    ENDPROC
+
+    PROC Write (VAR iodev IODevice, string String \num Num | bool Bool | pos Pos | orient Orient | dnum Dnum \switch NoNewLine)
+        ! the string and the value as TPWrite does
+        !python:from run import pyrapid_lib, pyrapid_files
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:val = _s("String").data.Get()
+        IF Present(Num) THEN
+            !python:val = val + pyrapid.rapid_text(_s("Num").data)
+        ELSEIF Present(Bool) THEN
+            !python:val = val + pyrapid.rapid_text(_s("Bool").data)
+        ELSEIF Present(Pos) THEN
+            !python:val = val + pyrapid.rapid_text(_s("Pos").data)
+        ELSEIF Present(Orient) THEN
+            !python:val = val + pyrapid.rapid_text(_s("Orient").data)
+        ELSEIF Present(Dnum) THEN
+            !python:val = val + pyrapid.rapid_text(_s("Dnum").data)
+        ENDIF
+        !python:newline = not pyrapid.Symbols().IsInScope("NoNewLine")
+        !python:pyrapid_lib.call(None, lambda device: pyrapid_files.write(device, val, newline), _s("IODevice").data)
+    ENDPROC
+
+    PROC WriteBin (VAR iodev IODevice, num Buffer{*}, num NChar)
+        !python:from run import pyrapid_lib, pyrapid_files
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(None, pyrapid_files.write_bin, _s("IODevice").data, _s("Buffer").data, _s("NChar").data)
+    ENDPROC
+
+    PROC WriteStrBin (VAR iodev IODevice, string Str)
+        !python:from run import pyrapid_lib, pyrapid_files
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(None, pyrapid_files.write_str_bin, _s("IODevice").data, _s("Str").data)
+    ENDPROC
+
+    FUNC string ReadStr (VAR iodev IODevice \switch RemoveCR \switch DiscardHeaders \num Time)
+        ! "EOF" at the end of the file
+        VAR string ret;
+        !python:from run import pyrapid_lib, pyrapid_files
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:remove = pyrapid.Symbols().IsInScope("RemoveCR")
+        !python:discard = pyrapid.Symbols().IsInScope("DiscardHeaders")
+        !python:pyrapid_lib.call(_s("ret").data, lambda device: pyrapid_files.read_str(device, remove, discard), _s("IODevice").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num ReadNum (VAR iodev IODevice \string Delim \num Time)
+        ! EOF_NUM at the end of the file
+        VAR num ret;
+        !python:from run import pyrapid_lib, pyrapid_files
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:delim = None
+        IF Present(Delim) THEN
+            !python:delim = _s("Delim").data.Get()
+        ENDIF
+        !python:pyrapid_lib.call(_s("ret").data, lambda device: pyrapid_files.read_num(device, delim), _s("IODevice").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num ReadBin (VAR iodev IODevice \num Time)
+        ! EOF_BIN at the end of the file
+        VAR num ret;
+        !python:from run import pyrapid_lib, pyrapid_files
+        !python:pyrapid_lib.call(pyrapid.Symbols().GetSymbol("ret").data, pyrapid_files.read_bin, pyrapid.Symbols().GetSymbol("IODevice").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC string ReadStrBin (VAR iodev IODevice, num NChar \num Time)
+        VAR string ret;
+        !python:from run import pyrapid_lib, pyrapid_files
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_files.read_str_bin, _s("IODevice").data, _s("NChar").data)
+        RETURN ret;
+    ENDFUNC
+
+    PROC RemoveFile (string Path)
+        !python:from run import pyrapid_lib, pyrapid_files
+        !python:pyrapid_lib.call(None, pyrapid_files.remove_file, pyrapid.Symbols().GetSymbol("Path").data)
+    ENDPROC
+
+    PROC RenameFile (string OldPath, string NewPath)
+        !python:from run import pyrapid_lib, pyrapid_files
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(None, pyrapid_files.rename_file, _s("OldPath").data, _s("NewPath").data)
+    ENDPROC
+
+    PROC CopyFile (string OldPath, string NewPath)
+        !python:from run import pyrapid_lib, pyrapid_files
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(None, pyrapid_files.copy_file, _s("OldPath").data, _s("NewPath").data)
+    ENDPROC
+
+    PROC MakeDir (string Path)
+        !python:from run import pyrapid_lib, pyrapid_files
+        !python:pyrapid_lib.call(None, pyrapid_files.make_dir, pyrapid.Symbols().GetSymbol("Path").data)
+    ENDPROC
+
+    PROC RemoveDir (string Path)
+        !python:from run import pyrapid_lib, pyrapid_files
+        !python:pyrapid_lib.call(None, pyrapid_files.remove_dir, pyrapid.Symbols().GetSymbol("Path").data)
+    ENDPROC
+
+    FUNC bool IsFile (string Path \switch Directory | switch Fifo | switch RegFile | switch Symlink | switch BlockSpecFile | switch CharSpecFile | switch Socket)
+        VAR bool ret;
+        !python:from run import pyrapid_lib, pyrapid_files
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:kind = ""
+        IF Present(Directory) THEN
+            !python:kind = "directory"
+        ELSEIF Present(Fifo) THEN
+            !python:kind = "fifo"
+        ELSEIF Present(RegFile) THEN
+            !python:kind = "regfile"
+        ELSEIF Present(Symlink) THEN
+            !python:kind = "symlink"
+        ELSEIF Present(BlockSpecFile) THEN
+            !python:kind = "blockspecfile"
+        ELSEIF Present(CharSpecFile) THEN
+            !python:kind = "charspecfile"
+        ELSEIF Present(Socket) THEN
+            !python:kind = "socket"
+        ENDIF
+        !python:pyrapid_lib.call(_s("ret").data, lambda path: pyrapid_files.is_file(path, kind), _s("Path").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num FileSize (string Path)
+        VAR num ret;
+        !python:from run import pyrapid_lib, pyrapid_files
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_files.file_size, _s("Path").data)
+        RETURN ret;
+    ENDFUNC
+
+    PROC OpenDir (VAR dir Dev, string Path)
+        !python:from run import pyrapid_lib, pyrapid_files
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("Dev").data, pyrapid_files.open_dir, _s("Path").data)
+    ENDPROC
+
+    FUNC bool ReadDir (VAR dir Dev, VAR string FileName)
+        ! FALSE at the end of the directory
+        VAR bool ret;
+        !python:from run import pyrapid_lib, pyrapid_files
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:entry = []
+        !python:pyrapid_lib.call(None, lambda device: entry.append(pyrapid_files.read_dir(device)), _s("Dev").data)
+        !python:_s("ret").data.Set(entry[0] is not None)
+        IF ret THEN
+            !python:_s("FileName").data.Set(entry[0])
+        ENDIF
+        RETURN ret;
+    ENDFUNC
+
+    PROC CloseDir (VAR dir Dev)
+        !python:from run import pyrapid_lib, pyrapid_files
+        !python:pyrapid_lib.call(None, pyrapid_files.close_dir, pyrapid.Symbols().GetSymbol("Dev").data)
     ENDPROC
 
     !! I/O instructions: the signals are in the I/O configuration (--eio of rapid2py),

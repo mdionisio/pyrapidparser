@@ -116,6 +116,8 @@ def test_rapid2py_execution(path: str, tmp_path: pathlib.Path) -> None:
     # one line for each motion instruction, no viewer
     env["PYRAPID_MOTION_LOG"] = "1"
     env.pop("PYRAPID_VIEWER", None)
+    # HOME: of the files of the program
+    env["PYRAPID_HOME"] = outdir
     run = subprocess.run(
         [sys.executable, "program.py"],
         cwd=outdir,

@@ -184,14 +184,19 @@ controller provides; `rapid2py.py` translates it with the program (`-s` leaves i
 | Strings             | `StrLen`, `StrPart`, `StrFind`, `StrMatch`, `StrMemb`, `StrOrder`, `StrMap`, `NumToStr`, `ValToStr`, `StrToVal`, `DecToHex`, `HexToDec`, `ByteToStr`, `StrToByte`; the constants `STR_DIGIT`, `STR_UPPER`, `STR_LOWER` (ASCII letters only), `STR_WHITE` |
 | Time and messages   | `GetTime`, `CTime`, `CDate`, `WaitTime`, `ClkReset`, `ClkStart`, `ClkStop`, `ClkRead`, `TPWrite`, `ErrWrite`, `ExitCycle` |
 | Modules             | `Load`, `UnLoad` (the modules translated apart, `rapid2py -f <module>.py`) |
+| Files               | `Open` (`\Read`, `\Write`, `\Append`, `\Bin`), `Close`, `Rewind`, `Write`, `WriteBin`, `WriteStrBin`, `ReadStr` ("EOF" at the end), `ReadNum` (`EOF_NUM`), `ReadBin`, `ReadStrBin`, `ClearIOBuff`, `RemoveFile`, `RenameFile`, `CopyFile`, `MakeDir`, `RemoveDir`, `IsFile`, `FileSize`, `OpenDir`, `ReadDir`, `CloseDir` |
 | Raw data            | `ClearRawBytes`, `CopyRawBytes`, `PackRawBytes`, `UnPackRawBytes`, `RawBytesLen` |
 
 The sockets are real: `SocketBind`, `SocketListen` and `SocketAccept` open a TCP server on
 the machine, so a program can talk with a real client (a PLC, a vision system, a test
 script). The data of `SocketSend` and `SocketReceive` are strings (`\Str`, one character
 for each byte, as latin-1); `\RawData` and the byte arrays `\Data` are not supported.
-`TryInit`, the files and serial channels (`Open`, `Write`, `Close`), the interrupts and
-the other installed routines are missing: see [todo.md](todo.md).
+The paths of the files are those of the controller: `HOME:/dir/file` is relative to the
+folder `PYRAPID_HOME` (default: the current folder), `TEMP:/file` to the temporary folder.
+The errors are `ERR_FILEOPEN`, `ERR_FILEACC`, `ERR_FILEEXIST`. The serial channels
+(`com1:`) are not supported.
+`TryInit`, the interrupts and the other installed routines are missing: see
+[todo.md](todo.md).
 
 ## Robot motion
 

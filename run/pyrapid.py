@@ -628,6 +628,8 @@ class rapid_num:
 
 
 Symbols().AddGlobalSym("num", Symbol.CreateDataType(rapid_num))
+# dnum (double precision) is a Python float, as num
+Symbols().AddGlobalSym("dnum", Symbol.CreateDataType(rapid_num))
 
 
 class rapid_byte:
@@ -819,6 +821,7 @@ Symbols().AddGlobalSym("ERR_EXCRTYMAX", Symbol.CreateConst(rapid_errnum, rapid_e
 Symbols().AddGlobalSym("ERR_EXECPHR", Symbol.CreateConst(rapid_errnum, rapid_errnum()))
 Symbols().AddGlobalSym("ERR_FILEACC", Symbol.CreateConst(rapid_errnum, rapid_errnum()))
 Symbols().AddGlobalSym("ERR_FILEOPEN", Symbol.CreateConst(rapid_errnum, rapid_errnum()))
+Symbols().AddGlobalSym("ERR_FILEEXIST", Symbol.CreateConst(rapid_errnum, rapid_errnum()))
 Symbols().AddGlobalSym("ERR_FILNOTFND", Symbol.CreateConst(rapid_errnum, rapid_errnum()))
 Symbols().AddGlobalSym("ERR_FNCNORET", Symbol.CreateConst(rapid_errnum, rapid_errnum()))
 Symbols().AddGlobalSym("ERR_FRAME", Symbol.CreateConst(rapid_errnum, rapid_errnum()))
@@ -938,6 +941,30 @@ class rapid_iodev:
 
 
 Symbols().AddGlobalSym("iodev", Symbol.CreateDataType(rapid_iodev))
+
+
+class rapid_dir:
+    def __init__(self, val: Any = None) -> None:
+        self.val: Any = None
+        if not (val is None):
+            self.Set(val)
+
+    def Set(self, val: Any) -> None:
+        if isinstance(val, str):
+            self.val = val
+        elif isinstance(val, rapid_dir):
+            self.val = deepcopy(val.val)
+        else:
+            raise Exception("type unsupported")
+
+    def Get(self) -> Any:
+        if self.val is None:
+            raise Exception("variable never assigned")
+        else:
+            return self.val
+
+
+Symbols().AddGlobalSym("dir", Symbol.CreateDataType(rapid_dir))
 
 
 class rapid_jointtarget(rapid_struct):

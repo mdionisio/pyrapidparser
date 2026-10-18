@@ -1,0 +1,18 @@
+directory TRUE
+size 57
+read first line
+read x = 12.5
+read flag TRUE and position [1,2,3]
+number 3
+number 4
+number 5
+end of file TRUE
+after rewind first line
+bytes 6
+binary text Hi
+moved TRUE
+entry data.bin
+entry data.txt
+entry moved.txt
+removed TRUE
+cannot open
