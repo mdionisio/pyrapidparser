@@ -517,6 +517,17 @@ class Viewer:
         # path of the TCP
         self.trace: list[Any] = []
 
+    def close(self) -> None:
+        """stop the server of MeshCat, that otherwise stays after the program (and keeps
+        its port: the next viewer has another address)"""
+        process = getattr(self.visualizer.viewer.window, "server_proc", None)
+        if process is not None:
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except Exception:  # pragma: no cover
+                process.kill()
+
     def show(self, axes: Any) -> None:
         self.visualizer.display(self.robot.configuration(axes))
 
@@ -1340,9 +1351,13 @@ def install_exit_hooks(viewer: bool) -> None:
     sys.excepthook = excepthook
 
     def at_exit() -> None:
-        CONTROLLER.finish()
-        if viewer and os.environ.get("PYRAPID_VIEWER_HOLD", "1") not in ("", "0"):
-            hold_viewer()
+        try:
+            CONTROLLER.finish()
+            if viewer and os.environ.get("PYRAPID_VIEWER_HOLD", "1") not in ("", "0"):
+                hold_viewer()
+        finally:
+            if CONTROLLER.viewer is not None:
+                CONTROLLER.viewer.close()
 
     atexit.register(at_exit)
 
