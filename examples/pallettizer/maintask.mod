@@ -1,13 +1,12 @@
 MODULE MAINTASK
-!robot: irb460_approx
-! Palletizer: ABB IRB 460, 4 axes (approximate model, see models/irb460_approx.json).
-! The motion is still to be written: the program does not move the robot yet.
-! Translation (from the project folder):
-!   python rapid2py.py -e MAIN -i examples/pallettizer/settings.mod -i examples/pallettizer/gloadschema.mod
+! Palletizer: the robot (environment.mod) fills the pallets of the place lines with
+! the products of the pick lines, following the schemas of schema.mod.
+! Translation and run (from the project folder), with the simulation of the cell:
+!   PYRAPID_SIMULATION=examples/pallettizer/cell.py python rapid2py.py
+!       --eio examples/pallettizer/EIO.cfg -e MAIN -d out -f pallettizer.py -r
+!       -i examples/pallettizer/settings.mod -i examples/pallettizer/gloadschema.mod
 !       -i examples/pallettizer/schema.mod -i examples/pallettizer/types.mod
-!       -i examples/pallettizer/maintask.mod -d out -f pallettizer.py
-!
-!
+!       -i examples/pallettizer/environment.mod -i examples/pallettizer/maintask.mod
 
     ! this type contain the action that has to be done
     ! if nProdLine=-1 or nQueue=-1 or nStep=-1 means nothing to do
@@ -45,6 +44,14 @@ MODULE MAINTASK
 
     !  GLOBAL VARIABLE
     VAR bool bContinueExecution := TRUE;
+
+    ! the gripper holds a product for the place line nHeldLine
+    VAR bool bHolding := FALSE;
+    VAR num nHeldLine := 0;
+    ! last place line served: the lines are served in turn
+    VAR num nLastLine := 0;
+    ! pallets filled by each place line
+    VAR num nPalletsDone{nPLACELINE} := [0, 0];
     
     !  GLOBAL VARIABLE USED IN AUTOMATIC
     
@@ -64,8 +71,7 @@ MODULE MAINTASK
     ! robot go in parking position and waith to arrive there
     PROC GoHome()
         TPWrite "GO TO PARK";
-        !todo
-        WaitTime Time:=1;
+        MoveAbsJ jHome, v2000, fine, tGripper;
     ENDPROC
     
     FUNC bool IsPalletExiting(num nProdLine)
@@ -92,7 +98,7 @@ MODULE MAINTASK
         IF spacepos = (StrLen(command_to_find)+1) THEN
             basecommand := StrPart(command, 1, StrLen(command_to_find));
             IF basecommand = command_to_find THEN
-                tmp := StrPart(command, spacepos+1, StrLen(command)-spacepos-1);
+                tmp := StrPart(command, spacepos+1, StrLen(command)-spacepos);
                 IF StrToVal(tmp, prod) THEN
                     x := prod.x;
                     y := prod.y;
@@ -119,7 +125,7 @@ MODULE MAINTASK
         IF spacepos = (StrLen(command_to_find)+1) THEN
             basecommand := StrPart(command, 1, StrLen(command_to_find));
             IF basecommand = command_to_find THEN
-                tmp := StrPart(command, spacepos+1, StrLen(command)-spacepos-1);
+                tmp := StrPart(command, spacepos+1, StrLen(command)-spacepos);
                 IF StrToVal(tmp, prod) THEN
                     index := prod.type;
                     x{1} := prod.x1;
@@ -162,7 +168,7 @@ MODULE MAINTASK
         IF spacepos = (StrLen(command_to_find)+1) THEN
             basecommand := StrPart(command, 1, StrLen(command_to_find));
             IF basecommand = command_to_find THEN
-                tmp := StrPart(command, spacepos+1, StrLen(command)-spacepos-1);
+                tmp := StrPart(command, spacepos+1, StrLen(command)-spacepos);
                 IF StrToVal(tmp, prod) THEN
                     nprod := prod{1};
                     disposition := prod{2};
@@ -184,7 +190,7 @@ MODULE MAINTASK
         IF spacepos = (StrLen(command_to_find)+1) THEN
             basecommand := StrPart(command, 1, StrLen(command_to_find));
             IF basecommand = command_to_find THEN
-                tmp := StrPart(command, spacepos+1, StrLen(command)-spacepos-1);
+                tmp := StrPart(command, spacepos+1, StrLen(command)-spacepos);
                 IF StrToVal(tmp, queue) THEN
                     RETURN TRUE;
                 ENDIF
@@ -203,7 +209,7 @@ MODULE MAINTASK
         IF spacepos = (StrLen(command_to_find)+1) THEN
             basecommand := StrPart(command, 1, StrLen(command_to_find));
             IF basecommand = command_to_find THEN
-                tmp := StrPart(command, spacepos+1, StrLen(command)-spacepos-1);
+                tmp := StrPart(command, spacepos+1, StrLen(command)-spacepos);
                 IF StrToVal(tmp, queue) THEN
                     RETURN TRUE;
                 ENDIF
@@ -297,12 +303,14 @@ MODULE MAINTASK
         UnLoad FilePath:="schema.mod";
         Load FilePath:="schema.mod";
         TPWrite "INIT MODULE";
-        %"INIT_SCHEMA"%;
+        %"INIT_SCHEMA"% nsch;
         
         r_SchemaType_Valid{nsch} := SchemaType_Valid;
         IF r_SchemaType_Valid{nsch}=TRUE THEN
             TPWrite "RUNNING SCHEMA:",\Num:=nsch;
             r_ProductType{nsch} := ProductType;
+            r_PalletType{nsch} := PalletType;
+            r_SheetType{nsch} := SheetType;
             
             r_GripperType{nsch} := GripperType;
             
@@ -400,36 +408,36 @@ MODULE MAINTASK
     ENDPROC
     
     PROC AOrderProduct(num nProdLine, num nProd, num Dispo)
-        TPWrite "ORDER PRODUCT";
-        TPWrite "LINE:",\Num:=nProdLine;
-        TPWrite "SRC LINE:",\Num:=r_TakeLine{nProdLine};
-        TPWrite "nprod:",\Num:=nProd;
-        TPWrite "disp:",\Num:=Dispo;
+        TPWrite "ORDER PRODUCT LINE " + NumToStr(nProdLine, 0) + " FROM PICK LINE " + NumToStr(r_TakeLine{nProdLine}, 0) + ": " + NumToStr(nProd, 0);
+        OrderProducts r_TakeLine{nProdLine}, nProd;
     ENDPROC
     
     PROC AOrderPallet(num nProdLine)
-        TPWrite "ORDER PALLET";
-        TPWrite "LINE:",\Num:=nProdLine;
+        TPWrite "ORDER PALLET LINE ", \Num:=nProdLine;
+        RequestPallet nProdLine;
     ENDPROC
     
+    ! nPALLET_PICKLINE = 0: the empty pallets come on the station by conveyor
     PROC ATakePallet(num nProdLine)
-        TPWrite "TAKE PALLET";
-        TPWrite "LINE:",\Num:=nProdLine;
-        !todo
-        WaitTime Time:=1;
+        TPWrite "TAKE PALLET LINE ", \Num:=nProdLine;
     ENDPROC
     
     PROC APlacePallet(num nProdLine)
-        TPWrite "PLACE PALLET";
-        TPWrite "LINE:",\Num:=nProdLine;
-        !todo
-        WaitTime Time:=1;
+        TPWrite "PLACE PALLET LINE ", \Num:=nProdLine;
     ENDPROC
     
     PROC AExitPallet(num nProdLine)
-        TPWrite "EXIT PALLET";
-        TPWrite "LINE:",\Num:=nProdLine;
+        TPWrite "EXIT PALLET LINE ", \Num:=nProdLine;
         SetPalletExiting nProdLine;
+        IF PalletPresent(nProdLine) THEN
+            SendPallet nProdLine;
+            nPalletsDone{nProdLine} := nPalletsDone{nProdLine} + 1;
+        ENDIF
+        ResetPalletExiting nProdLine;
+        IF nPalletsToDo > 0 AND nPalletsDone{nProdLine} >= nPalletsToDo THEN
+            TPWrite "LINE " + NumToStr(nProdLine, 0) + " DONE: " + NumToStr(nPalletsDone{nProdLine}, 0) + " PALLETS";
+            r_SchemaType_Valid{nProdLine} := FALSE;
+        ENDIF
     ENDPROC
     
     PROC ATakeSheet(num nProdLine)
@@ -443,25 +451,35 @@ MODULE MAINTASK
     ENDPROC
     
     
+    ! take a product from the pick line of nProdLine: x, y, z, rot are offsets from the
+    ! pick point
     PROC ATakeProd(num nProdLine, num x, num y, num z, num rot)
-        TPWrite "PLACE TAKE Prod";
-        TPWrite "LINE:",\Num:=nProdLine;
-        TPWrite "X:",\Num:=x;
-        TPWrite "Y:",\Num:=y;
-        TPWrite "Z:",\Num:=z;
-        TPWrite "rot:",\Num:=rot;
+        VAR robtarget target;
+        target := PickTarget(r_TakeLine{nProdLine}, r_ProductType{nProdLine}.Z);
+        target := RelTool(Offs(target, x, y, z), 0, 0, 0 \Rz:=rot);
+        TPWrite "TAKE PRODUCT LINE ", \Num:=nProdLine;
+        MoveJ Offs(target, 0, 0, nApproach), v3000, z100, tGripper;
+        MoveL target, v1000, fine, tGripper;
+        GripperClose;
+        bHolding := TRUE;
+        nHeldLine := nProdLine;
+        MoveL Offs(target, 0, 0, nApproach), v2000, z100, tGripper;
     ENDPROC
     
+    ! place the product on the pallet of nProdLine: x, y center, z bottom from the top of
+    ! the pallet, rot degrees, coming from the point displaced of acc_x, acc_y, acc_z
     PROC APlaceSingleProd(num nProdLine, num x, num y, num z, num rot, num acc_x, num acc_y, num acc_z)
-        TPWrite "PLACE Single Prod";
-        TPWrite "LINE:",\Num:=nProdLine;
-        TPWrite "X:",\Num:=x;
-        TPWrite "Y:",\Num:=y;
-        TPWrite "Z:",\Num:=z;
-        TPWrite "rot:",\Num:=rot;
-        TPWrite "acc X:",\Num:=acc_x;
-        TPWrite "acc Y:",\Num:=acc_y;
-        TPWrite "acc Z:",\Num:=acc_z;
+        VAR robtarget target;
+        VAR wobjdata wobj;
+        wobj := PalletWObj(nProdLine);
+        target := PlaceTarget(x, y, z, rot, r_PalletType{nProdLine}.Z, r_ProductType{nProdLine}.Z);
+        TPWrite "PLACE PRODUCT LINE " + NumToStr(nProdLine, 0) + " AT ", \Pos:=target.trans;
+        MoveJ Offs(target, acc_x, acc_y, acc_z + nApproach), v3000, z100, tGripper \WObj:=wobj;
+        MoveL Offs(target, acc_x, acc_y, acc_z), v1000, z10, tGripper \WObj:=wobj;
+        MoveL target, v300, fine, tGripper \WObj:=wobj;
+        GripperOpen;
+        bHolding := FALSE;
+        MoveL Offs(target, 0, 0, nApproach), v2000, z100, tGripper \WObj:=wobj;
     ENDPROC
     
     PROC APlaceDoubleProd(num nProdLine, num x{*}, num y{*}, num z{*}, num rot{*}, num acc_x{*}, num acc_y{*}, num acc_z{*})
@@ -515,7 +533,6 @@ MODULE MAINTASK
                 IF IsPalletExiting(command.nProdLine) THEN
                     RETURN FALSE;
                 ENDIF
-                !TODO NO PALLET PRESENT
                 RETURN TRUE;
             ELSEIF IsTakePallet(fullcommand) THEN
                 IF IsPalletExiting(command.nProdLine) THEN
@@ -536,9 +553,11 @@ MODULE MAINTASK
             ELSEIF IsPlaceSheet(fullcommand) THEN
                 RETURN TRUE;
             ELSEIF IsTakeProduct(fullcommand, param_queue1, param_queue2, param_queue3, param_queue4) THEN
-                RETURN TRUE;
+                ! the gripper is free and a product is on the pick point
+                RETURN NOT bHolding AND ProductPresent(r_TakeLine{command.nProdLine});
             ELSEIF IsPlaceProduct(fullcommand, param_queue1, v_param_queue1, v_param_queue2, v_param_queue3, v_param_queue4, v_param_queue5, v_param_queue6, v_param_queue7) THEN
-                RETURN TRUE;
+                ! the gripper holds a product of this line and the pallet is there
+                RETURN bHolding AND nHeldLine = command.nProdLine AND PalletPresent(command.nProdLine);
             ELSE
                 TPWrite "command not yet supported and so can not be done: "+fullcommand ;
                 RETURN FALSE;
@@ -602,10 +621,13 @@ MODULE MAINTASK
     !
     FUNC todoType AThereIsSomethingToDo()
         VAR todoType res;
+        VAR num k;
         VAR num i;
         VAR num j;
         
-        FOR i FROM 1 TO nPLACELINE STEP 1 DO
+        ! the lines in turn, starting from the one after the last served
+        FOR k FROM 1 TO nPLACELINE STEP 1 DO
+            i := ((nLastLine + k - 1) MOD nPLACELINE) + 1;
             IF r_SchemaType_Valid{i} THEN
                 FOR j FROM 1 TO nQueueForSchema STEP 1 DO
                     
@@ -614,6 +636,7 @@ MODULE MAINTASK
                     res.nStep := r_SchemaType_RunSteps{i, j};
                     
                     IF CommandCanBeExecuted(res) THEN
+                        nLastLine := i;
                         RETURN res;
                     ENDIF
                     
@@ -679,7 +702,7 @@ MODULE MAINTASK
             
             ActionToDo := AThereIsSomethingToDo();
             IF (ActionToDo.nProdLine<>-1) AND (ActionToDo.nQueue<>-1) AND (ActionToDo.nStep<>-1) THEN
-                TPWrite "DO ACTION ON LINE "+NumToStr(ActionToDo.nProdLine,10) + " QUEUE "+NumToStr(ActionToDo.nQueue,10) + " STEP " + NumToStr(ActionToDo.nStep,10);
+                TPWrite "DO ACTION ON LINE "+NumToStr(ActionToDo.nProdLine,0) + " QUEUE "+NumToStr(ActionToDo.nQueue,0) + " STEP " + NumToStr(ActionToDo.nStep,0);
                 bDoneSomething := TRUE;
                 
                 TPWrite "Do Step:"+r_ActionType_Name{ActionToDo.nProdLine, ActionToDo.nQueue, ActionToDo.nStep};
@@ -725,6 +748,9 @@ MODULE MAINTASK
     ! MAIN PROGRAM
     ! this has to be configured to work in the main task as a single loop
     PROC MAIN()
+        ! the 4 axis robot: no configuration supervision
+        ConfJ \Off;
+        ConfL \Off;
         ! loop foreever
         WHILE HasToRun() DO
         
@@ -740,7 +766,11 @@ MODULE MAINTASK
             
             ! wait to avoit to loop too quick and to be sure that
             ! the main will be stopped with the robot velocity = 0
-            WaitTime \InPos, 1;         
+            WaitTime \InPos, 1;
+            ! the demo ends when the lines have filled their pallets
+            IF nPalletsToDo > 0 THEN
+                bContinueExecution := FALSE;
+            ENDIF
             
         ENDWHILE
     ENDPROC

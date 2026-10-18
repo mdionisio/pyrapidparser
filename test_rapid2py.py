@@ -182,3 +182,30 @@ def test_example_irb120(tmp_path: pathlib.Path) -> None:
     # the corners z20 of the small square are passed without stopping
     assert [m[3] for m in moves].count("z20") == 3
     assert "tilted pen at [75,75,50]" in result.stdout
+
+
+def test_example_pallettizer(tmp_path: pathlib.Path) -> None:
+    """examples/pallettizer with the simulation of the cell (cell.py): the two place
+    lines fill a pallet each and ship it"""
+    pytest.importorskip("pinocchio")
+    example = os.path.join("examples", "pallettizer")
+    env = dict(os.environ)
+    env["PYRAPID_SIMULATION"] = os.path.join(example, "cell.py")
+    env.pop("PYRAPID_VIEWER", None)
+    env.pop("PYRAPID_MOTION_LOG", None)
+    modules = ["settings", "gloadschema", "schema", "types", "environment", "maintask"]
+    result = subprocess.run(
+        [sys.executable, "rapid2py.py", "-r", "-e", "MAIN"]
+        + ["--eio", os.path.join(example, "EIO.cfg")]
+        + [a for m in modules for a in ("-i", os.path.join(example, m + ".mod"))]
+        + ["-d", os.fspath(tmp_path), "-f", "pallettizer.py"],
+        cwd=PROJECT_DIR,
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=600,
+    )
+    assert result.returncode == 0, result.stderr[-2000:]
+    assert "cell: station 1 shipped 1 pallets, 12 products" in result.stdout
+    assert "cell: station 2 shipped 1 pallets, 14 products" in result.stdout
+    assert "closed on nothing" not in result.stderr
