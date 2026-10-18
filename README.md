@@ -198,9 +198,12 @@ one:
   `third_party/abb`): IRB 120, 1200, 1600, 2400, 2600, 4400, 4600, 52, 5400, 6600, 6640,
   6650S, 6700, 7600 and CRB 15000, named after their xacro file (`irb120_3_58`,
   `irb4600_60_205`, ...);
-- `irb460_approx` in `models/`: the 4 axis palletizer ABB IRB 460. No model of this robot
-  exists: the link lengths are estimated from the ABB data sheet (reach 2403 mm, height
-  1786 mm) and the geometry is made of boxes.
+- `irb460_110_240` in `models/`: the 4 axis palletizer ABB IRB 460-110/2.4, with the
+  parallel linkage. There is no URDF of this robot: the lengths come from the ABB CAD
+  model, the geometry is made of boxes. `python models/irb460_110_240/build_cad.py`
+  (needs `pip install gmsh`) downloads the CAD model from the ABB Library and converts it
+  to meshes in `models/irb460_110_240/cad/` (not in the repository: ABB copyright); then
+  the viewer shows the real robot.
 
 The models contain the geometry, the limits and the maximum speed of the axes (from the ABB
 data sheets). The other data is often missing, and the loading prints a warning for each
@@ -219,8 +222,8 @@ warning: irb4600_60_205: no inertial data, the joint torques are not computed
 ```
 
 `models/<model>.json` adds or overrides data of a model: accelerations, torque limits,
-limits of the axes, coupled joints (see the comment at the top of `robotmodel.py` and
-`models/irb460_approx.json`).
+limits of the axes, coupled joints, meshes of a CAD model (see the comment at the top of
+`robotmodel.py` and `models/irb460_110_240.json`).
 
 ### Motion instructions
 
@@ -337,70 +340,24 @@ See `examples/pallettizer/cell.py`.
 | `PYRAPID_SIMULATION=file` | the simulation of the cell                                  |
 
 With the viewer, MeshCat prints the address to open (`http://127.0.0.1:7000/static/`) and
-the program runs at the speed of the robot.
+the program runs at the speed of the robot: `PYRAPID_VIEWER=meshcat` implies the real time,
+`PYRAPID_REALTIME=1` is for the real time without the viewer.
 
 ### Examples
 
-`examples/irb120/demo.mod`: an ABB IRB 120 draws on a table with a pen: a square with stop
-points, a smaller square with fly-by corners (`z20`) and a circle, with joint, linear and
-circular movements, a work object and a tilted tool:
+Each example has a README with what it does and how to run it:
+
+- [examples/irb120](examples/irb120/README.md): an ABB IRB 120 draws on a table with a pen:
+  joint, linear and circular movements, stop and fly-by points, a work object and a tool;
+- [examples/pallettizer](examples/pallettizer/README.md): an ABB IRB 460 fills two pallets
+  at the same time with different products and schemas; the cell (conveyors, pallets,
+  products, gripper) is simulated by `cell.py` and talks with the program through the I/O
+  signals; with the ABB CAD model the viewer shows the real robot.
 
 ```sh
 PYRAPID_MOTION_LOG=1 python rapid2py.py -e demo.main -i examples/irb120/demo.mod -d out -f demo.py -r
-```
-
-```
-   0.43 s  MoveAbsJ fine      axes [0.0, 0.0, 0.0, 0.0, 30.0, 0.0] deg  max torque [0.0, 5.8, 5.8, 0.0, 0.1, 0.0] Nm
-   1.37 s  MoveAbsJ fine      axes [-60.0, 20.0, -20.0, 90.0, 60.0, 180.0] deg  max torque [1.9, 12.4, 6.1, 0.1, 0.1, 0.0] Nm
-...
-   8.32 s  MoveL    z20       axes [-22.4, 38.8, -5.3, 0.0, 56.5, -22.4] deg  max torque [1.3, 19.9, 7.2, 0.0, 0.1, 0.0] Nm
-   8.83 s  MoveL    z20       axes [-10.0, 33.1, 3.5, 0.0, 53.3, -10.0] deg  max torque [1.5, 19.9, 7.2, 0.0, 0.1, 0.0] Nm
-```
-
-The time is the end of the movement; a fly-by point that became a stop point is marked
-`stop` (`z20 stop`).
-
-To see it in the browser:
-
-```sh
 PYRAPID_VIEWER=meshcat python rapid2py.py -e demo.main -i examples/irb120/demo.mod -d out -f demo.py -r
 ```
-
-`examples/pallettizer/`: a palletizer with an ABB IRB 460 (4 axes, `irb460_approx`) that
-fills two pallets at the same time with different products and schemas:
-
-| File              |                                                                    |
-| ----------------- | ------------------------------------------------------------------ |
-| `maintask.mod`    | the program: it runs the commands of the schemas, line after line  |
-| `schema.mod`      | a schema for each pallet: product, pallet, take and place commands |
-| `environment.mod` | the data of the cell: pick points, pallet work objects, gripper, I/O |
-| `settings.mod`, `gloadschema.mod`, `types.mod` | data of the program                   |
-| `EIO.cfg`         | the I/O signals of the cell                                        |
-| `cell.py`         | the simulation of the cell (not part of the program)              |
-
-The program orders an empty pallet and the products; the cell brings them (the products on
-the pick points of the two conveyors, `diProduct1`, `diProduct2`); the robot takes a product
-closing the gripper (`doGripper`) and places it on the pallet of its line; a full pallet
-leaves with its products (`doPalletOut1`). In the viewer the products appear on the
-conveyors, travel with the gripper (green when it holds a product) and leave with the
-pallet; `floor.png` next to `cell.py` replaces the grid of the floor.
-
-```sh
-E=examples/pallettizer
-PYRAPID_SIMULATION=$E/cell.py PYRAPID_VIEWER=meshcat python rapid2py.py --eio $E/EIO.cfg \
-    -i $E/settings.mod -i $E/gloadschema.mod -i $E/schema.mod -i $E/types.mod \
-    -i $E/environment.mod -i $E/maintask.mod -e MAIN -d out -f pallettizer.py -r
-```
-
-Without the viewer the run takes a few seconds and ends with:
-
-```
-cell: station 1 shipped 1 pallets, 12 products
-cell: station 2 shipped 1 pallets, 14 products
-```
-
-`nPalletsToDo` in `environment.mod` sets the pallets of each line (0: the program never
-ends).
 
 ## Supported language
 

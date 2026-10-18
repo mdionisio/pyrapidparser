@@ -43,8 +43,10 @@ instructions = 3HAC050917-001.
   IRB 6640): cfx is always 0.
 - [ ] **Acceleration and torque limits**: no model has them; add `models/<model>.json`
   when the data is available (ABB does not publish it).
-- [ ] **IRB 460**: the model is approximate (link lengths estimated from the data sheet,
-  no inertial data, axis 3 measured from the horizontal); replace it with a real model.
+- [ ] **IRB 460**: the lengths come from the ABB CAD model, but there is no inertial data
+  (it could be estimated from the volumes of the CAD parts) and the combined limits of
+  the axes 2 and 3 are not modeled (the reach of the model is 2446 mm, the data sheet
+  says 2403 mm).
 - [ ] **Palletizer example**: `PlaceProduct` of two products at once (type 2),
   `TakeSheet`/`PlaceSheet` and the pallet magazine (`TakePallet`/`PlacePallet`) only
   write a message; the positions of `cell.py` repeat the points of `environment.mod`.
