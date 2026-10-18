@@ -905,6 +905,15 @@ MODULE SYSTEMMODULE(SYSMODULE)
         RETURN ret;
     ENDFUNC
 
+    ! orientation from Euler angles (degrees): around z, then the new y, then the new x
+    FUNC orient OrientZYX(num ZAngle, num YAngle, num XAngle)
+        VAR orient ret;
+        !python:import pyrapid_motion
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_motion.OrientZYX(_s("ret").data, _s("ZAngle").data.Get(), _s("YAngle").data.Get(), _s("XAngle").data.Get())
+        RETURN ret;
+    ENDFUNC
+
     FUNC robtarget Offs(robtarget Point, num XOffset, num YOffset, num ZOffset)
         VAR robtarget ret;
         !python:import pyrapid_motion

@@ -1049,6 +1049,16 @@ def CalcRobT(result: Any, jointtarget: Any, tooldata: Any, wobjdata: Any) -> Non
     result.Set(robtarget_values(axes_of(jointtarget), Tool.of(tooldata), wobj_of(wobjdata)))
 
 
+def OrientZYX(result: Any, z: float, y: float, x: float) -> None:
+    """orientation from Euler angles in degrees: around z, then the new y, then the new x"""
+    rotation = (
+        pin.utils.rotate("z", math.radians(z))
+        @ pin.utils.rotate("y", math.radians(y))
+        @ pin.utils.rotate("x", math.radians(x))
+    )
+    result.Set(pose_values(pin.SE3(rotation, np.zeros(3)))[1])
+
+
 def Offs(result: Any, point: Any, dx: float, dy: float, dz: float) -> None:
     """the point displaced in the work object frame (mm)"""
     result.Set(point)

@@ -385,3 +385,15 @@ def test_viewer(monkeypatch: pytest.MonkeyPatch) -> None:
     assert np.allclose(np.degrees(controller.current()), [30, 0, 0, 0, 30, 0])
     assert len(viewer.trace) > 5
     assert np.allclose(viewer.trace[-1], tcp(), atol=0.01)
+
+
+def test_orient_zyx() -> None:
+    """OrientZYX(z, y, x): around z, then the new y, then the new x"""
+    result = pyrapid.rapid_orient()
+    motion.OrientZYX(result, 90, 0, 0)
+    q = [result.GetElem(c).Get() for c in ("q1", "q2", "q3", "q4")]
+    assert q == pytest.approx([math.sqrt(0.5), 0, 0, math.sqrt(0.5)])
+    # the tool pointing down: 180 degrees around y
+    motion.OrientZYX(result, 0, 180, 0)
+    q = [result.GetElem(c).Get() for c in ("q1", "q2", "q3", "q4")]
+    assert q == pytest.approx([0, 0, 1, 0], abs=1e-9)
