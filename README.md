@@ -3,6 +3,14 @@
 Parser, syntax tree tools and Python translator for **ABB RAPID**, the programming
 language of ABB robot controllers.
 
+**Not affiliated with ABB.** This is an independent study project, born to find out whether
+a RAPID program could be checked, translated and run on a simulated robot with free
+software. It is not a product of ABB, it is not endorsed by ABB, and it does not replace
+the ABB controller or RobotStudio: the result of a simulation must not be trusted for a real
+robot. ABB and RAPID are trademarks of ABB, used here only to name the language. The
+project is released under the BSD 3-Clause license (see [LICENSE](LICENSE) and
+[NOTICE.md](NOTICE.md)).
+
 The project contains:
 
 | Tool                    | What it does                                                          |
