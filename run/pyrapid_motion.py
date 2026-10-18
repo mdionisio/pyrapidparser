@@ -417,6 +417,14 @@ class Segment:
     torque: Any = None
     watch: Optional[Watch] = None
     triggers: list[Trigger] = field(default_factory=list)
+    # to resume the movement after StopMove: how it was planned
+    speed: Optional["Speed"] = None
+    tool: Optional["Tool"] = None
+    linear: bool = False
+    final: Any = None  # the axes at the end of the planned movement
+    stopping: bool = False  # StopMove: the movement decelerates and is suspended
+    stop_axes: Any = None  # the axes where the movement was suspended
+    parent: Optional["Segment"] = None  # the suspended movement that this one completes
 
     @classmethod
     def of(cls, trajectory: Trajectory, zone: Zone, tcp: Callable[[Any], Any]) -> "Segment":
@@ -669,6 +677,11 @@ class Controller:
         self.pending_triggers: list[Trigger] = []
         # AccSet: factor of the accelerations; VelSet: factor of the speeds, maximum TCP speed (m/s)
         self.interrupts: Any = None
+        # StopMove: the new movements wait for StartMove; the suspended movements and the
+        # paths of StorePath
+        self.stopped = False
+        self.suspended: list[Segment] = []
+        self.stored: list[tuple[list[Segment], list[Segment]]] = []
         self.acc_factor = 1.0
         # program displacement: placement in the object frame of the displaced points
         self.displacement = pin.SE3.Identity()
@@ -855,11 +868,11 @@ class Controller:
         """advance the robot of SAMPLE_TIME (called with the lock)"""
         robot = self.require_robot()
         now = self.time + SAMPLE_TIME
-        if not self.active and self.queue:
+        if not self.active and self.queue and not self.stopped:
             segment = self.queue.popleft()
             segment.start = self.time
             self.active.append(segment)
-        if self.active:
+        if self.active and not self.stopped:
             last = self.active[-1]
             assert last.start is not None
             radius = last.zone_radius()
@@ -917,7 +930,17 @@ class Controller:
             assert segment.start is not None
             if now >= segment.start + segment.duration - 1e-9:
                 self.active.remove(segment)
+                if segment.stopping:
+                    # StopMove: the movement is suspended, the program stays in its instruction
+                    segment.stop_axes = self.axes.copy()
+                    self.suspended.append(segment)
+                    self.planned = self.axes.copy()
+                    continue
                 segment.done = True
+                parent = segment.parent
+                while parent is not None:
+                    parent.done = True
+                    parent = parent.parent
                 self.completed.append(segment)
                 self.report(segment)
         if not self.active and not self.queue:
@@ -961,6 +984,117 @@ class Controller:
                 robot = self.require_robot()
                 segment.stop_at(now - segment.start, self.accelerations() * factor)
                 watch.finished = True
+
+    # ---------------------------------------------------------- StopMove, StartMove, ...
+
+    def stop_move(self) -> None:
+        """StopMove: the robot stops; the movement in progress is suspended and the new
+        ones wait for StartMove"""
+        with self.condition:
+            self.stopped = True
+            for segment in self.active:
+                if not segment.stopping:
+                    assert segment.start is not None
+                    segment.stop_at(self.time - segment.start, self.accelerations() * 2.0)
+                    segment.stopping = True
+                    segment.watch = None
+            self.condition.notify_all()
+
+    def resume_segments(self) -> list[Segment]:
+        """the movements that complete the suspended ones, from the current position"""
+        resumed: list[Segment] = []
+        position = self.axes.copy()
+        for old in self.suspended:
+            assert old.speed is not None and old.tool is not None and old.final is not None
+            if old.stop_axes is not None and float(np.max(np.abs(old.stop_axes - position))) > 1e-6:
+                # back to the point where the movement was stopped
+                back = self.joint_move(
+                    old.instruction, position, old.stop_axes, old.speed, Zone.fine(), old.tool
+                )
+                resumed.append(back)
+                position = old.stop_axes.copy()
+            if old.linear:
+                start = self.tcp(position, old.tool)
+                end = self.tcp(old.final, old.tool)
+                rotation = pin.log3(start.rotation.T @ end.rotation)
+
+                def path(
+                    s: float, start: Any = start, end: Any = end, rotation: Any = rotation
+                ) -> Any:
+                    return pin.SE3(
+                        start.rotation @ pin.exp3(s * rotation),
+                        start.translation + s * (end.translation - start.translation),
+                    )
+
+                new = self.path_move(
+                    old.instruction,
+                    position,
+                    path,
+                    float(np.linalg.norm(end.translation - start.translation)),
+                    float(np.linalg.norm(rotation)),
+                    old.speed,
+                    old.zone,
+                    old.tool,
+                    None,
+                )
+            else:
+                new = self.joint_move(
+                    old.instruction, position, old.final, old.speed, old.zone, old.tool
+                )
+            new.parent = old
+            new.final = old.final
+            resumed.append(new)
+            position = old.final.copy()
+        return resumed
+
+    def start_move(self) -> None:
+        """StartMove: the suspended movements go on from the current position"""
+        with self.condition:
+            self.block(lambda: not self.active)
+            resumed = self.resume_segments()
+            self.suspended = []
+            self.stopped = False
+            self.queue.extendleft(reversed(resumed))
+            if self.queue:
+                self.planned = self.queue[-1].axes[-1].copy()
+            self.condition.notify_all()
+
+    def store_path(self) -> None:
+        """StorePath: the movements stopped or queued are stored, the new ones run"""
+        with self.condition:
+            self.block(lambda: not self.active)
+            self.stored.append((self.suspended, list(self.queue)))
+            self.suspended = []
+            self.queue.clear()
+            self.stopped = False
+            self.planned = self.axes.copy()
+
+    def restore_path(self) -> None:
+        """RestoPath: the stored movements are back, stopped until StartMove"""
+        with self.condition:
+            if not self.stored:
+                raise MotionError("RestoPath without StorePath")
+            self.block(self.idle)
+            self.suspended, queued = self.stored.pop()
+            self.queue.extend(queued)
+            self.stopped = True
+
+    def clear_path(self) -> None:
+        """ClearPath: the movements stopped or queued are removed; the instructions that
+        wait for them go on"""
+        with self.condition:
+            self.block(lambda: not self.active)
+            for segment in [*self.suspended, *self.queue]:
+                segment.done = True
+                parent = segment.parent
+                while parent is not None:
+                    parent.done = True
+                    parent = parent.parent
+            self.suspended = []
+            self.queue.clear()
+            self.stopped = False
+            self.planned = self.axes.copy()
+            self.condition.notify_all()
 
     def report(self, segment: Segment) -> None:
         robot = self.require_robot()
@@ -1054,7 +1188,9 @@ class Controller:
         minimum = speed.time or max(distance / speed.tcp, angle / speed.orientation)
         total, ramp = joint_timing(end - start, robot.velocity, self.accelerations(), minimum)
         trajectory = joint_trajectory(instruction, start, end, total, ramp)
-        return Segment.of(trajectory, zone, lambda a: self.tcp(a, tool).translation.copy())
+        segment = Segment.of(trajectory, zone, lambda a: self.tcp(a, tool).translation.copy())
+        segment.speed, segment.tool, segment.final = speed, tool, end.copy()
+        return segment
 
     def path_move(
         self,
@@ -1113,7 +1249,10 @@ class Controller:
                 break
             total *= ratio * 1.01
             ramp *= ratio * 1.01
-        return Segment.of(trajectory, zone, lambda a: self.tcp(a, tool).translation.copy())
+        segment = Segment.of(trajectory, zone, lambda a: self.tcp(a, tool).translation.copy())
+        segment.speed, segment.tool, segment.linear = speed, tool, True
+        segment.final = path_axes[-1].copy()
+        return segment
 
 
 CONTROLLER = Controller()
@@ -1400,6 +1539,26 @@ def Triggered(records: list[Any], movement: Callable[..., None], *arguments: Any
         movement(*arguments)
     finally:
         CONTROLLER.pending_triggers = []
+
+
+def StopMove() -> None:
+    CONTROLLER.stop_move()
+
+
+def StartMove() -> None:
+    CONTROLLER.start_move()
+
+
+def StorePath() -> None:
+    CONTROLLER.store_path()
+
+
+def RestoPath() -> None:
+    CONTROLLER.restore_path()
+
+
+def ClearPath() -> None:
+    CONTROLLER.clear_path()
 
 
 def PDispSet(dispframe: Any) -> None:

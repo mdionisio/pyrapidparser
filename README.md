@@ -279,6 +279,7 @@ limits of the axes, coupled joints, meshes of a CAD model (see the comment at th
 | `MoveJ`                            | to a `robtarget`, with its `confdata` (`ConfJ \On`)      |
 | `MoveL`, `MoveC`                   | straight line and circle of the TCP                      |
 | `SearchL`                          | linear search on a `signaldi` (see below)                |
+| `StopMove`, `StartMove`, `StorePath`, `RestoPath`, `ClearPath` | stop of the movement from a trap (see below) |
 | `TriggL`, `TriggJ`, `TriggC`, `TriggAbsJ` | movements with `TriggIO` and `TriggEquip` (outputs set along the path, see below) |
 | `MoveJDO`, `MoveLDO`, `MoveCDO`, `MoveJGO`, ... `MoveCAO` | movement that sets an output at its end (at the corner of a fly-by point) |
 | `AccSet`, `VelSet`                 | accelerations in percent, speeds in percent and maximum speed of the TCP |
@@ -310,6 +311,13 @@ the end with `\Time`; `TriggEquip` sets it `EquipLag` seconds earlier). `TriggL`
 `TriggJ`, `TriggC` and `TriggAbsJ` take up to 8 `triggdata` (`Trigg_1`, `\T2`, ... `\T8`)
 and set the outputs in the time of the robot (`test/exec/trigger.mod`). `TriggInt triggdata, Distance [\Start] [\Time], Interrupt` runs a trap at that point of
 the movement; `TriggRampAO` is missing.
+
+`StopMove` stops the robot (the movement in progress is suspended and the program stays in
+its instruction); `StorePath` saves the suspended movements so that the trap can move
+the robot on a new path; `RestoPath` brings them back and `StartMove` goes on: the robot
+returns to the point where it stopped and completes the movement (a circle is completed
+with a straight line). `ClearPath` removes the suspended movements: the instructions
+that wait for them go on (`test/exec/stopmove.mod`).
 
 ### Program and robot
 

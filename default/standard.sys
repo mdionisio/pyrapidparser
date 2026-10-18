@@ -2027,6 +2027,37 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:pyrapid_motion.MoveWithOutput(_s("Signal").data.name, _s("Value").data.Get(), pyrapid_motion.MoveC, False, _s("CirPoint").data, _s("ToPoint").data, _s("Speed").data, -1, -1, _s("Zone").data, -1, _s("Tool").data, _s("mv_wobj").data)
     ENDPROC
 
+    PROC StopMove(\switch Quick \switch AllMotionTasks)
+        ! the robot stops; the movement in progress waits for StartMove
+        !python:import pyrapid_motion
+        !python:pyrapid_motion.StopMove()
+    ENDPROC
+
+    PROC StartMove(\switch AllMotionTasks)
+        !python:import pyrapid_motion
+        !python:pyrapid_motion.StartMove()
+    ENDPROC
+
+    PROC StorePath(\switch KeepSync \switch SyncLevel)
+        ! the stopped movements are stored: the new movements are on a new path
+        !python:import pyrapid_motion
+        !python:pyrapid_motion.StorePath()
+    ENDPROC
+
+    PROC RestoPath(\switch ToolLoadCheck)
+        !python:import pyrapid_motion
+        !python:pyrapid_motion.RestoPath()
+    ENDPROC
+
+    PROC ClearPath(\switch AllMotionTasks)
+        !python:import pyrapid_motion
+        !python:pyrapid_motion.ClearPath()
+    ENDPROC
+
+    PROC StopMoveReset(\switch AllMotionTasks)
+        !python:pass
+    ENDPROC
+
     PROC WaitRob(\switch InPos | switch ZeroSpeed)
         ! wait until the robot has completed its movements
         !python:import pyrapid_motion
