@@ -709,8 +709,10 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:except:
         !python:    Val = None
         !python:try:
-        !python:    parser = rapid_parser.RAPIDParser(lex_optimize=True, yacc_debug=False, yacc_optimize=False, start_from='constant_expression')
-        !python:    parser_ast = parser.parse(Str, "tmp", debuglevel=0)
+        !python:    # the parser is built once (it takes some time)
+        !python:    if not hasattr(pyrapid, "strtoval_parser"):
+        !python:        pyrapid.strtoval_parser = rapid_parser.RAPIDParser(lex_optimize=True, yacc_debug=False, yacc_optimize=False, start_from='constant_expression')
+        !python:    parser_ast = pyrapid.strtoval_parser.parse(Str, "tmp", debuglevel=0)
         !python:    compute = EvaluateRapidExpression("sys", "sys")
         !python:    compute.visit(parser_ast)
         !python:    Val = compute.return_value

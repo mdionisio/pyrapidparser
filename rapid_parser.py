@@ -77,6 +77,8 @@ class RAPIDParser(PLYParser):
         self.rapidlex.build(optimize=lex_optimize, lextab=lextab, outputdir=taboutputdir)
         self.tokens = self.rapidlex.tokens
 
+        # from another start symbol part of the grammar is unreachable: no warnings
+        errorlog = None if start_from == "module_declaration" else ply.yacc.NullLogger()
         self.rapidparser = ply.yacc.yacc(
             module=self,
             start=start_from,
@@ -84,6 +86,7 @@ class RAPIDParser(PLYParser):
             optimize=yacc_optimize,
             tabmodule=yacctab,
             outputdir=taboutputdir,
+            errorlog=errorlog,
         )
 
         # Stack of scopes for keeping track of typedefs. _scope_stack[-1] is
