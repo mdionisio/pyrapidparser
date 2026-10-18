@@ -1,6 +1,8 @@
 """Robot models (robotmodel.py): loading, warnings, kinematics, confdata, dynamics."""
 
 import math
+import xml.etree.ElementTree as ET
+from typing import Any
 
 import pytest
 
@@ -77,19 +79,52 @@ def test_warnings_printed(capsys: pytest.CaptureFixture[str]) -> None:
     assert "warning: irb4600_60_205: no inertial data" in err
 
 
-def test_irb460_approximate() -> None:
-    """the approximate 4 axis palletizer matches the reach and the height of the
-    data sheet, the flange stays horizontal"""
-    robot = robotmodel.load("irb460_approx", verbose=False)
+def test_irb460() -> None:
+    """the 4 axis palletizer (lengths of the ABB CAD model): the flange at the zero
+    position and the top of the working range of the data sheet (1786 mm), the flange
+    stays horizontal, the parallel linkage closes"""
+    robot = robotmodel.load("irb460_110_240", verbose=False)
     assert robot.rapid_axes == [1, 2, 3, 6]
     assert robot.warnings[0].startswith("approximate model:")
-    reach = robot.fk(np.radians([0, 85, 0, 0]))
-    assert reach.translation[0] == pytest.approx(2.403, abs=0.005)
+    assert np.allclose(robot.fk(np.zeros(4)).translation, [1.505, 0, 1.436])
     top = robot.fk(np.radians([0, 0, -20, 0]))
-    assert top.translation[2] == pytest.approx(1.786, abs=0.005)
-    for axes in ([0, 30, 60, 0], [40, -20, 100, 90]):
+    assert top.translation[2] == pytest.approx(1.786, abs=0.001)
+    model, data = robot.model, robot.data
+
+    def world(frame: str, local: list[float]) -> Any:
+        return data.oMf[model.getFrameId(frame)].act(np.array(local))
+
+    for axes in ([0, 30, 60, 0], [40, -20, 100, 90], [-100, 80, -10, -200]):
         flange = robot.fk(np.radians(axes))
         assert np.allclose(flange.rotation @ [0, 0, 1], [0, 0, -1])
+        # first parallelogram: p_arm, p_link, the rear lever of the upper arm
+        assert np.allclose(world("p_link", [0, 0, 0.945]), world("link_3", [-0.4, 0, 0]))
+        # second: the swing, lower_link, link_plate; then upper_link, the wrist
+        assert np.allclose(
+            world("lower_link", [0, 0, 0.945]), world("link_plate", [-0.2649, 0, 0.1408])
+        )
+        assert np.allclose(world("upper_link", [1.025, 0, 0]), world("link_4", [0.2298, 0, 0.1928]))
+
+
+def test_cad_meshes(tmp_path: Any, monkeypatch: pytest.MonkeyPatch) -> None:
+    """cad_meshes: a CAD part at the zero position replaces the geometry of its link,
+    placed in the link frame"""
+    stl = tmp_path / "part.stl"
+    # a binary STL with one triangle
+    stl.write_bytes(b"\0" * 80 + (1).to_bytes(4, "little") + b"\0" * 50)
+    monkeypatch.setattr(robotmodel, "MODELS_DIR", str(tmp_path))
+    robot = robotmodel.load("irb120_3_58", verbose=False)
+    xml = robotmodel._cad_xml(robot, robot.xml, {"scale": 0.001, "links": {"link_3": "part.stl"}})
+    link = [e for e in ET.fromstring(xml).iter("link") if e.get("name") == "link_3"][0]
+    visuals = link.findall("visual")
+    assert len(visuals) == 1
+    mesh = visuals[0].find("geometry/mesh")
+    origin_element = visuals[0].find("origin")
+    assert mesh is not None and origin_element is not None
+    assert mesh.get("filename") == str(stl)
+    # link_3 is at x 0, z 0.56 at the zero position: the mesh origin is the opposite
+    origin = [float(v) for v in origin_element.get("xyz", "").split()]
+    assert origin == pytest.approx([0, 0, -0.56])
 
 
 def test_torques() -> None:

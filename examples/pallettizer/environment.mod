@@ -1,5 +1,5 @@
 MODULE ENVIRONMENT
-!robot: irb460_approx
+!robot: irb460_110_240
     ! The cell of the palletizer: robot ABB IRB 460 (4 axes), two product pick lines
     ! (conveyors), two pallet stations, a gripper. This module has the data of the
     ! cell taught on the robot and the I/O signals of the equipment (EIO.cfg); the

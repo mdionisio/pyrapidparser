@@ -17,3 +17,6 @@ doc/abb/official/
 
 # output of the commands of README.md (rapid2py -d out)
 out/
+
+# meshes of the ABB CAD models (ABB copyright), built by models/*/build_cad.py
+models/*/cad/

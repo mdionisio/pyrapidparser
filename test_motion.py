@@ -347,7 +347,7 @@ def test_palletizer(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("PYRAPID_VIEWER", raising=False)
     monkeypatch.delenv("PYRAPID_REALTIME", raising=False)
     monkeypatch.setattr(motion, "CONTROLLER", motion.Controller())
-    motion.UseRobot("irb460_approx")
+    motion.UseRobot("irb460_110_240")
     controller: Any = motion.CONTROLLER
     move_j([1500, 0, 800], [0, 0, 0, 0], v=2000)
     move_l([1500, 0, 300], [0, 0, 0, 0], v=1000)

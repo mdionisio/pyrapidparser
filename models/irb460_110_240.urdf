@@ -1,0 +1,224 @@
+<?xml version="1.0"?>
+<!--
+  ABB IRB 460-110/2.4, 4 axis palletizer.
+
+  Lengths from the ABB CAD model (STEP "joint", 9AKK107992A7905): axis 2 at
+  x 260, z 742.5 mm; lower arm 945 mm; upper arm 1025 mm; flange 220 mm in front
+  of the wrist and 251.5 mm under it.
+
+  Two parallelograms (pivots from the CAD model):
+  - the axis 3 motor turns p_arm on the axis 2 pivot; p_link (parallel to the lower
+    arm) connects p_arm to the rear lever of the upper arm: the upper arm is parallel
+    to p_arm, axis 3 is the angle of the upper arm from the horizontal;
+  - lower_link (parallel to the lower arm) connects the swing to link_plate on the
+    axis 3 pivot, which stays horizontal; upper_link (parallel to the upper arm)
+    connects link_plate to the wrist (tilt), which stays horizontal.
+  See irb460_110_240.json for the coupling of the joints to the axes.
+
+  Known limit: the combined limits of the axes 2 and 3 (the parallel linkage) are not
+  modeled, only the range of each axis: the model reaches 2446 mm (axis 2 at +85,
+  axis 3 at 0) where the ABB data sheet says 2403 mm, so a point a little out of the
+  real working range can be reachable in the simulation. The top of the working range
+  (1786 mm) is the one of the data sheet.
+
+  The geometry is made of boxes; models/irb460_110_240/build_cad.py downloads the
+  ABB CAD model and converts it to meshes (not distributed: ABB copyright), then
+  the meshes replace the boxes. No inertial data.
+-->
+<robot name="irb460_110_240">
+  <material name="robot_white">
+    <color rgba="0.9 0.9 0.88 1"/>
+  </material>
+  <material name="robot_grey">
+    <color rgba="0.55 0.55 0.55 1"/>
+  </material>
+  <material name="robot_dark">
+    <color rgba="0.25 0.25 0.25 1"/>
+  </material>
+
+  <link name="base_link">
+    <visual>
+      <origin xyz="-0.12 0 0.14" rpy="0 0 0"/>
+      <geometry><box size="1.007 0.720 0.285"/></geometry>
+      <material name="robot_dark"/>
+    </visual>
+  </link>
+  <link name="base"/>
+  <joint name="base_link-base" type="fixed">
+    <parent link="base_link"/>
+    <child link="base"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- axis 1 -->
+  <link name="link_1">
+    <visual>
+      <origin xyz="0 0 0.5" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.3" length="0.5"/></geometry>
+      <material name="robot_white"/>
+    </visual>
+  </link>
+  <joint name="joint_1" type="revolute">
+    <parent link="base_link"/>
+    <child link="link_1"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-2.8798" upper="2.8798" velocity="2.5307" effort="0"/>
+  </joint>
+
+  <!-- axis 2: lower arm -->
+  <link name="link_2">
+    <visual>
+      <origin xyz="0 0 0.4725" rpy="0 0 0"/>
+      <geometry><box size="0.2 0.3 1.1"/></geometry>
+      <material name="robot_white"/>
+    </visual>
+  </link>
+  <joint name="joint_2" type="revolute">
+    <parent link="link_1"/>
+    <child link="link_2"/>
+    <origin xyz="0.26 0 0.7425" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-3.1416" upper="3.1416" velocity="1.9199" effort="0"/>
+  </joint>
+
+  <!-- upper arm: joint_3 = axis 3 - axis 2 -->
+  <link name="link_3">
+    <visual>
+      <origin xyz="0.45 0 0" rpy="0 0 0"/>
+      <geometry><box size="1.25 0.19 0.2"/></geometry>
+      <material name="robot_white"/>
+    </visual>
+  </link>
+  <joint name="joint_3" type="revolute">
+    <parent link="link_2"/>
+    <child link="link_3"/>
+    <origin xyz="0 0 0.945" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-6.2832" upper="6.2832" velocity="2.0944" effort="0"/>
+  </joint>
+
+  <!-- wrist (tilt), kept horizontal: joint_4 = - axis 3 -->
+  <link name="link_4">
+    <visual>
+      <origin xyz="0.12 0 -0.06" rpy="0 0 0"/>
+      <geometry><box size="0.38 0.3 0.4"/></geometry>
+      <material name="robot_white"/>
+    </visual>
+  </link>
+  <joint name="joint_4" type="revolute">
+    <parent link="link_3"/>
+    <child link="link_4"/>
+    <origin xyz="1.025 0 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-6.2832" upper="6.2832" velocity="2.0944" effort="0"/>
+  </joint>
+
+  <!-- axis 6: the flange -->
+  <link name="link_6">
+    <visual>
+      <origin xyz="0 0 0.02" rpy="0 0 0"/>
+      <geometry><cylinder radius="0.08" length="0.04"/></geometry>
+      <material name="robot_dark"/>
+    </visual>
+  </link>
+  <joint name="joint_6" type="revolute">
+    <parent link="link_4"/>
+    <child link="link_6"/>
+    <origin xyz="0.22 0 -0.2515" rpy="0 0 0"/>
+    <axis xyz="0 0 -1"/>
+    <limit lower="-5.2360" upper="5.2360" velocity="6.9813" effort="0"/>
+  </joint>
+
+  <!-- ABB tool0: z out of the flange, pointing down -->
+  <link name="tool0"/>
+  <joint name="joint_6-tool0" type="fixed">
+    <parent link="link_6"/>
+    <child link="tool0"/>
+    <origin xyz="0 0 0" rpy="0 3.14159265358979 0"/>
+  </joint>
+
+  <!-- parallel linkage, only for the view -->
+
+  <!-- plate on the axis 3 joint, kept horizontal: link_plate = - axis 2 -->
+  <link name="link_plate">
+    <visual>
+      <origin xyz="0.12 0 0.1" rpy="0 0 0"/>
+      <geometry><box size="0.55 0.14 0.3"/></geometry>
+      <material name="robot_grey"/>
+    </visual>
+  </link>
+  <joint name="joint_plate" type="revolute">
+    <parent link="link_2"/>
+    <child link="link_plate"/>
+    <origin xyz="0 0 0.945" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-6.2832" upper="6.2832" velocity="2.0944" effort="0"/>
+  </joint>
+
+  <!-- rod from the plate to the wrist, parallel to the upper arm: axis 3 -->
+  <link name="upper_link">
+    <visual>
+      <origin xyz="0.5125 -0.165 0" rpy="0 0 0"/>
+      <geometry><box size="1.1 0.045 0.08"/></geometry>
+      <material name="robot_grey"/>
+    </visual>
+  </link>
+  <joint name="joint_upper_link" type="revolute">
+    <parent link="link_plate"/>
+    <child link="upper_link"/>
+    <origin xyz="0.2298 0 0.1928" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-6.2832" upper="6.2832" velocity="2.0944" effort="0"/>
+  </joint>
+
+  <!-- lever on the axis 2 pivot turned by the axis 3 motor, parallel to the rear
+       lever of the upper arm: axis 3 -->
+  <link name="p_arm">
+    <visual>
+      <origin xyz="-0.2 -0.03 0" rpy="0 0 0"/>
+      <geometry><box size="0.5 0.12 0.15"/></geometry>
+      <material name="robot_grey"/>
+    </visual>
+  </link>
+  <joint name="joint_p_arm" type="revolute">
+    <parent link="link_1"/>
+    <child link="p_arm"/>
+    <origin xyz="0.26 0 0.7425" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-6.2832" upper="6.2832" velocity="2.0944" effort="0"/>
+  </joint>
+
+  <!-- rod from p_arm to the rear lever of the upper arm, parallel to the lower arm:
+       axis 2 (relative to p_arm: axis 2 - axis 3) -->
+  <link name="p_link">
+    <visual>
+      <origin xyz="0 -0.035 0.4725" rpy="0 0 0"/>
+      <geometry><box size="0.08 0.05 1.0"/></geometry>
+      <material name="robot_grey"/>
+    </visual>
+  </link>
+  <joint name="joint_p_link" type="revolute">
+    <parent link="p_arm"/>
+    <child link="p_link"/>
+    <origin xyz="-0.4 0 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-6.2832" upper="6.2832" velocity="2.0944" effort="0"/>
+  </joint>
+
+  <!-- rod from the swing to link_plate, parallel to the lower arm: axis 2 -->
+  <link name="lower_link">
+    <visual>
+      <origin xyz="0 -0.26 0.4725" rpy="0 0 0"/>
+      <geometry><box size="0.08 0.045 1.0"/></geometry>
+      <material name="robot_grey"/>
+    </visual>
+  </link>
+  <joint name="joint_lower_link" type="revolute">
+    <parent link="link_1"/>
+    <child link="lower_link"/>
+    <origin xyz="-0.0049 0 0.8833" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit lower="-6.2832" upper="6.2832" velocity="2.0944" effort="0"/>
+  </joint>
+</robot>

@@ -1,0 +1,40 @@
+{
+    "description": "ABB IRB 460-110/2.4, 4 axis palletizer (lengths from the ABB CAD model)",
+    "approximate": "no inertial data; the combined limits of the axes 2 and 3 of the parallel linkage are not modeled: the reach is 2446 mm, 2403 mm in the data sheet",
+    "rapid_axes": [1, 2, 3, 6],
+    "joints": {
+        "joint_1": {"1": 1},
+        "joint_2": {"2": 1},
+        "joint_3": {"2": -1, "3": 1},
+        "joint_4": {"3": -1},
+        "joint_6": {"6": 1},
+        "joint_plate": {"2": -1},
+        "joint_upper_link": {"3": 1},
+        "joint_p_arm": {"3": 1},
+        "joint_p_link": {"2": 1, "3": -1},
+        "joint_lower_link": {"2": 1}
+    },
+    "axis_limits": {
+        "1": [-165, 165, 145],
+        "2": [-40, 85, 110],
+        "3": [-20, 120, 120],
+        "6": [-300, 300, 400]
+    },
+    "cad_meshes": {
+        "comment": "ABB CAD model at the zero position, in mm, built by irb460_110_240/build_cad.py",
+        "scale": 0.001,
+        "links": {
+            "base_link": "irb460_110_240/cad/foot.stl",
+            "link_1": "irb460_110_240/cad/swing.stl",
+            "link_2": "irb460_110_240/cad/lower_arm.stl",
+            "link_3": "irb460_110_240/cad/upper_arm.stl",
+            "link_4": "irb460_110_240/cad/tilt.stl",
+            "link_6": "irb460_110_240/cad/disk.stl",
+            "link_plate": "irb460_110_240/cad/link_plate.stl",
+            "upper_link": "irb460_110_240/cad/upper_link.stl",
+            "p_link": "irb460_110_240/cad/p_link.stl",
+            "p_arm": "irb460_110_240/cad/p_arm.stl",
+            "lower_link": "irb460_110_240/cad/lower_link.stl"
+        }
+    }
+}

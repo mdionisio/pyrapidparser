@@ -5,7 +5,7 @@ The models are URDF or xacro files:
 - third_party/abb: the ABB models of ROS-Industrial (git submodule
   https://github.com/ros-industrial/abb), named after their xacro file, e.g.
   irb120_3_58 for abb_irb120_support/urdf/irb120_3_58.xacro;
-- models/: models of this project, e.g. irb460_approx.
+- models/: models of this project, e.g. irb460_110_240.
 
 models/<name>.json, when present, completes or overrides the data of the model:
 
@@ -17,14 +17,18 @@ models/<name>.json, when present, completes or overrides the data of the model:
         "axis_limits": {"3": [-20, 120, 120]},
         "acceleration": [5.0, 5.0, 5.0, 10.0],
         "effort": [100, 100, 50, 10],
-        "home": [0, 0, 0, 0]
+        "home": [0, 0, 0, 0],
+        "cad_meshes": {"scale": 0.001, "links": {"link_1": "<model>/cad/swing.stl"}}
     }
 
 rapid_axes are the RAPID axes (rax_1 ... rax_6) moved by the robot, in order;
 joints gives the position of a model joint as a linear combination of the RAPID
 axes (default: the joints of the URDF that are not <mimic>, in order, one per
 axis); axis_limits are [lower, upper, velocity] in degrees and degrees/s;
-acceleration (rad/s^2), effort (Nm) and home (degrees) are per axis.
+acceleration (rad/s^2), effort (Nm) and home (degrees) are per axis; cad_meshes
+are the parts of a CAD assembly of the robot at the zero position (in the base
+frame, scaled by scale, files relative to models/): when the files exist they
+replace the geometry of the links in the view.
 
 The data missing from the model is replaced with default values, and a warning
 says what is used instead. Units: m, rad, s. The conversion from the RAPID units
@@ -552,6 +556,47 @@ def _mesh_xml(xml: str) -> str:
     return ET.tostring(root, encoding="unicode")
 
 
+def _cad_xml(robot: RobotModel, xml: str, cad: Optional[dict[str, Any]]) -> str:
+    """the visual geometry of the links replaced by the meshes of the CAD assembly at the
+    zero position, when the files exist"""
+    if not cad:
+        return xml
+    scale = float(cad.get("scale", 1.0))
+    files = {
+        link: os.path.join(MODELS_DIR, path)
+        for link, path in cad.get("links", {}).items()
+        if os.path.exists(os.path.join(MODELS_DIR, path))
+    }
+    if not files:
+        return xml
+    model, data = robot.model, robot.data
+    q = robot.configuration(np.zeros(robot.naxes))
+    pin.forwardKinematics(model, data, q)
+    pin.updateFramePlacements(model, data)
+    root = ET.fromstring(xml)
+    for link in root.iter("link"):
+        name = link.get("name", "")
+        if name not in files or not model.existFrame(name):
+            continue
+        # the mesh is in the base frame: its origin in the link frame
+        origin = data.oMf[model.getFrameId(name)].inverse()
+        material = link.find("visual/material")
+        for visual in link.findall("visual"):
+            link.remove(visual)
+        visual = ET.SubElement(link, "visual")
+        ET.SubElement(
+            visual,
+            "origin",
+            xyz=" ".join("%.6f" % v for v in origin.translation),
+            rpy=" ".join("%.6f" % v for v in pin.rpy.matrixToRpy(origin.rotation)),
+        )
+        geometry = ET.SubElement(visual, "geometry")
+        ET.SubElement(geometry, "mesh", filename=files[name], scale="%g %g %g" % ((scale,) * 3))
+        if material is not None:
+            visual.append(material)
+    return ET.tostring(root, encoding="unicode")
+
+
 def load(name: str, geometry: bool = False, verbose: bool = True) -> RobotModel:
     """load the model name; the warnings about the missing data are printed on stderr
     when verbose"""
@@ -697,7 +742,7 @@ def load(name: str, geometry: bool = False, verbose: bool = True) -> RobotModel:
     )
     robot.analytic = _analytic_arm(robot)
     if geometry:
-        mesh_xml = _mesh_xml(xml)
+        mesh_xml = _mesh_xml(_cad_xml(robot, xml, options.get("cad_meshes")))
         robot.visual_model = pin.buildGeomFromUrdfString(
             model, mesh_xml, pin.GeometryType.VISUAL, package_dirs=_package_dirs()
         )
