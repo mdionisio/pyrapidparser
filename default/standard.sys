@@ -742,6 +742,355 @@ MODULE SYSTEMMODULE(SYSMODULE)
         RETURN ret;
     ENDFUNC 
 
+    !! Mathematics, vectors, poses, bits and strings (run/pyrapid_lib.py)
+
+    CONST num RAND_MAX := 32767;
+    CONST string STR_DIGIT := "0123456789";
+    CONST string STR_UPPER := "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    CONST string STR_LOWER := "abcdefghijklmnopqrstuvwxyz";
+    CONST string STR_WHITE := " ";
+
+    FUNC num Sin (num Angle)
+        VAR num ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.sin, _s("Angle").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num Cos (num Angle)
+        VAR num ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.cos, _s("Angle").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num Tan (num Angle)
+        VAR num ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.tan, _s("Angle").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num ASin (num Value)
+        VAR num ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.asin, _s("Value").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num ACos (num Value)
+        VAR num ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.acos, _s("Value").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num ATan (num Value)
+        VAR num ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.atan, _s("Value").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num ATan2 (num Y, num X)
+        VAR num ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.atan2, _s("Y").data, _s("X").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num Max (num A, num B)
+        VAR num ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.maximum, _s("A").data, _s("B").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num Min (num A, num B)
+        VAR num ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.minimum, _s("A").data, _s("B").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num Distance (pos Point1, pos Point2)
+        VAR num ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.distance, _s("Point1").data, _s("Point2").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num DotProd (pos Vector1, pos Vector2)
+        VAR num ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.dot, _s("Vector1").data, _s("Vector2").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC pos CrossProd (pos Vector1, pos Vector2)
+        VAR pos ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.cross, _s("Vector1").data, _s("Vector2").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num VectMagn (pos Vector)
+        VAR num ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.magnitude, _s("Vector").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC pose PoseMult (pose Pose1, pose Pose2)
+        VAR pose ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.pose_mult, _s("Pose1").data, _s("Pose2").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC pose PoseInv (pose Pose1)
+        VAR pose ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.pose_inv, _s("Pose1").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC pos PoseVect (pose Pose1, pos Vector)
+        VAR pos ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.pose_vect, _s("Pose1").data, _s("Vector").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC orient NOrient (orient Rotation)
+        VAR orient ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.normalize, _s("Rotation").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num BitAnd (num BitData1, num BitData2)
+        VAR num ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.bit_and, _s("BitData1").data, _s("BitData2").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num BitOr (num BitData1, num BitData2)
+        VAR num ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.bit_or, _s("BitData1").data, _s("BitData2").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num BitXOr (num BitData1, num BitData2)
+        VAR num ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.bit_xor, _s("BitData1").data, _s("BitData2").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num BitNeg (num BitData)
+        VAR num ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.bit_neg, _s("BitData").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num BitLSh (num BitData, num ShiftSteps)
+        VAR num ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.bit_left, _s("BitData").data, _s("ShiftSteps").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num BitRSh (num BitData, num ShiftSteps)
+        VAR num ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.bit_right, _s("BitData").data, _s("ShiftSteps").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC bool BitCheck (num BitData, num BitPos)
+        VAR bool ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.bit_check, _s("BitData").data, _s("BitPos").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC string DecToHex (string Str)
+        VAR string ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.dec_to_hex, _s("Str").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num HexToDec (string Str)
+        VAR num ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.hex_to_dec, _s("Str").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC bool StrMemb (string Str, num ChPos, string Set)
+        VAR bool ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.str_memb, _s("Str").data, _s("ChPos").data, _s("Set").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC bool StrOrder (string Str1, string Str2, string Order)
+        VAR bool ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.str_order, _s("Str1").data, _s("Str2").data, _s("Order").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC string StrMap (string Str, string FromMap, string ToMap)
+        VAR string ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.str_map, _s("Str").data, _s("FromMap").data, _s("ToMap").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC string CTime ()
+        VAR string ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.c_time)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC string CDate ()
+        VAR string ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.c_date)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num EulerZYX (\switch X | switch Y | switch Z, orient Rotation)
+        VAR num ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:axis = "z"
+        IF Present(X) THEN
+            !python:axis = "x"
+        ELSEIF Present(Y) THEN
+            !python:axis = "y"
+        ENDIF
+        !python:pyrapid_lib.call(_s("ret").data, lambda q: pyrapid_lib.euler_zyx(axis, q), _s("Rotation").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num Rand (\switch Seed \num SeedEachNTime)
+        VAR num ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:seed = pyrapid.Symbols().IsInScope("Seed")
+        !python:each = None
+        IF Present(SeedEachNTime) THEN
+            !python:each = _s("SeedEachNTime").data.Get()
+        ENDIF
+        !python:pyrapid_lib.call(_s("ret").data, pyrapid_lib.rand, seed, each)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num GetTime (\switch WDay | switch Hour | switch Min | switch Sec | switch MSec)
+        VAR num ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:field = "sec"
+        IF Present(WDay) THEN
+            !python:field = "wday"
+        ELSEIF Present(Hour) THEN
+            !python:field = "hour"
+        ELSEIF Present(Min) THEN
+            !python:field = "min"
+        ELSEIF Present(MSec) THEN
+            !python:field = "msec"
+        ENDIF
+        !python:pyrapid_lib.call(_s("ret").data, lambda: pyrapid_lib.get_time(field))
+        RETURN ret;
+    ENDFUNC
+
+    FUNC string ByteToStr (num BitData \switch Hex | switch Okt | switch Bin | switch Char)
+        VAR string ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:base = ""
+        IF Present(Hex) THEN
+            !python:base = "hex"
+        ELSEIF Present(Okt) THEN
+            !python:base = "okt"
+        ELSEIF Present(Bin) THEN
+            !python:base = "bin"
+        ELSEIF Present(Char) THEN
+            !python:base = "char"
+        ENDIF
+        !python:pyrapid_lib.call(_s("ret").data, lambda v: pyrapid_lib.byte_to_str(v, base), _s("BitData").data)
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num StrToByte (string ConStr \switch Hex | switch Okt | switch Bin | switch Char)
+        VAR num ret;
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:base = ""
+        IF Present(Hex) THEN
+            !python:base = "hex"
+        ELSEIF Present(Okt) THEN
+            !python:base = "okt"
+        ELSEIF Present(Bin) THEN
+            !python:base = "bin"
+        ELSEIF Present(Char) THEN
+            !python:base = "char"
+        ENDIF
+        !python:pyrapid_lib.call(_s("ret").data, lambda s: pyrapid_lib.str_to_byte(s, base), _s("ConStr").data)
+        RETURN ret;
+    ENDFUNC
+
+    PROC BitSet (INOUT num BitData, num BitPos)
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("BitData").data, pyrapid_lib.bit_set, _s("BitData").data, _s("BitPos").data)
+    ENDPROC
+
+    PROC BitClear (INOUT num BitData, num BitPos)
+        !python:import pyrapid_lib
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_lib.call(_s("BitData").data, pyrapid_lib.bit_clear, _s("BitData").data, _s("BitPos").data)
+    ENDPROC
+
     !! I/O instructions: the signals are in the I/O configuration (--eio of rapid2py),
     !! their values in pyrapid.IO; the simulation of the cell reads and sets them.
 

@@ -32,11 +32,11 @@ instructions = 3HAC050917-001.
   `RestoPath`, `ClearPath`, `TriggL`/`TriggJ`/`TriggC` with `TriggIO`/`TriggEquip`,
   `MoveLDO`/`MoveJDO`, `MoveExtJ`, `PDispSet`/`PDispOn` (program displacement),
   `AccSet`, `VelSet`, `PathResol`, `CirPathMode`.
-- [ ] **Math and general functions**: `Sin`, `Cos`, `Tan`, `ASin`, `ACos`, `ATan`,
-  `ATan2`, `Min`, `Max`, `Distance`, `DotProd`, `CrossProd`, `VectMagn`, `PoseMult`,
-  `PoseInv`, `Rand`, `BitAnd`/`BitOr`..., `StrFormat`, `StrOrder`, `StrMemb`,
-  `StrMap`, `GetTime`, `CTime`, `CDate`, `ValidIO`, `RobName`, `OpMode`, the `dnum`
-  versions (`AbsDnum`, ...).
+- [ ] **Math and general functions**: the `dnum` versions (`AbsDnum`, `BitAndDnum`, ...),
+  `StrFormat`, `StrDigCmp`/`StrDigCalc`, `ValidIO`, `RobName`, `OpMode`, `RunMode`;
+  the bit functions work on bytes (0 to 255) only; `STR_UPPER` and `STR_LOWER` have only
+  the ASCII letters; the argument errors (`ASin(2)`) raise a Python exception, not
+  `ERR_ARGVALERR`.
 - [ ] **Stop and wait**: `Stop`, `Break`, `SystemStopAction`, `WaitAI`, `WaitAO`, `WaitGO`,
   `WaitUntil` on routines called by name, `InvertDO`, `IODisable`/`IOEnable`, `AliasIO`,
   `TPReadNum`/`TPReadFK`/`UIMsgBox` (no operator: they need an answer from the

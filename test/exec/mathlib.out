@@ -1,0 +1,39 @@
+sin 500
+cos 500
+tan 1000
+asin 30
+acos 60
+atan 45
+atan2 135
+max min 73
+distance 13
+dot 32
+cross [0,0,1]
+magnitude 7
+posevect [100,10,0]
+posemult x 100
+posemult y 100
+pose inverse 0
+norient 1
+euler z 30
+euler y 20
+euler x 10
+bitand 8
+bitor 14
+bitxor 6
+bitneg 240
+lsh 12
+rsh 3
+bitcheck TRUE
+bitset bitclear 6
+dectohex FF
+hextodec 255
+bytetostr hex AB
+bytetostr bin 101
+strtobyte 3
+strmemb TRUE
+strorder TRUE
+strorder prefix FALSE
+strmap hippo
+rand in range TRUE
+time TRUE
