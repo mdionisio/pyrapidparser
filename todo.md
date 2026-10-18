@@ -72,10 +72,9 @@ instructions = 3HAC050917-001.
   in the model (`effort`). The confdata of the ABB arms does not describe its solutions:
   a configuration of its own (e.g. the signs of the oblique joints) would let MoveJ
   choose the solution.
-- [ ] **SingArea**: `SingArea \Wrist` (the orientation is joint interpolated to pass a
-  wrist singularity) and `\LockAxis4` are missing. ABB with `\Off` (the default) passes
-  near a singularity sweeping the axes at a lower TCP speed; here the program stops
-  (`the path crosses a singularity`, `test/exec/motion_singular.mod`).
+- [ ] **SingArea \Off**: ABB passes near a singularity sweeping the axes at a lower TCP
+  speed; here the program stops (`the path crosses a singularity`,
+  `test/exec/motion_singular.mod`); `\LockAxis4` is missing.
 - [ ] **Interruption**: a motion error stops the program with a Python exception; ABB
   raises recoverable errors for some of them (ERR_ROBLIMIT with `\ErrorNumber`).
 

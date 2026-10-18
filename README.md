@@ -282,6 +282,7 @@ limits of the axes, coupled joints, meshes of a CAD model (see the comment at th
 | `MoveL`, `MoveC`                   | straight line and circle of the TCP                      |
 | `SearchL`                          | linear search on a `signaldi` (see below)                |
 | `StopMove`, `StartMove`, `StorePath`, `RestoPath`, `ClearPath` | stop of the movement from a trap (see below) |
+| `SingArea`                         | `\Wrist`: the wrist axes are joint interpolated to pass a singularity |
 | `TriggL`, `TriggJ`, `TriggC`, `TriggAbsJ` | movements with `TriggIO` and `TriggEquip` (outputs set along the path, see below) |
 | `MoveJDO`, `MoveLDO`, `MoveCDO`, `MoveJGO`, ... `MoveCAO` | movement that sets an output at its end (at the corner of a fly-by point) |
 | `AccSet`, `VelSet`                 | accelerations in percent, speeds in percent and maximum speed of the TCP |
@@ -368,8 +369,11 @@ How the movements are computed:
   recoverable errors `ERR_OUTSIDE_REACH` and `ERR_ROBLIMIT`, or stores them in
   `\ErrorNumber`. At a wrist singularity `CalcJointT` returns axis 4 at 0, as the manual
   says. A joint movement goes through a singularity; a linear one goes through it only on
-  the exact position (axes 4 and 6 do not swing), near it the program stops: there is no
-  `SingArea \Wrist` yet.
+  the exact position (axes 4 and 6 do not swing), near it the program stops, unless
+  `SingArea \Wrist` is active: the wrist axes (6 axis robots) are then joint interpolated
+  from the start to the end of the movement, the TCP follows the path and the orientation
+  of the tool differs from the programmed one in between (`SingArea \LockAxis4` is not
+  supported). `SingArea \Off` restores the default.
 - **Dynamics**: with the inertial data the joint torques are computed along the path,
   including the load of the tool.
 - **Corner paths** superpose the end of a movement and the start of the next one in the

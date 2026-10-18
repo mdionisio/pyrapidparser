@@ -2022,6 +2022,12 @@ MODULE SYSTEMMODULE(SYSMODULE)
         RETURN ret;
     ENDFUNC
 
+    PROC SingArea(\switch Wrist | switch LockAxis4 | switch Off)
+        ! \Wrist: the orientation of the tool changes a little to pass a wrist singularity
+        !python:import pyrapid_motion
+        !python:pyrapid_motion.SingArea(pyrapid.Symbols().IsInScope("Wrist"), pyrapid.Symbols().IsInScope("LockAxis4"))
+    ENDPROC
+
     PROC AccSet(num Acc, num Ramp)
         !python:import pyrapid_motion
         !python:pyrapid_motion.AccSet(pyrapid.Symbols().GetSymbol("Acc").data.Get(), pyrapid.Symbols().GetSymbol("Ramp").data.Get())

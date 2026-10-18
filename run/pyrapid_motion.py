@@ -677,6 +677,8 @@ class Controller:
         self.pending_triggers: list[Trigger] = []
         # AccSet: factor of the accelerations; VelSet: factor of the speeds, maximum TCP speed (m/s)
         self.interrupts: Any = None
+        # SingArea \Wrist: the orientation is joint interpolated through the singularities
+        self.sing_wrist = False
         # StopMove: the new movements wait for StartMove; the suspended movements and the
         # paths of StorePath
         self.stopped = False
@@ -1163,6 +1165,29 @@ class Controller:
             solutions = matching
         return solutions[0].axes
 
+    def arm_for_wrist(self, target: Any, tool: Tool, wrist: Any, previous: Any) -> Any:
+        """the axes 1 to 3 that put the TCP on the position of target when the wrist axes
+        are given (the orientation of the target is not reached); None if they do not
+        converge"""
+        robot = self.require_robot()
+        axes = previous.copy()
+        axes[3:] = wrist
+        wanted = target.translation
+        for _ in range(30):
+            error = wanted - self.tcp(axes, tool).translation
+            if float(np.linalg.norm(error)) < 1e-6:
+                return axes
+            jacobian = np.zeros((3, 3))
+            for i in range(3):
+                shifted = axes.copy()
+                shifted[i] += 1e-6
+                jacobian[:, i] = (self.tcp(shifted, tool).translation - wanted + error) / 1e-6
+            step = np.linalg.lstsq(jacobian, error, rcond=None)[0]
+            axes[:3] += np.clip(step, -0.2, 0.2)
+        if float(np.linalg.norm(wanted - self.tcp(axes, tool).translation)) < 1e-4:
+            return axes if robot.within_limits(axes) else None
+        return None
+
     def accelerations(self) -> Any:
         """the accelerations of the axes with AccSet"""
         return self.require_robot().acceleration * self.acc_factor
@@ -1210,8 +1235,28 @@ class Controller:
         speed = self.scaled(speed)
         count = max(20, int(math.ceil(max(length / 0.002, angle / 0.01))))
         path_axes = [start.copy()]
+        wrist_end: Any = None
+        if self.sing_wrist and robot.naxes == 6:
+            # the wrist axes go linearly from the start to the end position; the other
+            # axes follow the TCP on the path
+            final = robot.ik(path(1.0) * tool.frame.inverse(), start)
+            if not final:
+                raise OutsideReach(
+                    "%s: position outside reach: %s" % (instruction, pose_values(path(1.0)))
+                )
+            wrist_end = final[0].axes
         for k in range(1, count + 1):
             target = path(k / count)
+            if wrist_end is not None:
+                wrist = start[3:] + (k / count) * (wrist_end[3:] - start[3:])
+                axes = self.arm_for_wrist(target, tool, wrist, path_axes[-1])
+                if axes is None:
+                    raise OutsideReach(
+                        "%s: position outside reach on the path: %s"
+                        % (instruction, pose_values(target))
+                    )
+                path_axes.append(axes)
+                continue
             solutions = robot.ik(target * tool.frame.inverse(), path_axes[-1])
             if not solutions:
                 raise OutsideReach(
@@ -1598,6 +1643,15 @@ def ORobT(result: Any, point: Any) -> None:
     rot = component(result, "rot")
     for name, v in zip(("q1", "q2", "q3", "q4"), values[1]):
         rot.GetElem(name).Set(v)
+
+
+def SingArea(wrist: bool, lock_axis4: bool) -> None:
+    """\\Wrist: the orientation of the linear and circular movements may differ from the
+    programmed one to pass a wrist singularity (the wrist axes are joint interpolated);
+    \\Off (default): the orientation is as programmed"""
+    if lock_axis4:
+        raise MotionError("SingArea \\LockAxis4 is not supported")
+    CONTROLLER.sing_wrist = wrist
 
 
 def AccSet(acc: float, ramp: float) -> None:
