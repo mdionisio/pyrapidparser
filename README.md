@@ -568,6 +568,7 @@ The tests:
 | `test_robotmodel.py`       | models, inverse kinematics of every model, confdata, torques       |
 | `test_motion.py`           | motion instructions: limits, paths, configurations, viewer         |
 | `test_rapid2py.py`         | the generated Python compiles, the `test/exec/` programs and the examples run right (the programs run: control flow, errors, GOTO, loops, records, strings, I/O, standard routines, sockets, motion; `<name>.err` is the message of the error that must stop a program, as the motion tests of reach, axis limits and singularities) |
+| `test_public_programs.py`  | RAPID programs of public repositories, downloaded when the test runs (skipped without network): validation, and the socket server of open-abb-driver with a client |
 | `test_quality.py`          | mypy strict and ruff formatting                                    |
 
 The project code is typed and must pass `mypy --strict`. The generated files are excluded
