@@ -3,6 +3,43 @@
 Parser, syntax tree tools and Python translator for **ABB RAPID**, the programming
 language of ABB robot controllers.
 
+![A simulated ABB IRB 460 palletizer, running a RAPID program](doc/palletizer.gif)
+
+*The RAPID program of [examples/pallettizer](examples/pallettizer/README.md) fills two
+pallets with a simulated ABB IRB 460; the cell (conveyors, products, gripper) is a Python
+file, the robot is seen in the browser with MeshCat.*
+
+## Start here
+
+If you arrive from outside: this project **reads a RAPID program, checks it, and runs it on
+a simulated robot**, without an ABB controller or RobotStudio. What it does today:
+
+- parses and validates RAPID (names, types, arguments, the rules of the language manuals);
+- translates the program into Python and runs it, with a large part of the standard
+  routines (arithmetic, strings, files, sockets, I/O signals, interrupts, motion
+  instructions with zones, search, triggers, error handlers);
+- moves a robot model of the ABB ROS-Industrial package in simulated time or in real time,
+  with joint limits, reach, configurations and torques, and shows it in the browser;
+- runs unmodified RAPID programs of other people: the validation and the socket server of
+  [open-abb-driver](https://github.com/Humhu/open-abb-driver) are tested against a Python
+  client (`test_public_programs.py`).
+
+It is a study project that grew: the timing of the robot is a model, not the ABB motion
+planner, and many instructions are missing (see [todo.md](todo.md)). Try it in two minutes
+(with [hatch](https://hatch.pypa.io/), `pip install hatch`: the first `hatch run` creates the
+environment, installs the dependencies and generates `rapid_ast.py`):
+
+```sh
+git clone --recurse-submodules https://github.com/mdionisio/pyrapidparser.git
+cd pyrapidparser
+E=examples/pallettizer
+MODULES="-i $E/settings.mod -i $E/gloadschema.mod -i $E/schema.mod -i $E/types.mod -i $E/environment.mod -i $E/maintask.mod"
+PYRAPID_SIMULATION=$E/cell.py PYRAPID_VIEWER=meshcat hatch run python rapid2py.py --eio $E/EIO.cfg $MODULES -e MAIN -d out -f pallettizer.py -r
+```
+
+then open the address that MeshCat prints. The README of each example (also
+[examples/irb120](examples/irb120/README.md)) tells what it does and how to run it.
+
 **Not affiliated with ABB.** This is an independent study project, born to find out whether
 a RAPID program could be checked, translated and run on a simulated robot with free
 software. It is not a product of ABB, it is not endorsed by ABB, and it does not replace
@@ -32,7 +69,9 @@ kernel* (3HAC050946-001), together with the *RAPID Overview* (3HAC050947-001) an
 
 - Python 3.9 or later
 - [ply](https://pypi.org/project/ply/) 3.11
-- [hatch](https://hatch.pypa.io/) for development (optional)
+- [hatch](https://hatch.pypa.io/): `hatch run <command>` runs the command in an environment
+  with all that the project needs (the commands of this README can start with it);
+  without hatch install the packages below by hand
 - for the motion instructions: [Pinocchio](https://github.com/stack-of-tasks/pinocchio)
   (`pin`), numpy, xacro, and [MeshCat](https://github.com/meshcat-dev/meshcat-python) for
   the view in the browser
@@ -40,6 +79,7 @@ kernel* (3HAC050946-001), together with the *RAPID Overview* (3HAC050947-001) an
 ```sh
 pip install ply
 pip install pin numpy xacro meshcat     # or: pip install .[view]
+python _ast_gen.py                      # generates rapid_ast.py
 ```
 
 The ABB robot models are in a git submodule:
@@ -51,8 +91,8 @@ git submodule update --init
 ```
 
 The module `rapid_ast.py` is generated from `_rapid_ast.cfg` and is not in the repository.
-Generate it before the first use (with hatch the `test` and `typecheck` scripts and the
-package build do it for you):
+Generate it before the first use (with hatch, creating the environment, the package build and
+the `test` and `typecheck` scripts do it for you):
 
 ```sh
 python _ast_gen.py

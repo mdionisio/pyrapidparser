@@ -23,7 +23,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OUTPUT = os.path.join(HERE, "stylized")
 
 
-def box(x: tuple[float, float], y: tuple[float, float], z: tuple[float, float], fillet: float = 0) -> Any:
+def box(
+    x: tuple[float, float], y: tuple[float, float], z: tuple[float, float], fillet: float = 0
+) -> Any:
     """a box with the given extents, with rounded edges"""
     solid = (
         cq.Workplane("XY")

@@ -178,6 +178,8 @@ class Cell:
             g.MeshLambertMaterial(map=g.ImageTexture(image=png), color=0xFFFFFF),
         )
         viewer["cell/floor"].set_transform(placement(np.eye(3), (0, 0, -0.002)).homogeneous)
+        # a view of the whole cell
+        self.world.camera((3.4, 2.4, 2.4), 1.0)
         for n, line in PICK_LINES.items():
             angle = float(line["angle"])  # type: ignore[arg-type]
             direction = rotation_z(angle)

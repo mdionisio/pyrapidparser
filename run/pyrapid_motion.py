@@ -591,6 +591,16 @@ class World:
         viewer = self.controller.viewer
         return None if viewer is None else viewer.visualizer.viewer
 
+    def camera(self, position: Any = None, zoom: float = 1.0) -> None:
+        """the point of view of the viewer: the camera at position (m, in the base frame,
+        it looks at the base of the robot) and its zoom (less than 1: farther)"""
+        viewer = self.controller.viewer
+        if viewer is not None:
+            node = viewer.visualizer.viewer["/Cameras/default"]["rotated/<object>"]
+            if position is not None:
+                node.set_property("position", [float(c) for c in position])
+            node.set_property("zoom", zoom)
+
     def require_io(self) -> Any:
         if self.io is None:
             raise MotionError("the program has no I/O signals (rapid2py --eio)")
