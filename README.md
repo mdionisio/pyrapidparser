@@ -278,6 +278,7 @@ limits of the axes, coupled joints, meshes of a CAD model (see the comment at th
 | `CJointT`, `CRobT`                 | current position                                         |
 | `CalcJointT`, `CalcRobT`           | inverse and forward kinematics                           |
 | `Offs`, `RelTool`                  | displaced points                                         |
+| `PDispSet`, `PDispOn`, `PDispOff`, `ORobT` | program displacement in the object frame (`PDispOn` replaces the previous displacement); `CRobT` and `CalcRobT` give the programmed position, as the robot does |
 
 The supported arguments are `\Conc`, `\V`, `\T`, `\Z` and `\WObj`; `tooldata` (TCP and load) and
 `wobjdata` (user and object frame) work as on the robot, `tool0`, `wobj0` and `load0` are

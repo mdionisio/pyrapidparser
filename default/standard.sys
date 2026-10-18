@@ -1817,6 +1817,40 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:pyrapid_motion.Triggered(_triggers, pyrapid_motion.MoveAbsJ, _s("mv_conc").data.Get(), _s("ToJointPos").data, _s("Speed").data, _s("mv_v").data.Get(), _s("mv_t").data.Get(), _s("Zone").data, _s("mv_z").data.Get(), _s("Tool").data)
     ENDPROC
 
+    PROC PDispSet(pose DispFrame)
+        ! program displacement: the programmed points are displaced by DispFrame, in the
+        ! object frame
+        !python:import pyrapid_motion
+        !python:pyrapid_motion.PDispSet(pyrapid.Symbols().GetSymbol("DispFrame").data)
+    ENDPROC
+
+    PROC PDispOff()
+        !python:import pyrapid_motion
+        !python:pyrapid_motion.PDispOff()
+    ENDPROC
+
+    PROC PDispOn(\switch Rot \robtarget ExeP, robtarget ProgPoint, tooldata Tool \wobjdata WObj)
+        ! the displacement that moves ProgPoint to ExeP (default: the current position)
+        VAR wobjdata mv_wobj;
+        mv_wobj := wobj0;
+        IF Present(WObj) THEN
+            mv_wobj := WObj;
+        ENDIF
+        !python:import pyrapid_motion
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:_exep = _s("ExeP").data if pyrapid.Symbols().IsInScope("ExeP") else None
+        !python:pyrapid_motion.PDispOn(pyrapid.Symbols().IsInScope("Rot"), _exep, _s("ProgPoint").data, _s("Tool").data, _s("mv_wobj").data)
+    ENDPROC
+
+    FUNC robtarget ORobT(robtarget OrgPoint \switch InPDisp \switch InEOffs)
+        ! the point without the program displacement
+        VAR robtarget ret;
+        !python:import pyrapid_motion
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid_motion.ORobT(_s("ret").data, _s("OrgPoint").data)
+        RETURN ret;
+    ENDFUNC
+
     PROC AccSet(num Acc, num Ramp)
         !python:import pyrapid_motion
         !python:pyrapid_motion.AccSet(pyrapid.Symbols().GetSymbol("Acc").data.Get(), pyrapid.Symbols().GetSymbol("Ramp").data.Get())

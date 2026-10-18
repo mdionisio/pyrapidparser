@@ -1,0 +1,11 @@
+   0.50 s  MoveAbsJ fine      axes [0.0, 20.0, 10.0, 0.0, 40.0, 0.0] deg  max torque [0.0, 17.0, 8.3, 0.0, 0.1, 0.0] Nm
+   0.87 s  MoveL    fine      axes [2.7, 26.3, 1.5, -1.4, 42.3, 3.6] deg  max torque [0.6, 15.4, 6.5, 0.0, 0.0, 0.0] Nm
+programmed x 0
+ORobT x -30
+real x 30
+real y 20
+   1.32 s  MoveL    fine      axes [0.0, 20.1, 2.2, 0.0, 47.6, 0.0] deg  max torque [0.4, 15.6, 6.9, 0.0, 0.0, 0.0] Nm
+   1.44 s  MoveL    fine      axes [1.4, 20.2, 2.2, -0.7, 47.7, 1.8] deg  max torque [3.2, 12.4, 6.4, 0.0, 0.0, 0.0] Nm
+PDispOn x 10
+PDispOn y 10
+PDispOn z 40

@@ -152,12 +152,14 @@ class Tool:
 
 
 def wobj_of(wobjdata: Any) -> Any:
-    """placement of the object frame in the base frame"""
+    """placement in the base frame of the frame of the programmed points: the object
+    frame, displaced by the program displacement (PDispSet)"""
     if wobjdata is None:
         return pin.SE3.Identity()
     if bool(component(wobjdata, "robhold").Get()):
         raise MotionError("work objects held by the robot (robhold TRUE) are not supported")
-    return pose_of(component(wobjdata, "uframe")) * pose_of(component(wobjdata, "oframe"))
+    frame = pose_of(component(wobjdata, "uframe")) * pose_of(component(wobjdata, "oframe"))
+    return frame * CONTROLLER.displacement
 
 
 @dataclass
@@ -667,6 +669,8 @@ class Controller:
         self.pending_triggers: list[Trigger] = []
         # AccSet: factor of the accelerations; VelSet: factor of the speeds, maximum TCP speed (m/s)
         self.acc_factor = 1.0
+        # program displacement: placement in the object frame of the displaced points
+        self.displacement = pin.SE3.Identity()
         self.vel_override = 1.0
         self.vel_max: Optional[float] = None
         self.world = World(self)
@@ -1375,6 +1379,45 @@ def Triggered(records: list[Any], movement: Callable[..., None], *arguments: Any
         movement(*arguments)
     finally:
         CONTROLLER.pending_triggers = []
+
+
+def PDispSet(dispframe: Any) -> None:
+    """program displacement: the programmed points are displaced by the pose, in the
+    object frame"""
+    CONTROLLER.displacement = pose_of(dispframe)
+
+
+def PDispOff() -> None:
+    CONTROLLER.displacement = pin.SE3.Identity()
+
+
+def PDispOn(rot: bool, exep: Any, progpoint: Any, tooldata: Any, wobjdata: Any) -> None:
+    """the displacement (in the object frame) that moves the programmed point ProgPoint
+    to ExeP, or to the current position; the orientation changes only with \\Rot. It
+    replaces the previous displacement."""
+    frame = wobj_of(wobjdata) * CONTROLLER.displacement.inverse()
+    programmed = pose_of(progpoint)
+    if exep is None:
+        executed = frame.inverse() * CONTROLLER.tcp(CONTROLLER.current(), Tool.of(tooldata))
+    else:
+        executed = pose_of(exep)
+    rotation = executed.rotation @ programmed.rotation.T if rot else np.eye(3)
+    CONTROLLER.displacement = pin.SE3(
+        rotation, executed.translation - rotation @ programmed.translation
+    )
+
+
+def ORobT(result: Any, point: Any) -> None:
+    """the point without the program displacement"""
+    result.Set(point)
+    displaced = CONTROLLER.displacement.inverse() * pose_of(point)
+    values = pose_values(displaced)
+    trans = component(result, "trans")
+    for name, v in zip(("x", "y", "z"), values[0]):
+        trans.GetElem(name).Set(v)
+    rot = component(result, "rot")
+    for name, v in zip(("q1", "q2", "q3", "q4"), values[1]):
+        rot.GetElem(name).Set(v)
 
 
 def AccSet(acc: float, ramp: float) -> None:
