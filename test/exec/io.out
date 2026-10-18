@@ -1,0 +1,11 @@
+lamp 1
+semi-value
+lamp 0
+value 1
+count 5
+ready TRUE
+WaitDI timeout TRUE
+WaitUntil timeout TRUE
+pulse 1
+after the pulse 0
+ERR_WAIT_MAXTIME

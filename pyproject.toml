@@ -31,6 +31,7 @@ view = [
 include = [
     "/ast_gen.py",
     "/browse_rapid_ast.py",
+    "/eio.py",
     "/plyparser.py",
     "/rapid2py.py",
     "/rapid2rapid.py",
@@ -93,6 +94,7 @@ files = [
     "_ast_gen.py",
     "ast_gen.py",
     "browse_rapid_ast.py",
+    "eio.py",
     "hatch_build.py",
     "plyparser.py",
     "rapid2py.py",

@@ -724,7 +724,128 @@ MODULE SYSTEMMODULE(SYSMODULE)
         RETURN ret;
     ENDFUNC 
 
-!! Motion instructions: run/pyrapid_motion.py, the robot model is selected with
+    !! I/O instructions: the signals are in the I/O configuration (--eio of rapid2py),
+    !! their values in pyrapid.IO; the simulation of the cell reads and sets them.
+
+    PROC SetDO(\num SDelay | switch Sync, VAR signaldo Signal, dionum Value)
+        !python:pyrapid.IO.set(pyrapid.Symbols().GetSymbol("Signal").data.name, int(pyrapid.Symbols().GetSymbol("Value").data.Get()))
+    ENDPROC
+
+    PROC Set(VAR signaldo Signal)
+        !python:pyrapid.IO.set(pyrapid.Symbols().GetSymbol("Signal").data.name, 1)
+    ENDPROC
+
+    PROC Reset(VAR signaldo Signal)
+        !python:pyrapid.IO.set(pyrapid.Symbols().GetSymbol("Signal").data.name, 0)
+    ENDPROC
+
+    PROC PulseDO(\switch High, \num PLength, VAR signaldo Signal)
+        VAR num io_length := 0.2;
+        IF Present(PLength) THEN
+            io_length := PLength;
+        ENDIF
+        !python:pyrapid.IO.pulse(pyrapid.Symbols().GetSymbol("Signal").data.name, pyrapid.Symbols().GetSymbol("io_length").data.Get())
+    ENDPROC
+
+    PROC SetGO(VAR signalgo Signal, num Value)
+        !python:pyrapid.IO.set(pyrapid.Symbols().GetSymbol("Signal").data.name, pyrapid.Symbols().GetSymbol("Value").data.Get())
+    ENDPROC
+
+    PROC SetAO(VAR signalao Signal, num Value)
+        !python:pyrapid.IO.set(pyrapid.Symbols().GetSymbol("Signal").data.name, pyrapid.Symbols().GetSymbol("Value").data.Get())
+    ENDPROC
+
+    PROC WaitDI(VAR signaldi Signal, dionum Value \num MaxTime \VAR bool TimeFlag)
+        VAR bool io_done;
+        VAR num io_max := -1;
+        IF Present(MaxTime) THEN
+            io_max := MaxTime;
+        ENDIF
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:_name, _value, _max = _s("Signal").data.name, _s("Value").data.Get(), _s("io_max").data.Get()
+        !python:_s("io_done").data.Set(pyrapid.IO.wait(lambda: pyrapid.IO.get(_name) == _value, None if _max < 0 else _max))
+        IF Present(TimeFlag) THEN
+            TimeFlag := NOT io_done;
+        ELSEIF NOT io_done THEN
+            RAISE ERR_WAIT_MAXTIME;
+        ENDIF
+    ENDPROC
+
+    PROC WaitDO(VAR signaldo Signal, dionum Value \num MaxTime \VAR bool TimeFlag)
+        VAR bool io_done;
+        VAR num io_max := -1;
+        IF Present(MaxTime) THEN
+            io_max := MaxTime;
+        ENDIF
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:_name, _value, _max = _s("Signal").data.name, _s("Value").data.Get(), _s("io_max").data.Get()
+        !python:_s("io_done").data.Set(pyrapid.IO.wait(lambda: pyrapid.IO.get(_name) == _value, None if _max < 0 else _max))
+        IF Present(TimeFlag) THEN
+            TimeFlag := NOT io_done;
+        ELSEIF NOT io_done THEN
+            RAISE ERR_WAIT_MAXTIME;
+        ENDIF
+    ENDPROC
+
+    PROC WaitGI(VAR signalgi Signal, num Value \num MaxTime \VAR bool TimeFlag)
+        VAR bool io_done;
+        VAR num io_max := -1;
+        IF Present(MaxTime) THEN
+            io_max := MaxTime;
+        ENDIF
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:_name, _value, _max = _s("Signal").data.name, _s("Value").data.Get(), _s("io_max").data.Get()
+        !python:_s("io_done").data.Set(pyrapid.IO.wait(lambda: pyrapid.IO.get(_name) == _value, None if _max < 0 else _max))
+        IF Present(TimeFlag) THEN
+            TimeFlag := NOT io_done;
+        ELSEIF NOT io_done THEN
+            RAISE ERR_WAIT_MAXTIME;
+        ENDIF
+    ENDPROC
+
+    FUNC dionum DInput(VAR signaldi Signal)
+        VAR num ret;
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set(pyrapid.IO.get(pyrapid.Symbols().GetSymbol("Signal").data.name))
+        RETURN ret;
+    ENDFUNC
+
+    FUNC dionum DOutput(VAR signaldo Signal)
+        VAR num ret;
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set(pyrapid.IO.get(pyrapid.Symbols().GetSymbol("Signal").data.name))
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num GInput(VAR signalgi Signal)
+        VAR num ret;
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set(pyrapid.IO.get(pyrapid.Symbols().GetSymbol("Signal").data.name))
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num GOutput(VAR signalgo Signal)
+        VAR num ret;
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set(pyrapid.IO.get(pyrapid.Symbols().GetSymbol("Signal").data.name))
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num AInput(VAR signalai Signal)
+        VAR num ret;
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set(pyrapid.IO.get(pyrapid.Symbols().GetSymbol("Signal").data.name))
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num AOutput(VAR signalao Signal)
+        VAR num ret;
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set(pyrapid.IO.get(pyrapid.Symbols().GetSymbol("Signal").data.name))
+        RETURN ret;
+    ENDFUNC
+
+    FUNC bool TestDI(VAR signaldi Signal)
+        VAR bool ret;
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set(pyrapid.IO.get(pyrapid.Symbols().GetSymbol("Signal").data.name) == 1)
+        RETURN ret;
+    ENDFUNC
+
+    !! Motion instructions: run/pyrapid_motion.py, the robot model is selected with
     !! the comment !robot: <model> (robotmodel.py). Zones are run as fine points.
 
     PROC MoveAbsJ(\switch Conc, jointtarget ToJointPos, speeddata Speed \num V | num T, zonedata Zone \num Z, tooldata Tool \wobjdata WObj)

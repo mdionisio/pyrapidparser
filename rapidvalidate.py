@@ -53,6 +53,12 @@ MODULE_ATTRIBUTES = ("SYSMODULE", "NOVIEW", "NOSTEPIN", "VIEWONLY", "READONLY")
 # 2.16 Data type value classes: installed types known to be non-value types
 NON_VALUE_TYPES = frozenset(("iodev", "socketdev", "clock", "rawbytes"))
 
+# 2.16 semi-value types: the I/O signals, num in value context ("the associated type of
+# signaldi is num")
+SEMI_VALUE_TYPES = frozenset(
+    ("signaldi", "signaldo", "signalgi", "signalgo", "signalai", "signalao")
+)
+
 # 2.15 The alias data types: "The built-in alias types are errnum and intnum - both are
 # alias for num." (dionum, byte and socketstatus are alias for num too)
 BUILTIN_ALIASES = {
@@ -282,9 +288,10 @@ def identifier_name(node: Any) -> Optional[str]:
 
 class Builtins:
     """predefined types, data objects and routines (2.19, 11, 12, 13), taken from the
-    runtime run.pyrapid and from the kernel manual"""
+    runtime run.pyrapid and from the kernel manual; signals: the I/O signals of the
+    controller configuration (name -> signaldi, ...)"""
 
-    def __init__(self) -> None:
+    def __init__(self, signals: Optional[dict[str, str]] = None) -> None:
         self.objects: dict[str, Entry] = {}
         symbols = pyrapid.Symbols()
         class_names: dict[type, str] = {}
@@ -359,6 +366,9 @@ class Builtins:
         # "The predefined (readonly) variable ERRNO", "variable INTNO" (7.1, 8)
         self.objects["errno"] = DataObject("ERRNO", "VAR", errnum, readonly=True, predefined=True)
         self.objects["intno"] = DataObject("INTNO", "VAR", intnum, readonly=True, predefined=True)
+        # the signals are installed data objects, set only by the I/O instructions
+        for name, kind in (signals or {}).items():
+            self.objects[name.lower()] = DataObject(name, "VAR", self.type(kind), predefined=True)
 
         # 11 Built-in routines
         anytype = self.type("anytype")
@@ -413,8 +423,8 @@ class Builtins:
 
 
 class Validator:
-    def __init__(self) -> None:
-        self.builtins = Builtins()
+    def __init__(self, signals: Optional[dict[str, str]] = None) -> None:
+        self.builtins = Builtins(signals)
         self.diagnostics: list[Diagnostic] = []
         self.modules: dict[str, ModuleInfo] = {}
         self.global_objects: dict[str, Entry] = {}
@@ -729,6 +739,8 @@ class Validator:
         info = t.base
         if info.name.lower() in NON_VALUE_TYPES:
             return "nonvalue"
+        if info.name.lower() in SEMI_VALUE_TYPES:
+            return "semivalue"
         if info.kind == "record":
             seen = seen or set()
             if id(info) in seen:
@@ -737,6 +749,8 @@ class Validator:
             classes = [self.value_class(ct, seen) for _, ct in info.components]
             if "nonvalue" in classes:
                 return "nonvalue"
+            if "semivalue" in classes:
+                return "semivalue"
             return "value"
         if info.kind in ("atomic",):
             return "value"
@@ -812,12 +826,12 @@ class Validator:
         if value is None or obj.type is None:
             return
         # 2.16 constant, persistent and variable with initialization: only value types
-        if self.value_class(obj.type) == "nonvalue":
+        if self.value_class(obj.type) in ("nonvalue", "semivalue"):
             self.report(
                 vdef.name,
                 "value-class",
-                "%s %s of non-value type %s cannot be initialized"
-                % (describe(obj), obj.name, obj.type),
+                "%s %s of %s type %s cannot be initialized"
+                % (describe(obj), obj.name, self.value_class(obj.type), obj.type),
             )
             return
         if obj.kind == "PERS":
@@ -1015,16 +1029,19 @@ class Validator:
             # 2.16 non-value types only as var (or ref) parameters
             if (
                 not param.switch
-                and param.mode != "VAR"
-                and self.value_class(param.type) == "nonvalue"
+                and param.mode not in ("VAR", "REF")
+                and self.value_class(param.type) in ("nonvalue", "semivalue")
             ):
                 self.report(
                     param.node,
                     "value-class",
-                    "parameter %s of non-value type %s must be a VAR parameter"
-                    % (param.name, param.type),
+                    "parameter %s of %s type %s must be a VAR parameter"
+                    % (param.name, self.value_class(param.type), param.type),
                 )
-        if routine.kind == "FUNC" and self.value_class(routine.return_type) == "nonvalue":
+        if routine.kind == "FUNC" and self.value_class(routine.return_type) in (
+            "nonvalue",
+            "semivalue",
+        ):
             # 5.5 "Functions can have (return) any value data type"
             self.report(
                 decl.data_type,
@@ -1246,6 +1263,16 @@ class Validator:
                 s.dest,
                 "value-class",
                 "cannot assign to %s of non-value type %s" % (obj.name if obj else "", target_type),
+            )
+            return
+        if target_type is not None and self.value_class(target_type) == "semivalue":
+            # 2.16 "a semi-value object (type) can reject either reading or updating by
+            # value": the signals are set by SetDO, SetGO, SetAO
+            self.report(
+                s.dest,
+                "assign-signal",
+                "cannot assign to the signal %s: use SetDO, SetGO or SetAO"
+                % (obj.name if obj else "",),
             )
             return
         if target_type is not None:
@@ -1677,10 +1704,23 @@ class Validator:
         """type with known structure (unknown installed types are not checked)"""
         return t.base.kind in ("atomic", "record")
 
+    def associated(self, t: DataType) -> DataType:
+        """2.16 a semi-value object in value context: its associated type"""
+        if not t.dims and t.base.name.lower() in SEMI_VALUE_TYPES:
+            num = self.builtins.type("num")
+            if num is not None:
+                return num
+        return t
+
     def equal_types(self, expected: DataType, found: DataType) -> bool:
         """2.17 Equal type"""
         if expected.base.kind == "anytype" or found.base.kind == "anytype":
             return True
+        # "one of the objects has a value type, the other a semi-value type and the type
+        # of the first and the associated type of the semi-value object are equal"
+        semi = [t.base.name.lower() in SEMI_VALUE_TYPES for t in (expected, found)]
+        if semi[0] != semi[1]:
+            return self.equal_types(self.associated(expected), self.associated(found))
         if len(expected.dims) != len(found.dims):
             return False
         for a, b in zip(expected.dims, found.dims):
@@ -1938,7 +1978,10 @@ class Validator:
     ) -> Optional[DataType]:
         # 3.12 unary + - (num, dnum, pos), NOT (bool)
         t = self.type_of(node.par1, ctx, expected if node.operator != "NOT" else None)
-        if t is None or not self.known(t):
+        if t is None:
+            return None
+        t = self.associated(t)
+        if not self.known(t):
             return None
         name = t.base.name.lower()
         if node.operator == "NOT":
@@ -1973,6 +2016,7 @@ class Validator:
             right = self.type_of(node.par2, ctx, left if right_aggregate else None)
         if left is None or right is None:
             return None
+        left, right = self.associated(left), self.associated(right)
         if not (self.known(left) and self.known(right)):
             return None
         result = self.operator_result(op, left, right)
@@ -2028,11 +2072,16 @@ class Validator:
 # ----------------------------------------------------------------- API
 
 
-def validate(modules: Sequence[Any], quiet_files: Sequence[str] = ()) -> list[Diagnostic]:
+def validate(
+    modules: Sequence[Any],
+    quiet_files: Sequence[str] = (),
+    signals: Optional[dict[str, str]] = None,
+) -> list[Diagnostic]:
     """validate the modules of a task (the parsed ModuleAST of all its files, standard
-    modules included); the diagnostics of quiet_files are not returned"""
+    modules included); the diagnostics of quiet_files are not returned; signals are
+    the I/O signals of the controller configuration (eio.py)"""
     quiet = {os.path.normpath(f) for f in quiet_files}
-    diagnostics = Validator().validate(modules)
+    diagnostics = Validator(signals).validate(modules)
     return [d for d in diagnostics if os.path.normpath(d.file) not in quiet]
 
 
@@ -2064,13 +2113,18 @@ def parse_files(paths: Sequence[str]) -> tuple[list[Any], list[Diagnostic]]:
 
 
 def validate_files(
-    paths: Sequence[str], standard: bool = True, check_standard: bool = False
+    paths: Sequence[str],
+    standard: bool = True,
+    check_standard: bool = False,
+    eio_files: Sequence[str] = (),
 ) -> list[Diagnostic]:
+    import eio
+
     std = standard_files() if standard else []
     modules, errors = parse_files(list(std) + list(paths))
     if errors:
         return errors
-    return validate(modules, () if check_standard else std)
+    return validate(modules, () if check_standard else std, eio.load(list(eio_files)))
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -2089,8 +2143,15 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         action="store_true",
         help="report also the diagnostics of the standard modules",
     )
+    parser.add_argument(
+        "--eio",
+        action="append",
+        default=[],
+        metavar="FILE",
+        help="I/O configuration of the controller (EIO.cfg): the signals of the task",
+    )
     args = parser.parse_args(argv)
-    diagnostics = validate_files(args.files, not args.nostandard, args.check_standard)
+    diagnostics = validate_files(args.files, not args.nostandard, args.check_standard, args.eio)
     for d in diagnostics:
         print(d)
     errors = sum(1 for d in diagnostics if d.severity == ERROR)

@@ -52,6 +52,12 @@ class TraslateRapidToPython(rapid_ast.NodeVisitor):
         self.writemodule("import copy")
         self.writemodule("import sys")
 
+    def declare_signals(self, signals: dict[str, str]) -> None:
+        """the I/O signals of the controller configuration (eio.py)"""
+        pyrapid.DeclareSignals(signals)
+        if signals:
+            self.writemodule("pyrapid.DeclareSignals(%s)" % (repr(signals),))
+
     def close(self, entrypoint: Optional[str] = None) -> None:
         if not (entrypoint is None):
             self.writemodule("if __name__ == '__main__':")
@@ -1557,22 +1563,50 @@ class rapid_%s (pyrapid.rapid_struct):
 
         # SPECIAL PROCEDURE
         if isinstance(procedure_name, str) and procedure_name.lower() == "waituntil":
-            # TODO
-            # WaitUntil \InPos Cond \MaxTime \TimeFlag
-            self.writemodule("import time")
+            # WaitUntil [\InPos] Cond [\MaxTime] [\TimeFlag]: the clock of pyrapid.IO
+            # waits (in the time of the simulation when the program moves a robot)
+            named = {
+                a.argumentname.name.lower(): a
+                for a in node.arguments
+                if a.argumentname is not None and a.type != "Required"
+            }
+            if "inpos" in named:
+                self.writemodule("import sys as _sys")
+                self.writemodule("if 'pyrapid_motion' in _sys.modules:")
+                with self.ModuleScope():
+                    self.writemodule("_sys.modules['pyrapid_motion'].WaitRob()")
             self.simple_writeindent()
-            self.simple_writemodule("while ( ")
-
+            self.simple_writemodule("_wait_done = pyrapid.IO.wait(lambda: (")
             # the condition is the required argument (\InPos is a switch)
             for argument in node.arguments:
                 if argument.type == "Required":
                     self.visit(argument.argumentvalue, **kwargs)
                     break
-
-            self.simple_writemodule("): ")
+            self.simple_writemodule("), ")
+            if "maxtime" in named:
+                self.visit(named["maxtime"].argumentvalue, **kwargs)
+            else:
+                self.simple_writemodule("None")
+            self.simple_writemodule(")")
             self.simple_writemodule()
-            with self.ModuleScope():
-                self.writemodule("time.sleep(0.1)")
+            flag = named.get("timeflag")
+            if flag is not None and isinstance(flag.argumentvalue, rapid_ast.VariableAST):
+                self.writemodule(
+                    "pyrapid.Symbols().GetSymbol(symbolname=%s, modulename=%s, functionname=%s)"
+                    ".data.Set(not _wait_done)"
+                    % (
+                        repr(flag.argumentvalue.var.name),
+                        repr(self.module_name),
+                        repr(self.function_name),
+                    )
+                )
+            else:
+                self.writemodule("if not _wait_done:")
+                with self.ModuleScope():
+                    self.writemodule(
+                        "raise pyrapid.RapidException(pyrapid.Symbols().GetSymbol("
+                        "'ERR_WAIT_MAXTIME').data.Get(), 'ERR_WAIT_MAXTIME')"
+                    )
         else:
             # add possibility to make python conversion without have the procudere prototype
             # this is usefull in case of expression has procedure
@@ -1984,6 +2018,16 @@ if __name__ == "__main__":
     )
 
     optparser.add_option(
+        "--eio",
+        action="append",
+        type="string",
+        dest="eio",
+        default=[],
+        help="I/O configuration of the controller (EIO.cfg): the signals of the task",
+        metavar="FILE",
+    )
+
+    optparser.add_option(
         "--no-validate",
         action="store_false",
         dest="validate",
@@ -1994,6 +2038,10 @@ if __name__ == "__main__":
     (options, args) = optparser.parse_args()
 
     entrypoint = options.entrypoint
+
+    import eio
+
+    signals = eio.load(options.eio)
 
     ltext = []
 
@@ -2024,7 +2072,9 @@ if __name__ == "__main__":
         import rapidvalidate
 
         standard_files = [fname for fname, _ in ltext if fname not in options.infiles]
-        diagnostics = rapidvalidate.validate(attriblist, quiet_files=standard_files)
+        diagnostics = rapidvalidate.validate(
+            attriblist, quiet_files=standard_files, signals=signals
+        )
         for d in diagnostics:
             print(d, file=sys.stderr)
         if any(d.severity == rapidvalidate.ERROR for d in diagnostics):
@@ -2033,6 +2083,7 @@ if __name__ == "__main__":
     allmodule = rapid_ast.ModulesAST(attriblist)
 
     traslate = TraslateRapidToPython(out_filename=options.filename, out_folder=options.directory)
+    traslate.declare_signals(signals)
     try:
         traslate.visit(allmodule)
     except:

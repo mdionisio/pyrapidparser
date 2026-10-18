@@ -89,12 +89,17 @@ def test_rapid2py_execution(path: str, tmp_path: pathlib.Path) -> None:
     with open(path, "r") as f:
         robot = "!robot:" in f.read()
     if robot:
-        # the motion instructions are in default/standard.sys
         pytest.importorskip("pinocchio")
+    # <name>.cfg: the I/O configuration of the program
+    eio = os.path.splitext(path)[0] + ".cfg"
+    options = ["--eio", eio] if os.path.exists(eio) else []
+    # the motion and I/O instructions are in default/standard.sys
+    if not robot and not options:
+        options.append("-s")
     outdir = os.fspath(tmp_path)
     result = subprocess.run(
         [sys.executable, "rapid2py.py"]
-        + ([] if robot else ["-s"])
+        + options
         + ["-e", name + ".main", "-i", path, "-d", outdir, "-f", "program.py"],
         cwd=PROJECT_DIR,
         capture_output=True,

@@ -481,3 +481,57 @@ def test_command_line(capsys: pytest.CaptureFixture[str]) -> None:
     out = capsys.readouterr().out
     assert "test6.mod:9: error: 'pippo' is already declared" in out
     assert out.rstrip().endswith("[duplicate-name]")
+
+
+SIGNALS = {"diReady": "signaldi", "doLamp": "signaldo", "goCount": "signalgo"}
+
+
+def signal_codes(text: str) -> list[str]:
+    path = os.path.join(TEST_DIR, "case.mod")
+    modules = PARSER.parse(text, path).module_list
+    result = rapidvalidate.validate(standard_modules() + modules, signals=SIGNALS)
+    return sorted(d.code for d in result if d.file == path)
+
+
+@pytest.mark.parametrize(
+    "body, decl, expected",
+    [
+        # signals of the I/O configuration, semi-value in value context (2.16)
+        ("        SetDO doLamp, 1;\n        WaitDI diReady, 1;", "", []),
+        ("        IF diReady = 1 x := doLamp + 1;", "    VAR num x;", []),
+        ("        x := GOutput(goCount) + goCount;", "    VAR num x;", []),
+        ("        doLamp := 1;", "", ["assign-signal"]),
+        ("        x := diReady;", "    VAR bool x;", ["type-mismatch"]),
+        ("        SetDO diReady, 1;", "", ["type-mismatch"]),
+        ("", "    VAR signaldi s1 := 1;", ["value-class"]),
+    ],
+)
+def test_signals(body: str, decl: str, expected: list[str]) -> None:
+    assert signal_codes(proc(body, decl)) == expected
+
+
+def test_eio() -> None:
+    import eio
+
+    text = """EIO:CFG_1.0:6:1::
+#
+EIO_DEVICE:
+      -Name "d652" -VendorName "ABB Robotics"
+
+EIO_SIGNAL:
+
+      -Name "doGripper" -SignalType "DO" -Device "d652" -DeviceMap "0"
+
+      -Name "giCount" -SignalType "GI" -Device "d652"\\
+      -DeviceMap "8-15"
+      -Name aiLevel -SignalType AI
+"""
+    assert eio.parse(text) == {
+        "doGripper": "signaldo",
+        "giCount": "signalgi",
+        "aiLevel": "signalai",
+    }
+    with pytest.raises(eio.EioError, match="unknown -SignalType"):
+        eio.parse('EIO_SIGNAL:\n  -Name "x" -SignalType "XX"\n')
+    with pytest.raises(eio.EioError, match="defined twice"):
+        eio.parse('EIO_SIGNAL:\n  -Name "x" -SignalType "DI"\n  -Name "X" -SignalType "DO"\n')

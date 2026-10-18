@@ -3,6 +3,7 @@ from functools import reduce
 import operator
 from collections.abc import MutableMapping
 from typing import Any, Iterator, Optional
+import time
 
 from run import Singleton
 
@@ -1108,12 +1109,139 @@ class rapid_robtarget(rapid_struct):
 Symbols().AddGlobalSym("robtarget", Symbol.CreateDataType(rapid_robtarget))
 
 # todo define shapedata
-# todo define signalai
-# todo define signalao
-# todo define signaldi
-# todo define signaldo
-# todo define signalgi
-# todo define signalgo
+# ----------------------------------------------------------------- I/O signals
+
+
+class RealClock:
+    """waits in real time (no robot): the I/O instructions use the clock of the robot
+    controller when the program moves a robot"""
+
+    def now(self) -> float:
+        return time.monotonic()
+
+    def wait_until(self, condition: Any, max_time: Optional[float] = None) -> bool:
+        """wait until condition() is true; False when max_time (s) expires"""
+        end = None if max_time is None else time.monotonic() + max_time
+        while not condition():
+            if end is not None and time.monotonic() >= end:
+                return False
+            time.sleep(0.01)
+        return True
+
+    def after(self, delay: float, action: Any) -> None:
+        import threading
+
+        timer = threading.Timer(delay, action)
+        timer.daemon = True
+        timer.start()
+
+
+class IOSystem:
+    """the values of the I/O signals of the controller configuration (eio.py). The
+    simulation of the cell reads the outputs and sets the inputs; listeners are
+    called with (name, value) at every change."""
+
+    def __init__(self) -> None:
+        self.types: NoCaseDict = NoCaseDict()
+        self.values: NoCaseDict = NoCaseDict()
+        self.listeners: list[Any] = []
+        self.clock: Any = RealClock()
+
+    def declare(self, name: str, kind: str) -> None:
+        self.types[name] = kind
+        self.values[name] = 0
+
+    def get(self, name: str) -> Any:
+        if name not in self.values:
+            raise Exception("signal %s is not in the I/O configuration" % (name,))
+        return self.values[name]
+
+    def set(self, name: str, value: Any) -> None:
+        self.get(name)
+        if self.values[name] != value:
+            self.values[name] = value
+            for listener in list(self.listeners):
+                listener(name, value)
+
+    def pulse(self, name: str, length: float) -> None:
+        self.set(name, 1)
+        self.clock.after(length, lambda: self.set(name, 0))
+
+    def wait(self, condition: Any, max_time: Optional[float] = None) -> bool:
+        result: bool = self.clock.wait_until(condition, max_time)
+        return result
+
+
+IO = IOSystem()
+
+
+class rapid_signal:
+    """semi-value I/O signal (kernel manual 2.16): in value context its value"""
+
+    kind = ""
+
+    def __init__(self, val: Any = None) -> None:
+        self.name: Optional[str] = val if isinstance(val, str) else None
+
+    def Get(self) -> Any:
+        if self.name is None:
+            raise Exception("%s not connected to an I/O signal" % (self.kind,))
+        return IO.get(self.name)
+
+    def Set(self, val: Any) -> None:
+        if isinstance(val, rapid_signal):
+            self.name = val.name
+        else:
+            raise Exception("the value of a signal is set by SetDO, SetGO, SetAO")
+
+
+class rapid_signaldi(rapid_signal):
+    kind = "signaldi"
+
+
+class rapid_signaldo(rapid_signal):
+    kind = "signaldo"
+
+
+class rapid_signalgi(rapid_signal):
+    kind = "signalgi"
+
+
+class rapid_signalgo(rapid_signal):
+    kind = "signalgo"
+
+
+class rapid_signalai(rapid_signal):
+    kind = "signalai"
+
+
+class rapid_signalao(rapid_signal):
+    kind = "signalao"
+
+
+SIGNAL_CLASSES = {
+    c.kind: c
+    for c in (
+        rapid_signaldi,
+        rapid_signaldo,
+        rapid_signalgi,
+        rapid_signalgo,
+        rapid_signalai,
+        rapid_signalao,
+    )
+}
+for _kind, _cls in SIGNAL_CLASSES.items():
+    Symbols().AddGlobalSym(_kind, Symbol.CreateDataType(_cls))
+
+
+def DeclareSignals(signals: dict[str, str]) -> None:
+    """the signals of the I/O configuration (name -> signaldi, ...): installed data
+    objects of the task"""
+    for name, kind in signals.items():
+        IO.declare(name, kind)
+        cls = SIGNAL_CLASSES[kind]
+        if Symbols().GetSymbol(name) is None:
+            Symbols().AddGlobalSym(name, Symbol.CreateVar(cls, cls(name)))
 
 
 class rapid_speeddata(rapid_struct):
