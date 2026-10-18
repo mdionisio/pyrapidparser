@@ -462,10 +462,21 @@ class rapid_array:
                 self.val = [self.elem_type() for i in range(reduce(operator.mul, self.size))]
             else:
                 self.size = size
-                val, psize = rapid_array.unrollarray(val)
+                # the elements are the values at the depth of the dimensions: an element
+                # can be a record, a list too
+                val = rapid_array.flatten(val, len(size))
                 self.val = [self.elem_type(val[i]) for i in range(reduce(operator.mul, self.size))]
         else:
             raise Exception("size already defined")
+
+    @staticmethod
+    def flatten(indata: Any, depth: int) -> list[Any]:
+        if depth == 0:
+            return [indata]
+        out: list[Any] = []
+        for item in indata:
+            out += rapid_array.flatten(item, depth - 1)
+        return out
 
     @staticmethod
     def unrollarray(indata: list[Any]) -> tuple[list[Any], list[int]]:

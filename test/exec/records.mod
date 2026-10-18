@@ -6,6 +6,8 @@ MODULE records
     VAR pose p1 := [[1, 2, 3], [1, 0, 0, 0]];
     VAR pose p2;
     VAR num ax;
+    ! an array of records initialized with an aggregate
+    CONST pos points{2} := [[1, 2, 3], [4, 5, 6]];
     VAR num bx;
     PROC main()
         b := a;
@@ -23,5 +25,8 @@ MODULE records
         ax := origin.z;
         bx := b.z;
         !python:print("const", pyrapid.Symbols().GetSymbol("ax").data.Get(), pyrapid.Symbols().GetSymbol("bx").data.Get())
+        ax := points{2}.y;
+        bx := points{1}.z;
+        !python:print("array", pyrapid.Symbols().GetSymbol("ax").data.Get(), pyrapid.Symbols().GetSymbol("bx").data.Get())
     ENDPROC
 ENDMODULE
