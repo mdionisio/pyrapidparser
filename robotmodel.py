@@ -39,6 +39,7 @@ import json
 import math
 import os
 import sys
+import threading
 import types
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
@@ -198,7 +199,6 @@ class RobotModel:
     path: str
     xml: str
     model: Any
-    data: Any
     axis_names: list[str]
     rapid_axes: list[int]
     lower: Vector
@@ -220,6 +220,17 @@ class RobotModel:
     visual_model: Any = None
     collision_model: Any = None
     base_inertias: list[Any] = field(default_factory=list)
+
+    # Pinocchio data, one for each thread (the program plans while the robot moves)
+    local: threading.local = field(default_factory=threading.local)
+
+    @property
+    def data(self) -> Any:
+        data = getattr(self.local, "data", None)
+        if data is None:
+            data = self.model.createData()
+            self.local.data = data
+        return data
 
     @property
     def naxes(self) -> int:
@@ -666,7 +677,6 @@ def load(name: str, geometry: bool = False, verbose: bool = True) -> RobotModel:
         path=path,
         xml=xml,
         model=model,
-        data=model.createData(),
         axis_names=axis_names,
         rapid_axes=rapid_axes,
         lower=lower,

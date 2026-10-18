@@ -1,5 +1,6 @@
 MODULE demo
-    ! ABB IRB 120 drawing on a table with a pen: joint, linear and circular movements.
+    ! ABB IRB 120 drawing on a table with a pen: joint, linear and circular movements,
+    ! stop points and fly-by points.
     ! The model of ROS-Industrial has the inertial data: the log shows the torques.
     !
     ! From the project folder:
@@ -41,6 +42,13 @@ MODULE demo
         MoveL pc, v200, fine, tpen \WObj := wtable;
         MoveL pd, v200, fine, tpen \WObj := wtable;
         MoveL pa, v200, fine, tpen \WObj := wtable;
+        ! a smaller square with fly-by corners: the program continues before each
+        ! corner, the robot rounds it within 20 mm without stopping
+        MoveL Offs(pa, 25, 25, 0), v200, fine, tpen \WObj := wtable;
+        MoveL Offs(pb, -25, 25, 0), v200, z20, tpen \WObj := wtable;
+        MoveL Offs(pc, -25, -25, 0), v200, z20, tpen \WObj := wtable;
+        MoveL Offs(pd, 25, -25, 0), v200, z20, tpen \WObj := wtable;
+        MoveL Offs(pa, 25, 25, 0), v200, fine, tpen \WObj := wtable;
         MoveL Offs(pa, 0, 0, 50), v200, fine, tpen \WObj := wtable;
 
         ! the circle: two half circles

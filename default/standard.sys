@@ -439,9 +439,14 @@ MODULE SYSTEMMODULE(SYSMODULE)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     
     PROC WaitTime(\switch InPos, num Time)
-        ! with a robot (!robot:) the time of the motion simulation advances
+        ! with a robot (!robot:) the robot continues to move while the program waits,
+        ! \InPos waits first for the robot to stop
+        VAR bool mv_inpos := FALSE;
+        IF Present(InPos) THEN
+            mv_inpos := TRUE;
+        ENDIF
         !python:if "pyrapid_motion" in sys.modules:
-        !python:    sys.modules["pyrapid_motion"].WaitTime(pyrapid.Symbols().GetSymbol("Time").data.Get())
+        !python:    sys.modules["pyrapid_motion"].WaitTime(pyrapid.Symbols().GetSymbol("Time").data.Get(), pyrapid.Symbols().GetSymbol("mv_inpos").data.Get())
         !python:else:
         !python:    import time
         !python:    time.sleep(pyrapid.Symbols().GetSymbol("Time").data.Get())
@@ -737,20 +742,30 @@ MODULE SYSTEMMODULE(SYSMODULE)
     PROC MoveAbsJ(\switch Conc, jointtarget ToJointPos, speeddata Speed \num V | num T, zonedata Zone \num Z, tooldata Tool \wobjdata WObj)
         VAR num mv_v := -1;
         VAR num mv_t := -1;
+        VAR num mv_z := -1;
+        VAR bool mv_conc := FALSE;
         IF Present(V) THEN
             mv_v := V;
         ENDIF
         IF Present(T) THEN
             mv_t := T;
         ENDIF
+        IF Present(Z) THEN
+            mv_z := Z;
+        ENDIF
+        IF Present(Conc) THEN
+            mv_conc := TRUE;
+        ENDIF
         !python:import pyrapid_motion
         !python:_s = pyrapid.Symbols().GetSymbol
-        !python:pyrapid_motion.MoveAbsJ(_s("ToJointPos").data, _s("Speed").data, _s("mv_v").data.Get(), _s("mv_t").data.Get(), _s("Tool").data)
+        !python:pyrapid_motion.MoveAbsJ(_s("mv_conc").data.Get(), _s("ToJointPos").data, _s("Speed").data, _s("mv_v").data.Get(), _s("mv_t").data.Get(), _s("Zone").data, _s("mv_z").data.Get(), _s("Tool").data)
     ENDPROC
 
     PROC MoveJ(\switch Conc, robtarget ToPoint, speeddata Speed \num V | num T, zonedata Zone \num Z, tooldata Tool \wobjdata WObj)
         VAR num mv_v := -1;
         VAR num mv_t := -1;
+        VAR num mv_z := -1;
+        VAR bool mv_conc := FALSE;
         VAR wobjdata mv_wobj;
         mv_wobj := wobj0;
         IF Present(V) THEN
@@ -759,17 +774,25 @@ MODULE SYSTEMMODULE(SYSMODULE)
         IF Present(T) THEN
             mv_t := T;
         ENDIF
+        IF Present(Z) THEN
+            mv_z := Z;
+        ENDIF
+        IF Present(Conc) THEN
+            mv_conc := TRUE;
+        ENDIF
         IF Present(WObj) THEN
             mv_wobj := WObj;
         ENDIF
         !python:import pyrapid_motion
         !python:_s = pyrapid.Symbols().GetSymbol
-        !python:pyrapid_motion.MoveJ(_s("ToPoint").data, _s("Speed").data, _s("mv_v").data.Get(), _s("mv_t").data.Get(), _s("Tool").data, _s("mv_wobj").data)
+        !python:pyrapid_motion.MoveJ(_s("mv_conc").data.Get(), _s("ToPoint").data, _s("Speed").data, _s("mv_v").data.Get(), _s("mv_t").data.Get(), _s("Zone").data, _s("mv_z").data.Get(), _s("Tool").data, _s("mv_wobj").data)
     ENDPROC
 
     PROC MoveL(\switch Conc, robtarget ToPoint, speeddata Speed \num V | num T, zonedata Zone \num Z, tooldata Tool \wobjdata WObj)
         VAR num mv_v := -1;
         VAR num mv_t := -1;
+        VAR num mv_z := -1;
+        VAR bool mv_conc := FALSE;
         VAR wobjdata mv_wobj;
         mv_wobj := wobj0;
         IF Present(V) THEN
@@ -778,17 +801,25 @@ MODULE SYSTEMMODULE(SYSMODULE)
         IF Present(T) THEN
             mv_t := T;
         ENDIF
+        IF Present(Z) THEN
+            mv_z := Z;
+        ENDIF
+        IF Present(Conc) THEN
+            mv_conc := TRUE;
+        ENDIF
         IF Present(WObj) THEN
             mv_wobj := WObj;
         ENDIF
         !python:import pyrapid_motion
         !python:_s = pyrapid.Symbols().GetSymbol
-        !python:pyrapid_motion.MoveL(_s("ToPoint").data, _s("Speed").data, _s("mv_v").data.Get(), _s("mv_t").data.Get(), _s("Tool").data, _s("mv_wobj").data)
+        !python:pyrapid_motion.MoveL(_s("mv_conc").data.Get(), _s("ToPoint").data, _s("Speed").data, _s("mv_v").data.Get(), _s("mv_t").data.Get(), _s("Zone").data, _s("mv_z").data.Get(), _s("Tool").data, _s("mv_wobj").data)
     ENDPROC
 
     PROC MoveC(\switch Conc, robtarget CirPoint, robtarget ToPoint, speeddata Speed \num V | num T, zonedata Zone \num Z, tooldata Tool \wobjdata WObj)
         VAR num mv_v := -1;
         VAR num mv_t := -1;
+        VAR num mv_z := -1;
+        VAR bool mv_conc := FALSE;
         VAR wobjdata mv_wobj;
         mv_wobj := wobj0;
         IF Present(V) THEN
@@ -797,12 +828,24 @@ MODULE SYSTEMMODULE(SYSMODULE)
         IF Present(T) THEN
             mv_t := T;
         ENDIF
+        IF Present(Z) THEN
+            mv_z := Z;
+        ENDIF
+        IF Present(Conc) THEN
+            mv_conc := TRUE;
+        ENDIF
         IF Present(WObj) THEN
             mv_wobj := WObj;
         ENDIF
         !python:import pyrapid_motion
         !python:_s = pyrapid.Symbols().GetSymbol
-        !python:pyrapid_motion.MoveC(_s("CirPoint").data, _s("ToPoint").data, _s("Speed").data, _s("mv_v").data.Get(), _s("mv_t").data.Get(), _s("Tool").data, _s("mv_wobj").data)
+        !python:pyrapid_motion.MoveC(_s("mv_conc").data.Get(), _s("CirPoint").data, _s("ToPoint").data, _s("Speed").data, _s("mv_v").data.Get(), _s("mv_t").data.Get(), _s("Zone").data, _s("mv_z").data.Get(), _s("Tool").data, _s("mv_wobj").data)
+    ENDPROC
+
+    PROC WaitRob(\switch InPos | switch ZeroSpeed)
+        ! wait until the robot has completed its movements
+        !python:import pyrapid_motion
+        !python:pyrapid_motion.WaitRob()
     ENDPROC
 
     PROC ConfJ(\switch On | switch Off)
