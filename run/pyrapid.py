@@ -1298,6 +1298,10 @@ Symbols().AddGlobalSym(
     "fine", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([True, 0, 0, 0, 0, 0, 0]))
 )
 Symbols().AddGlobalSym(
+    "z0",
+    Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 0.3, 0.3, 0.3, 0.03, 0.3, 0.03])),
+)
+Symbols().AddGlobalSym(
     "z1", Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 1, 1, 1, 0.1, 1, 0.1]))
 )
 Symbols().AddGlobalSym(
@@ -1330,7 +1334,7 @@ Symbols().AddGlobalSym(
 )
 Symbols().AddGlobalSym(
     "z100",
-    Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 100, 150, 150, 12.0, 120, 12.0])),
+    Symbol.CreateConst(rapid_zonedata, rapid_zonedata([False, 100, 150, 150, 15.0, 150, 15.0])),
 )
 Symbols().AddGlobalSym(
     "z150",
