@@ -1,0 +1,4 @@
+start y -383
+end y 383
+   0.85 s  MoveAbsJ fine      axes [90.0, 30.0, 20.0, 0.0, 40.0, 0.0] deg  max torque [4.8, 17.5, 6.9, 0.0, 0.0, 0.0] Nm
+   2.07 s  MoveAbsJ fine      axes [-90.0, 30.0, 20.0, 0.0, 40.0, 0.0] deg  max torque [3.7, 18.9, 6.0, 0.0, 0.1, 0.0] Nm

@@ -84,7 +84,8 @@ EXEC_FILES = sorted(glob.glob(os.path.join(EXEC_DIR, "*.mod")))
 @pytest.mark.parametrize("path", EXEC_FILES, ids=os.path.basename)
 def test_rapid2py_execution(path: str, tmp_path: pathlib.Path) -> None:
     """translate test/exec/<name>.mod, run its main and compare stdout with <name>.out
-    (the programs with a robot, !robot:, use the motion instructions of standard.sys)"""
+    (the programs with a robot, !robot:, use the motion instructions of standard.sys);
+    <name>.err is the message of the error that stops the program"""
     name = os.path.splitext(os.path.basename(path))[0]
     with open(path, "r") as f:
         text = f.read()
@@ -123,7 +124,15 @@ def test_rapid2py_execution(path: str, tmp_path: pathlib.Path) -> None:
         env=env,
         timeout=60,
     )
-    assert run.returncode == 0, run.stderr[-2000:]
+    # <name>.err: the program stops with this message (a motion error, ...)
+    expected_error = os.path.join(EXEC_DIR, name + ".err")
+    if os.path.exists(expected_error):
+        with open(expected_error, "r") as f:
+            message = f.read().strip()
+        assert run.returncode != 0, "the program should stop with: " + message
+        assert message in run.stderr, run.stderr[-2000:]
+    else:
+        assert run.returncode == 0, run.stderr[-2000:]
     with open(os.path.join(EXEC_DIR, name + ".out"), "r") as f:
         assert run.stdout == f.read()
 

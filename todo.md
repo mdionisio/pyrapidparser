@@ -27,6 +27,20 @@ instructions = 3HAC050917-001.
   `Close`), `TryInit`, `ErrWrite`/`GetSysInfo` have no test.
 - [ ] **Sockets**: `SocketSend` and `SocketReceive` support only `\Str`; `\RawData`,
   `\Data` and `\NoOfBytes` are missing, and a message longer than 1024 bytes is cut.
+- [ ] **Movements that stop on a condition and the path control**: `SearchL`, `SearchC`
+  (stop on a signal, with `ERR_WHLSEARCH`), `StopMove`, `StartMove`, `StorePath`,
+  `RestoPath`, `ClearPath`, `TriggL`/`TriggJ`/`TriggC` with `TriggIO`/`TriggEquip`,
+  `MoveLDO`/`MoveJDO`, `MoveExtJ`, `PDispSet`/`PDispOn` (program displacement),
+  `AccSet`, `VelSet`, `PathResol`, `CirPathMode`.
+- [ ] **Math and general functions**: `Sin`, `Cos`, `Tan`, `ASin`, `ACos`, `ATan`,
+  `ATan2`, `Min`, `Max`, `Distance`, `DotProd`, `CrossProd`, `VectMagn`, `PoseMult`,
+  `PoseInv`, `Rand`, `BitAnd`/`BitOr`..., `StrFormat`, `StrOrder`, `StrMemb`,
+  `StrMap`, `GetTime`, `CTime`, `CDate`, `ValidIO`, `RobName`, `OpMode`, the `dnum`
+  versions (`AbsDnum`, ...).
+- [ ] **Stop and wait**: `Stop`, `Break`, `SystemStopAction`, `WaitAI`, `WaitAO`, `WaitGO`,
+  `WaitUntil` on routines called by name, `InvertDO`, `IODisable`/`IOEnable`, `AliasIO`,
+  `TPReadNum`/`TPReadFK`/`UIMsgBox` (no operator: they need an answer from the
+  simulation).
 - [ ] **Raw bytes** (`PackRawBytes`, `UnPackRawBytes`, ...): implemented, no test.
 
 ## Motion (run/pyrapid_motion.py, run/robotmodel.py)
@@ -62,6 +76,10 @@ instructions = 3HAC050917-001.
   in the model (`effort`). The confdata of the ABB arms does not describe its solutions:
   a configuration of its own (e.g. the signs of the oblique joints) would let MoveJ
   choose the solution.
+- [ ] **SingArea**: `SingArea \Wrist` (the orientation is joint interpolated to pass a
+  wrist singularity) and `\LockAxis4` are missing. ABB with `\Off` (the default) passes
+  near a singularity sweeping the axes at a lower TCP speed; here the program stops
+  (`the path crosses a singularity`, `test/exec/motion_singular.mod`).
 - [ ] **Interruption**: a motion error stops the program with a Python exception; ABB
   raises recoverable errors for some of them (ERR_ROBLIMIT with `\ErrorNumber`).
 

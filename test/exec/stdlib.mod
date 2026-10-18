@@ -38,7 +38,7 @@ MODULE stdlib
         TPWrite "strtoval invalid " \Bool:=ok;
         ClkReset timer;
         ClkStart timer;
-        WaitTime 0.05;
+        WaitTime 0.1;
         ClkStop timer;
         TPWrite "clock ok " \Bool:=(ClkRead(timer) >= 0.05);
     ENDPROC

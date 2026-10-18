@@ -843,6 +843,8 @@ Symbols().AddGlobalSym("ERR_NOTPRES", Symbol.CreateConst(rapid_errnum, rapid_err
 Symbols().AddGlobalSym("ERR_OUTOFBND", Symbol.CreateConst(rapid_errnum, rapid_errnum()))
 Symbols().AddGlobalSym("ERR_PATH", Symbol.CreateConst(rapid_errnum, rapid_errnum()))
 Symbols().AddGlobalSym("ERR_PATHDIST", Symbol.CreateConst(rapid_errnum, rapid_errnum()))
+Symbols().AddGlobalSym("ERR_OUTSIDE_REACH", Symbol.CreateConst(rapid_errnum, rapid_errnum()))
+Symbols().AddGlobalSym("ERR_ROBLIMIT", Symbol.CreateConst(rapid_errnum, rapid_errnum()))
 Symbols().AddGlobalSym("ERR_PID_MOVESTOP", Symbol.CreateConst(rapid_errnum, rapid_errnum()))
 Symbols().AddGlobalSym("ERR_PID_RAISE_PP", Symbol.CreateConst(rapid_errnum, rapid_errnum()))
 Symbols().AddGlobalSym("ERR_RCVDATA", Symbol.CreateConst(rapid_errnum, rapid_errnum()))

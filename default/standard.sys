@@ -1018,16 +1018,31 @@ MODULE SYSTEMMODULE(SYSMODULE)
         RETURN ret;
     ENDFUNC
 
-    FUNC jointtarget CalcJointT(robtarget Rob_target, tooldata Tool \wobjdata WObj)
+    FUNC jointtarget CalcJointT(robtarget Rob_target, tooldata Tool \wobjdata WObj \INOUT errnum ErrorNumber)
+        ! outside the working area: ERR_OUTSIDE_REACH, an axis out of its limits or another
+        ! configuration: ERR_ROBLIMIT; with \ErrorNumber the error is stored, not raised
         VAR jointtarget ret;
         VAR wobjdata mv_wobj;
+        VAR errnum mv_error;
         mv_wobj := wobj0;
+        mv_error := 0;
         IF Present(WObj) THEN
             mv_wobj := WObj;
         ENDIF
         !python:import pyrapid_motion
         !python:_s = pyrapid.Symbols().GetSymbol
-        !python:pyrapid_motion.CalcJointT(_s("ret").data, _s("Rob_target").data, _s("Tool").data, _s("mv_wobj").data)
+        !python:try:
+        !python:    pyrapid_motion.CalcJointT(_s("ret").data, _s("Rob_target").data, _s("Tool").data, _s("mv_wobj").data)
+        !python:except pyrapid_motion.MotionError as error:
+        !python:    reach = isinstance(error, pyrapid_motion.OutsideReach)
+        !python:    _s("mv_error").data.Set(_s("ERR_OUTSIDE_REACH" if reach else "ERR_ROBLIMIT").data.Get())
+        IF mv_error <> 0 THEN
+            IF Present(ErrorNumber) THEN
+                ErrorNumber := mv_error;
+            ELSE
+                RAISE mv_error;
+            ENDIF
+        ENDIF
         RETURN ret;
     ENDFUNC
 

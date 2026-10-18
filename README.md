@@ -311,8 +311,15 @@ How the movements are computed:
   cfx) follows the RAPID instructions manual: `MoveJ` reaches the programmed configuration,
   `MoveL` and `MoveC` stop the program if the end point has another configuration (as
   `ConfL \On` on the robot).
-- **Errors**: a point out of reach, a path through a singularity or a configuration error
-  stop the program with `MotionError`.
+- **Errors**: a point out of reach (`OutsideReach`), an axis out of its limits or a
+  configuration that does not exist (`JointLimit`), a linear or circular path that leaves
+  the working area or goes near a singularity stop the program with `MotionError`; the
+  error handlers do not see them (see [todo.md](todo.md)). `CalcJointT` raises the
+  recoverable errors `ERR_OUTSIDE_REACH` and `ERR_ROBLIMIT`, or stores them in
+  `\ErrorNumber`. At a wrist singularity `CalcJointT` returns axis 4 at 0, as the manual
+  says. A joint movement goes through a singularity; a linear one goes through it only on
+  the exact position (axes 4 and 6 do not swing), near it the program stops: there is no
+  `SingArea \Wrist` yet.
 - **Dynamics**: with the inertial data the joint torques are computed along the path,
   including the load of the tool.
 - **Corner paths** superpose the end of a movement and the start of the next one in the
@@ -459,7 +466,7 @@ The tests:
 | `test_rapidvalidate.py`    | one case for each diagnostic, and the invalid files in `test/`     |
 | `test_robotmodel.py`       | models, inverse kinematics of every model, confdata, torques       |
 | `test_motion.py`           | motion instructions: limits, paths, configurations, viewer         |
-| `test_rapid2py.py`         | the generated Python compiles, the `test/exec/` programs and the examples run right (the programs run: control flow, errors, GOTO, loops, records, strings, I/O, standard routines, sockets, motion) |
+| `test_rapid2py.py`         | the generated Python compiles, the `test/exec/` programs and the examples run right (the programs run: control flow, errors, GOTO, loops, records, strings, I/O, standard routines, sockets, motion; `<name>.err` is the message of the error that must stop a program, as the motion tests of reach, axis limits and singularities) |
 | `test_quality.py`          | mypy strict and ruff formatting                                    |
 
 The project code is typed and must pass `mypy --strict`. The generated files are excluded

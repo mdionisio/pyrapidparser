@@ -79,6 +79,15 @@ class MotionError(Exception):
     """the robot cannot execute the movement: the program stops"""
 
 
+class OutsideReach(MotionError):
+    """the position is outside the working area of the robot (ERR_OUTSIDE_REACH)"""
+
+
+class JointLimit(MotionError):
+    """the position is reachable but not with the programmed configuration or inside the
+    limits of the axes (ERR_ROBLIMIT)"""
+
+
 # ------------------------------------------------------------------ RAPID data
 
 
@@ -849,12 +858,12 @@ class Controller:
         robot = self.require_robot()
         solutions = robot.ik(target * tool.frame.inverse(), reference)
         if not solutions:
-            raise MotionError("position outside reach: %s" % (pose_values(target),))
+            raise OutsideReach("position outside reach: %s" % (pose_values(target),))
         if conf is not None:
             matching = [s for s in solutions if robot.matches(s.axes, conf)]
             if not matching:
                 found = sorted({robot.confdata(s.axes) for s in solutions})
-                raise MotionError(
+                raise JointLimit(
                     "no solution with the configuration %s (possible: %s)" % (list(conf), found)
                 )
             solutions = matching
@@ -865,7 +874,7 @@ class Controller:
     ) -> Segment:
         robot = self.require_robot()
         if not robot.within_limits(end):
-            raise MotionError("%s: joint position outside the limits of the axes" % (instruction,))
+            raise JointLimit("%s: joint position outside the limits of the axes" % (instruction,))
         begin, finish = self.tcp(start, tool), self.tcp(end, tool)
         distance = float(np.linalg.norm(finish.translation - begin.translation))
         angle = float(np.linalg.norm(pin.log3(begin.rotation.T @ finish.rotation)))
@@ -895,7 +904,7 @@ class Controller:
             target = path(k / count)
             solutions = robot.ik(target * tool.frame.inverse(), path_axes[-1])
             if not solutions:
-                raise MotionError(
+                raise OutsideReach(
                     "%s: position outside reach on the path: %s"
                     % (instruction, pose_values(target))
                 )
@@ -1188,6 +1197,11 @@ def CalcJointT(result: Any, robtarget: Any, tooldata: Any, wobjdata: Any) -> Non
     target = wobj_of(wobjdata) * pose_of(robtarget)
     CONTROLLER.require_robot()
     axes = CONTROLLER.solve(target, Tool.of(tooldata), confdata_of(robtarget), CONTROLLER.current())
+    # at a wrist singularity (axis 5 at 0) axis 4 is set to 0 (manual, CalcJointT)
+    if len(axes) == 6 and abs(axes[4]) < 1e-6:
+        axes = axes.copy()
+        axes[5] += axes[3]
+        axes[3] = 0.0
     result.Set(jointtarget_values(axes))
 
 
