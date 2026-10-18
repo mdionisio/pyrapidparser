@@ -1,0 +1,24 @@
+counters 14
+abs 3.5
+round 3
+sqrt 4
+pow 1024
+exp 1
+trunc 2
+trunc negative -2
+round half 3
+round negative half -3
+round decimals 3.14
+trunc decimals 3.141
+len 9
+part Arm
+match 7
+match none 10
+find 6
+find not in set 4
+numtostr 3.14
+numtostr exp 1.2E+03
+strtoval TRUE
+value 12.5
+strtoval invalid FALSE
+clock ok TRUE

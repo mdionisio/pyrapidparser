@@ -1,0 +1,12 @@
+created TRUE
+bound TRUE
+listening TRUE
+connected TRUE
+from 127.0.0.1
+request ping
+peer received pong
+closed TRUE
+error timeout
+after the timeout
+error connection refused
+after the failed connection

@@ -87,14 +87,17 @@ def test_rapid2py_execution(path: str, tmp_path: pathlib.Path) -> None:
     (the programs with a robot, !robot:, use the motion instructions of standard.sys)"""
     name = os.path.splitext(os.path.basename(path))[0]
     with open(path, "r") as f:
-        robot = "!robot:" in f.read()
+        text = f.read()
+    robot = "!robot:" in text
+    # the programs that mention standard.sys in a comment use its routines
+    standard = "standard.sys" in text
     if robot:
         pytest.importorskip("pinocchio")
     # <name>.cfg: the I/O configuration of the program
     eio = os.path.splitext(path)[0] + ".cfg"
     options = ["--eio", eio] if os.path.exists(eio) else []
     # the motion and I/O instructions are in default/standard.sys
-    if not robot and not options:
+    if not robot and not standard and not options:
         options.append("-s")
     outdir = os.fspath(tmp_path)
     result = subprocess.run(

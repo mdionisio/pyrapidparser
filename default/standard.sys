@@ -264,6 +264,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:import socket
         !python:SOCKET_CREATED = pyrapid.Symbols().GetSymbol("SOCKET_CREATED").data.Get()
         !python:s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        !python:s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         !python:pyrapid.Symbols().GetSymbol("Socket").data.Set( (SOCKET_CREATED, s) )
     ENDPROC
     
@@ -271,7 +272,8 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:import socket
         !python:SOCKET_CLOSED = pyrapid.Symbols().GetSymbol("SOCKET_CLOSED").data.Get()
         !python:state,s = pyrapid.Symbols().GetSymbol("Socket").data.Get()
-        !python:s.close()
+        !python:if s is not None:
+        !python:    s.close()
         !python:pyrapid.Symbols().GetSymbol("Socket").data.Set( (SOCKET_CLOSED, None) )
     ENDPROC
     
@@ -369,12 +371,12 @@ MODULE SYSTEMMODULE(SYSMODULE)
         
         !python:try:
         !python:        s.connect( (Address, Port) )
-        !python:except socket.error:
-        !python:        ERR_SOCK_CONNREF = pyrapid.Symbols().GetSymbol("ERR_SOCK_CONNREF").data.Get()
-        !python:        raise pyrapid.RapidException(ERR_SOCK_CONNREF, "connection refused: SocketConnect(%d) -"%(pyrapid.lineno(),))
         !python:except socket.timeout:
         !python:        ERR_SOCK_TIMEOUT = pyrapid.Symbols().GetSymbol("ERR_SOCK_TIMEOUT").data.Get()
         !python:        raise pyrapid.RapidException(ERR_SOCK_TIMEOUT, "connection timeout: SocketConnect(%d) -"%(pyrapid.lineno(),))
+        !python:except socket.error:
+        !python:        ERR_SOCK_CONNREF = pyrapid.Symbols().GetSymbol("ERR_SOCK_CONNREF").data.Get()
+        !python:        raise pyrapid.RapidException(ERR_SOCK_CONNREF, "connection refused: SocketConnect(%d) -"%(pyrapid.lineno(),))
         
         !python:Socket.Set( (SOCKET_CONNECTED, s) )
     ENDPROC
@@ -405,16 +407,17 @@ MODULE SYSTEMMODULE(SYSMODULE)
         
         !python:try:
         !python:    data = s.recv(1024)
-        !python:except socket.error:
-        !python:        ERR_SOCK_CLOSED = pyrapid.Symbols().GetSymbol("ERR_SOCK_CLOSED").data.Get()
-        !python:        #SOCKET_CLOSED = pyrapid.Symbols().GetSymbol("SOCKET_CLOSED").data.Get()
-        !python:        #Socket.Set((SOCKET_CLOSED, None))
-        !python:        raise pyrapid.RapidException(ERR_SOCK_CLOSED, "socket error: SocketReceive(%d) -"%(pyrapid.lineno(),))
+        !python:    if not data:
+        !python:        raise socket.error("connection closed by the peer")
         !python:except socket.timeout:
         !python:        ERR_SOCK_TIMEOUT = pyrapid.Symbols().GetSymbol("ERR_SOCK_TIMEOUT").data.Get()
         !python:        raise pyrapid.RapidException(ERR_SOCK_TIMEOUT, "socket read timeout: SocketReceive(%d) -"%(pyrapid.lineno(),))
+        !python:except socket.error:
+        !python:        ERR_SOCK_CLOSED = pyrapid.Symbols().GetSymbol("ERR_SOCK_CLOSED").data.Get()
+        !python:        raise pyrapid.RapidException(ERR_SOCK_CLOSED, "socket error: SocketReceive(%d) -"%(pyrapid.lineno(),))
         IF Present(Str) THEN
-            !python:pyrapid.Symbols().GetSymbol("Str").data.Set(data)
+            ! the characters of a string are bytes
+            !python:pyrapid.Symbols().GetSymbol("Str").data.Set(data.decode("latin-1"))
         ENDIF
     ENDPROC
     
@@ -425,7 +428,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:Socket = pyrapid.Symbols().GetSymbol("Socket").data
         !python:s = Socket.Get()[1]
         IF Present(Str) THEN
-            !python:data =  pyrapid.Symbols().GetSymbol("Str").data.Get()
+            !python:data = pyrapid.Symbols().GetSymbol("Str").data.Get().encode("latin-1")
         ENDIF
         !python:try:
         !python:        s.send(data)
@@ -597,19 +600,32 @@ MODULE SYSTEMMODULE(SYSMODULE)
         RETURN ret;
     ENDFUNC
     
-    FUNC num Round (num Value)
+    FUNC num Round (num Val \num Dec)
+        ! rounds half away from zero, to Dec decimals (default 0)
         VAR num ret;
-        !python:val = pyrapid.Symbols().GetSymbol("Value").data.Get()
-        !python:val = round(val)
+        !python:import math
+        !python:val = pyrapid.Symbols().GetSymbol("Val").data.Get()
+        !python:dec = 0
+        IF Present(Dec) THEN
+            !python:dec = int(pyrapid.Symbols().GetSymbol("Dec").data.Get())
+        ENDIF
+        !python:scale = 10.0 ** dec
+        !python:val = math.copysign(math.floor(abs(val) * scale + 0.5), val) / scale
         !python:pyrapid.Symbols().GetSymbol("ret").data.Set( val )
         RETURN ret;
     ENDFUNC
     
-    FUNC num Trunc (num Value)
+    FUNC num Trunc (num Val \num Dec)
+        ! truncates toward zero, to Dec decimals (default 0)
         VAR num ret;
         !python:import math
-        !python:val = pyrapid.Symbols().GetSymbol("Value").data.Get()
-        !python:val = math.floor(val)
+        !python:val = pyrapid.Symbols().GetSymbol("Val").data.Get()
+        !python:dec = 0
+        IF Present(Dec) THEN
+            !python:dec = int(pyrapid.Symbols().GetSymbol("Dec").data.Get())
+        ENDIF
+        !python:scale = 10.0 ** dec
+        !python:val = math.trunc(val * scale) / scale
         !python:pyrapid.Symbols().GetSymbol("ret").data.Set( val )
         RETURN ret;
     ENDFUNC
