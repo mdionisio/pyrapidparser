@@ -50,6 +50,60 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:sys.exit(0)
     ENDPROC
     
+    PROC Stop (\switch NoRegain)
+        ! no operator to restart the program: it ends (the robot completes its movements)
+        !python:import sys
+        !python:print("Program stopped by Stop", flush=True)
+        !python:sys.exit(0)
+    ENDPROC
+
+    PROC Break ()
+        !python:import sys
+        !python:print("Program stopped by Break", flush=True)
+        !python:sys.exit(0)
+    ENDPROC
+
+    PROC SystemStopAction (\switch Stop | switch StopBlock | switch Halt | switch SStop \switch AllMoveTasks)
+        !python:import sys
+        !python:print("Program stopped by SystemStopAction", flush=True)
+        !python:sys.exit(0)
+    ENDPROC
+
+    PROC TPErase ()
+        !python:pass
+    ENDPROC
+
+    CONST num TP_PROGRAM := 1;
+    CONST num TP_LATEST := 2;
+    CONST num TP_SCREENVIEWER := 3;
+
+    PROC TPShow (num Window)
+        !python:pass
+    ENDPROC
+
+    PROC TPReadNum (VAR num TPAnswer, string TPText \num MaxTime \switch DIBreak \switch DOBreak \switch BreakFlag)
+        ! the operator answers on the standard input; at its end the program stops
+        !python:import sys
+        !python:print(pyrapid.Symbols().GetSymbol("TPText").data.Get(), flush=True)
+        !python:line = sys.stdin.readline()
+        !python:if not line:
+        !python:    print("no answer on the standard input: TPReadNum stops the program", flush=True)
+        !python:    sys.exit(0)
+        !python:pyrapid.Symbols().GetSymbol("TPAnswer").data.Set(float(line))
+    ENDPROC
+
+    PROC TPReadFK (VAR num TPAnswer, string TPText, string TPFK1, string TPFK2, string TPFK3, string TPFK4, string TPFK5 \num MaxTime \switch DIBreak \switch DOBreak \switch BreakFlag)
+        ! the number of the function key (1 to 5) on the standard input
+        !python:import sys
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:print(_s("TPText").data.Get(), "|", " | ".join("%d: %s" % (k, _s("TPFK%d" % (k,)).data.Get()) for k in range(1, 6)), flush=True)
+        !python:line = sys.stdin.readline()
+        !python:if not line:
+        !python:    print("no answer on the standard input: TPReadFK stops the program", flush=True)
+        !python:    sys.exit(0)
+        !python:_s("TPAnswer").data.Set(float(line))
+    ENDPROC
+
     PROC ErrWrite ( \switch W | switch I, string Header, string Reason, \string RL2, \string RL3, \string RL4)
         !python:Header = pyrapid.Symbols().GetSymbol("Header").data.Get()
         !python:Reason = pyrapid.Symbols().GetSymbol("Reason").data.Get()
@@ -1402,6 +1456,101 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:pyrapid.Symbols().GetSymbol("ret").data.Set(pyrapid.IO.get(pyrapid.Symbols().GetSymbol("Signal").data.name) == 1)
         RETURN ret;
     ENDFUNC
+
+    PROC WaitAI(VAR signalai Signal, \switch LT | switch GT, num Value \num MaxTime \VAR bool TimeFlag)
+        VAR bool io_done;
+        VAR num io_max := -1;
+        VAR bool io_greater := FALSE;
+        IF Present(MaxTime) THEN
+            io_max := MaxTime;
+        ENDIF
+        IF Present(GT) THEN
+            io_greater := TRUE;
+        ENDIF
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:_name, _value, _max, _gt = _s("Signal").data.name, _s("Value").data.Get(), _s("io_max").data.Get(), _s("io_greater").data.Get()
+        !python:_s("io_done").data.Set(pyrapid.IO.wait(lambda: (pyrapid.IO.get(_name) > _value) if _gt else (pyrapid.IO.get(_name) < _value), None if _max < 0 else _max))
+        IF Present(TimeFlag) THEN
+            TimeFlag := NOT io_done;
+        ELSEIF NOT io_done THEN
+            RAISE ERR_WAIT_MAXTIME;
+        ENDIF
+    ENDPROC
+
+    PROC WaitAO(VAR signalao Signal, \switch LT | switch GT, num Value \num MaxTime \VAR bool TimeFlag)
+        VAR bool io_done;
+        VAR num io_max := -1;
+        VAR bool io_greater := FALSE;
+        IF Present(MaxTime) THEN
+            io_max := MaxTime;
+        ENDIF
+        IF Present(GT) THEN
+            io_greater := TRUE;
+        ENDIF
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:_name, _value, _max, _gt = _s("Signal").data.name, _s("Value").data.Get(), _s("io_max").data.Get(), _s("io_greater").data.Get()
+        !python:_s("io_done").data.Set(pyrapid.IO.wait(lambda: (pyrapid.IO.get(_name) > _value) if _gt else (pyrapid.IO.get(_name) < _value), None if _max < 0 else _max))
+        IF Present(TimeFlag) THEN
+            TimeFlag := NOT io_done;
+        ELSEIF NOT io_done THEN
+            RAISE ERR_WAIT_MAXTIME;
+        ENDIF
+    ENDPROC
+
+    PROC WaitGO(VAR signalgo Signal, num Value \num MaxTime \VAR bool TimeFlag)
+        VAR bool io_done;
+        VAR num io_max := -1;
+        IF Present(MaxTime) THEN
+            io_max := MaxTime;
+        ENDIF
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:_name, _value, _max = _s("Signal").data.name, _s("Value").data.Get(), _s("io_max").data.Get()
+        !python:_s("io_done").data.Set(pyrapid.IO.wait(lambda: pyrapid.IO.get(_name) == _value, None if _max < 0 else _max))
+        IF Present(TimeFlag) THEN
+            TimeFlag := NOT io_done;
+        ELSEIF NOT io_done THEN
+            RAISE ERR_WAIT_MAXTIME;
+        ENDIF
+    ENDPROC
+
+    PROC InvertDO(VAR signaldo Signal)
+        !python:pyrapid.IO.set(pyrapid.Symbols().GetSymbol("Signal").data.name, 1 - pyrapid.IO.get(pyrapid.Symbols().GetSymbol("Signal").data.name))
+    ENDPROC
+
+    FUNC num GInputDnum(VAR signalgi Signal)
+        VAR num ret;
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set(pyrapid.IO.get(pyrapid.Symbols().GetSymbol("Signal").data.name))
+        RETURN ret;
+    ENDFUNC
+
+    FUNC num GOutputDnum(VAR signalgo Signal)
+        VAR num ret;
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set(pyrapid.IO.get(pyrapid.Symbols().GetSymbol("Signal").data.name))
+        RETURN ret;
+    ENDFUNC
+
+    FUNC bool ValidIO(VAR signaldi Signal)
+        ! the signal is connected to a signal of the I/O configuration
+        VAR bool ret;
+        !python:pyrapid.Symbols().GetSymbol("ret").data.Set(pyrapid.Symbols().GetSymbol("Signal").data.name in pyrapid.IO.values)
+        RETURN ret;
+    ENDFUNC
+
+    PROC AliasIO(string FromSignal, VAR signaldi ToSignal)
+        ! ToSignal (a variable of the program) is connected to the signal named FromSignal
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:pyrapid.IO.get(_s("FromSignal").data.Get())
+        !python:_s("ToSignal").data.name = _s("FromSignal").data.Get()
+    ENDPROC
+
+    PROC IODisable(string MechUnit, num MaxTime)
+        ! the simulated I/O units are always enabled
+        !python:pass
+    ENDPROC
+
+    PROC IOEnable(string MechUnit, num MaxTime)
+        !python:pass
+    ENDPROC
 
     !! Motion instructions: run/pyrapid_motion.py, the robot model is selected with
     !! the comment !robot: <model> (run/robotmodel.py). Zones are run as fine points.

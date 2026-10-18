@@ -37,10 +37,10 @@ instructions = 3HAC050917-001.
   the bit functions work on bytes (0 to 255) only; `STR_UPPER` and `STR_LOWER` have only
   the ASCII letters; the argument errors (`ASin(2)`) raise a Python exception, not
   `ERR_ARGVALERR`.
-- [ ] **Stop and wait**: `Stop`, `Break`, `SystemStopAction`, `WaitAI`, `WaitAO`, `WaitGO`,
-  `WaitUntil` on routines called by name, `InvertDO`, `IODisable`/`IOEnable`, `AliasIO`,
-  `TPReadNum`/`TPReadFK`/`UIMsgBox` (no operator: they need an answer from the
-  simulation).
+- [ ] **Stop and wait**: `Stop`, `Break`, `SystemStopAction` end the program (there is
+  no operator to restart it); `TPReadNum` and `TPReadFK` read the standard input and the
+  other `UI*` instructions (`UIMsgBox`, ...) are missing; `WaitUntil` on routines called
+  by name.
 - [ ] **Raw bytes** (`PackRawBytes`, `UnPackRawBytes`, ...): implemented, no test.
 
 ## Motion (run/pyrapid_motion.py, run/robotmodel.py)
@@ -68,7 +68,7 @@ instructions = 3HAC050917-001.
 - [ ] **Palletizer example**: `PlaceProduct` of two products at once (type 2),
   `TakeSheet`/`PlaceSheet` and the pallet magazine (`TakePallet`/`PlacePallet`) only
   write a message; the positions of `cell.py` repeat the points of `environment.mod`.
-- [ ] **I/O**: `AliasIO`, interrupts on signals (`ISignalDI`), the cross connections
+- [ ] **I/O**: interrupts on signals (`ISignalDI`), the cross connections
   and the device mapping of EIO.cfg are not supported.
 - [ ] **osj6**: the parts are a first design, not printed yet. The hatches have no
   fixing, the gear is only keyed on the spigot (no axial screw), there is no reference

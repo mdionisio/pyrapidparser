@@ -1,0 +1,7 @@
+inverted 1
+inverted again 0
+analog output 7.5
+analog input timeout TRUE
+group 3
+valid TRUE
+alias 1

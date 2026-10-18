@@ -175,14 +175,14 @@ controller provides; `rapid2py.py` translates it with the program (`-s` leaves i
 | Area                | Routines                                                              |
 | ------------------- | --------------------------------------------------------------------- |
 | Motion              | `MoveAbsJ`, `MoveJ`, `MoveL`, `MoveC`, `ConfJ`, `ConfL`, `WaitRob`, `CJointT`, `CRobT`, `CalcJointT`, `CalcRobT`, `Offs`, `RelTool`, `OrientZYX` (see [Robot motion](#robot-motion)) |
-| I/O signals         | `SetDO`, `Set`, `Reset`, `PulseDO`, `SetGO`, `SetAO`, `WaitDI`, `WaitDO`, `WaitGI`, `WaitUntil`, `DInput`, `DOutput`, `GInput`, `GOutput`, `AInput`, `AOutput`, `TestDI` |
+| I/O signals         | `SetDO`, `Set`, `Reset`, `PulseDO`, `SetGO`, `SetAO`, `WaitDI`, `WaitDO`, `WaitGI`, `WaitGO`, `WaitAI`, `WaitAO`, `WaitUntil`, `InvertDO`, `AliasIO`, `ValidIO`, `GInputDnum`, `GOutputDnum`, `IODisable`/`IOEnable` (they do nothing), `DInput`, `DOutput`, `GInput`, `GOutput`, `AInput`, `AOutput`, `TestDI` |
 | Sockets             | `SocketCreate`, `SocketBind`, `SocketListen`, `SocketAccept`, `SocketConnect`, `SocketSend`, `SocketReceive`, `SocketClose`, `SocketGetStatus`, on TCP sockets; the errors `ERR_SOCK_TIMEOUT`, `ERR_SOCK_CLOSED`, `ERR_SOCK_CONNREF`, `ERR_SOCK_ISCON` |
 | Arithmetic          | `Abs`, `Round`, `Trunc` (with `\Dec`), `Sqrt`, `Exp`, `Pow`, `Max`, `Min`, `Rand`, `Incr`, `Decr`, `Add` |
 | Trigonometry        | `Sin`, `Cos`, `Tan`, `ASin`, `ACos`, `ATan`, `ATan2` (degrees) |
 | Vectors and poses   | `Distance`, `DotProd`, `CrossProd`, `VectMagn`, `PoseMult`, `PoseInv`, `PoseVect`, `NOrient`, `EulerZYX` |
 | Bits                | `BitAnd`, `BitOr`, `BitXOr`, `BitNeg`, `BitLSh`, `BitRSh`, `BitCheck`, `BitSet`, `BitClear` on bytes (0 to 255) |
 | Strings             | `StrLen`, `StrPart`, `StrFind`, `StrMatch`, `StrMemb`, `StrOrder`, `StrMap`, `NumToStr`, `ValToStr`, `StrToVal`, `DecToHex`, `HexToDec`, `ByteToStr`, `StrToByte`; the constants `STR_DIGIT`, `STR_UPPER`, `STR_LOWER` (ASCII letters only), `STR_WHITE` |
-| Time and messages   | `GetTime`, `CTime`, `CDate`, `WaitTime`, `ClkReset`, `ClkStart`, `ClkStop`, `ClkRead`, `TPWrite`, `ErrWrite`, `ExitCycle` |
+| Time and messages   | `GetTime`, `CTime`, `CDate`, `WaitTime`, `ClkReset`, `ClkStart`, `ClkStop`, `ClkRead`, `TPWrite`, `ErrWrite`, `TPErase`, `TPShow`, `TPReadNum`, `TPReadFK` (standard input), `Stop`, `Break`, `SystemStopAction` and `ExitCycle` (they end the program) |
 | Modules             | `Load`, `UnLoad` (the modules translated apart, `rapid2py -f <module>.py`) |
 | Files               | `Open` (`\Read`, `\Write`, `\Append`, `\Bin`), `Close`, `Rewind`, `Write`, `WriteBin`, `WriteStrBin`, `ReadStr` ("EOF" at the end), `ReadNum` (`EOF_NUM`), `ReadBin`, `ReadStrBin`, `ClearIOBuff`, `RemoveFile`, `RenameFile`, `CopyFile`, `MakeDir`, `RemoveDir`, `IsFile`, `FileSize`, `OpenDir`, `ReadDir`, `CloseDir` |
 | Raw data            | `ClearRawBytes`, `CopyRawBytes`, `PackRawBytes`, `UnPackRawBytes`, `RawBytesLen` |
