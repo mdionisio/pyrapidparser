@@ -2104,6 +2104,9 @@ if __name__ == "__main__":
         if env.get("PYTHONPATH"):
             paths.append(env["PYTHONPATH"])
         env["PYTHONPATH"] = os.pathsep.join(paths)
+        # the program runs in its folder: the simulation of the cell from here
+        if env.get("PYRAPID_SIMULATION"):
+            env["PYRAPID_SIMULATION"] = os.path.abspath(env["PYRAPID_SIMULATION"])
         program = os.path.abspath(traslate.file_module_name)
         sys.stdout.flush()
         result = subprocess.run(

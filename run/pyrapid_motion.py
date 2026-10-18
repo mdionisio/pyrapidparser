@@ -507,7 +507,11 @@ class World:
 
 
 def load_simulation(path: str, world: World) -> None:
-    """the simulation of the cell: a Python file with setup(world)"""
+    """the simulation of the cell: a Python file with setup(world), relative to the
+    current folder or to the project folder"""
+    if not os.path.exists(path):
+        project = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        path = os.path.join(project, path)
     spec = importlib.util.spec_from_file_location("pyrapid_simulation", path)
     if spec is None or spec.loader is None or not os.path.exists(path):
         raise MotionError("simulation %s not found" % (path,))
