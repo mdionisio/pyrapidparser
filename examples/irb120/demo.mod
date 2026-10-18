@@ -63,7 +63,7 @@ MODULE demo
         MoveL RelTool(Offs(pcenter, 0, 0, 50), 0, 0, 0 \Ry := -30), v100, fine, tpen \WObj := wtable;
         WaitTime 1;
         pnow := CRobT(\Tool := tpen \WObj := wtable);
-        TPWrite "tilted pen at", \Pos := pnow.trans;
+        TPWrite "tilted pen at ", \Pos := pnow.trans;
 
         MoveAbsJ jhome, v1000, fine, tool0;
     ENDPROC

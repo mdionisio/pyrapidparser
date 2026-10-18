@@ -453,23 +453,18 @@ MODULE SYSTEMMODULE(SYSMODULE)
     ENDPROC
     
     PROC TPWrite ( string String \ num Num | bool Bool | pos Pos | orient Orient )
+        ! the string and the value as on the FlexPendant: TPWrite "x = " \Num:=5 writes x = 5
         !python:val = pyrapid.Symbols().GetSymbol("String").data.Get()
-        
         IF Present(Num) THEN
-            !python:val = val + " Num: " + str(pyrapid.Symbols().GetSymbol("Num").data.Get())
+            !python:val = val + pyrapid.rapid_text(pyrapid.Symbols().GetSymbol("Num").data)
         ELSEIF Present(Bool) THEN
-            !python:val = val + " Bool: " + str(pyrapid.Symbols().GetSymbol("Bool").data.Get())
+            !python:val = val + pyrapid.rapid_text(pyrapid.Symbols().GetSymbol("Bool").data)
         ELSEIF Present(Pos) THEN
-            !python:val = val + " Pos: " + ",".join([ str(pyrapid.Symbols().GetSymbol("Pos").data.GetElem("x").Get()), 
-            !python:                                 str(pyrapid.Symbols().GetSymbol("Pos").data.GetElem("y").Get()), 
-            !python:                                 str(pyrapid.Symbols().GetSymbol("Pos").data.GetElem("z").Get())])
+            !python:val = val + pyrapid.rapid_text(pyrapid.Symbols().GetSymbol("Pos").data)
         ELSEIF Present(Orient) THEN
-            !python:val = val + " Orient: " + ",".join([ str(pyrapid.Symbols().GetSymbol("Orient").data.GetElem("q1").Get()), 
-            !python:                                    str(pyrapid.Symbols().GetSymbol("Orient").data.GetElem("q2").Get()), 
-            !python:                                    str(pyrapid.Symbols().GetSymbol("Orient").data.GetElem("q3").Get()), 
-            !python:                                    str(pyrapid.Symbols().GetSymbol("Orient").data.GetElem("q4").Get())])
+            !python:val = val + pyrapid.rapid_text(pyrapid.Symbols().GetSymbol("Orient").data)
         ENDIF
-        !python:print( "'"+val+"'" )
+        !python:print(val, flush=True)
     ENDPROC
     
     PROC ClkStart( VAR clock Clock )

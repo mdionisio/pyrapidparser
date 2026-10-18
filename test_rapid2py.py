@@ -176,4 +176,4 @@ def test_example_irb120(tmp_path: pathlib.Path) -> None:
     assert [m[2] for m in moves].count("MoveC") == 2
     # the corners z20 of the small square are passed without stopping
     assert [m[3] for m in moves].count("z20") == 3
-    assert "tilted pen at Pos: 75.0,75.0,50.0" in result.stdout
+    assert "tilted pen at [75,75,50]" in result.stdout

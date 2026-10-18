@@ -378,6 +378,24 @@ class ModuleSymbol(Singleton.Singleton):
         self.global_symbol: NoCaseDict = NoCaseDict()
 
 
+def rapid_text(value: Any) -> str:
+    """the text of a value as TPWrite writes it: numbers with at most 6 significant
+    digits, TRUE and FALSE, records as [a,b,c]"""
+    if isinstance(value, rapid_struct):
+        return "[" + ",".join(rapid_text(v) for v in value.Get()) + "]"
+    if hasattr(value, "Get"):
+        value = value.Get()
+    if isinstance(value, bool):
+        return "TRUE" if value else "FALSE"
+    if isinstance(value, (int, float)):
+        text = "%.6g" % (value,)
+        if "e" in text:
+            text = "%.6f" % (value,)
+            text = text.rstrip("0").rstrip(".")
+        return "0" if text == "-0" else text
+    return str(value)
+
+
 class rapid_struct:
     def __init__(self, names: list[str], types: list[Any]) -> None:
         self.names = names
