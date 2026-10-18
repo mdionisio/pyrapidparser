@@ -955,6 +955,9 @@ def install_exit_hooks(viewer: bool) -> None:
 
     def excepthook(kind: Any, value: Any, traceback: Any) -> None:
         CONTROLLER.failed = True
+        if issubclass(kind, KeyboardInterrupt):
+            print("program interrupted", file=sys.stderr)
+            return
         previous(kind, value, traceback)
 
     sys.excepthook = excepthook

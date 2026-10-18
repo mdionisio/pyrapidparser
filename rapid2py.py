@@ -2109,9 +2109,13 @@ if __name__ == "__main__":
             env["PYRAPID_SIMULATION"] = os.path.abspath(env["PYRAPID_SIMULATION"])
         program = os.path.abspath(traslate.file_module_name)
         sys.stdout.flush()
-        result = subprocess.run(
-            [sys.executable, os.path.basename(program)], cwd=os.path.dirname(program), env=env
-        )
+        try:
+            result = subprocess.run(
+                [sys.executable, os.path.basename(program)], cwd=os.path.dirname(program), env=env
+            )
+        except KeyboardInterrupt:
+            # Ctrl+C reaches the program too
+            sys.exit(130)
         sys.exit(result.returncode)
         #
         #
