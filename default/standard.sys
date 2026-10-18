@@ -512,11 +512,9 @@ MODULE SYSTEMMODULE(SYSMODULE)
     ENDFUNC
     
     PROC UnLoad( string FilePath )
+        ! the modules translated with the program stay loaded
         VAR bool ret;
-        TPWrite("UnLoad it is unsafe");
-        !python:FilePath = pyrapid.Symbols().GetSymbol("FilePath").data.Get()
-        !python:FilePath = FilePath.split('/')[-1].split('.')[0].upper()
-        !python:ret = pyrapid.Symbols().UnLoadModule(FilePath)
+        !python:ret = pyrapid.Symbols().UnLoadModuleFile(pyrapid.Symbols().GetSymbol("FilePath").data.Get())
         !python:pyrapid.Symbols().GetSymbol("ret").data.Set( ret )
         IF ret = FALSE THEN
             RAISE ERR_UNLOAD ;
@@ -525,14 +523,9 @@ MODULE SYSTEMMODULE(SYSMODULE)
     
 
     PROC Load( \switch Dynamic, string FilePath \string File \switch CheckRef )
-        TPWrite("Load it is unsafe");
-        !python:FilePath = pyrapid.Symbols().GetSymbol("FilePath").data.Get()
-        !python:FilePath = FilePath.split('/')[-1].split('.')[0]
-        !python:import sys
-        !python:if sys.modules.has_key(FilePath):
-        !python:    reload(sys.modules[FilePath])
-        !python:else:
-        !python:    __import__(FilePath)
+        ! a module translated with the program is already loaded, otherwise the module
+        ! translated apart (rapid2py -f <module>.py) is imported
+        !python:pyrapid.Symbols().LoadModuleFile(pyrapid.Symbols().GetSymbol("FilePath").data.Get())
     ENDPROC
     
     FUNC string NumToStr (num Val, num Dec \switch Exp)

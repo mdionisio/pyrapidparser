@@ -201,6 +201,8 @@ class Symbols(Singleton.Singleton):
         self.scope_symbol: list[tuple[Optional[str], Optional[str], NoCaseDict]] = []
         # contain for each module the list of global symbol defined
         self.module_global_symbol: NoCaseDict = NoCaseDict()
+        # modules imported by Load (upper case)
+        self.dynamic_modules: set[str] = set()
 
     def GetSymbol(
         self, symbolname: str, modulename: Optional[str] = None, functionname: Optional[str] = None
@@ -244,6 +246,33 @@ class Symbols(Singleton.Singleton):
             return symbolname in self.scope_symbol[-1][2]
         except:
             return False
+
+    def HasModule(self, modulename: str) -> bool:
+        return modulename in self.module_global_symbol or modulename in self.module_symbol
+
+    def LoadModuleFile(self, filepath: str) -> None:
+        """Load: a module translated with the program is already loaded; otherwise the
+        module translated apart (rapid2py -f <module>.py) is imported"""
+        name = filepath.replace("\\", "/").split("/")[-1].split(".")[0]
+        if self.HasModule(name) and name.upper() not in self.dynamic_modules:
+            return
+        import importlib
+        import sys
+
+        if name in sys.modules:
+            self.UnLoadModule(name.upper())
+            importlib.reload(sys.modules[name])
+        else:
+            importlib.import_module(name)
+        self.dynamic_modules.add(name.upper())
+
+    def UnLoadModuleFile(self, filepath: str) -> bool:
+        """UnLoad: the modules translated with the program stay"""
+        name = filepath.replace("\\", "/").split("/")[-1].split(".")[0].upper()
+        if name in self.dynamic_modules:
+            self.dynamic_modules.discard(name)
+            return self.UnLoadModule(name)
+        return self.HasModule(name)
 
     def UnLoadModule(self, modulename: str) -> bool:
         if modulename in self.module_global_symbol:
