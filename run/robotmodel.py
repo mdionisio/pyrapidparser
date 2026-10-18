@@ -278,13 +278,21 @@ class RobotModel:
     def within_limits(self, axes: Vector) -> bool:
         return bool(np.all(axes >= self.lower - 1e-9) and np.all(axes <= self.upper + 1e-9))
 
-    def ik(self, target: Any, reference: Vector) -> list[Solution]:
+    def ik(self, target: Any, reference: Vector, nearest: bool = False) -> list[Solution]:
         """all the axis positions (within the limits) that place the flange at target
-        (in the base frame); the first is the nearest to reference"""
+        (in the base frame); the first is the nearest to reference. With nearest the
+        numeric inverse kinematics starts only from reference when it converges: the
+        points of a path, near to each other, are fast"""
         if self.analytic is not None:
             solutions = self._ik_analytic(target, reference)
         else:
-            solutions = self._ik_numeric(target, reference)
+            solutions = []
+            if nearest:
+                axes = self._dls(target, reference)
+                if axes is not None:
+                    solutions = [Solution(axes, self._pose_error(axes, target))]
+            if not solutions:
+                solutions = self._ik_numeric(target, reference)
         solutions.sort(key=lambda s: float(np.sum(np.abs(s.axes - reference))))
         return solutions
 

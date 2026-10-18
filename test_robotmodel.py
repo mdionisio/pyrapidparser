@@ -128,6 +128,12 @@ def test_osj6() -> None:
     assert solutions
     assert np.allclose(robot.fk(solutions[0].axes).homogeneous, down.homogeneous, atol=1e-5)
     assert len(robot.visual_model.geometryObjects) > 20
+    # a point of a path: only the solution near to the previous point
+    near = pin.SE3(down.rotation, down.translation + np.array([0.002, 0, 0]))
+    path = robot.ik(near, solutions[0].axes, nearest=True)
+    assert len(path) == 1
+    assert np.allclose(robot.fk(path[0].axes).homogeneous, near.homogeneous, atol=1e-5)
+    assert np.max(np.abs(path[0].axes - solutions[0].axes)) < 0.05
 
 
 def test_cad_meshes(tmp_path: Any, monkeypatch: pytest.MonkeyPatch) -> None:

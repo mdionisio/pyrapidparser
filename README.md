@@ -406,8 +406,9 @@ How the movements are computed:
   profile is trapezoidal; the joint movements move all the axes together.
 - **Kinematics**: the inverse kinematics is in closed form for the 6 axis arms with a
   spherical wrist (most ABB models), numeric for the others (from the current position,
-  the home position and, when they do not converge, 30 random positions). `confdata` (cf1, cf4, cf6,
-  cfx) follows the RAPID instructions manual: `MoveJ` reaches the programmed configuration,
+  the home position and, when they do not converge, 30 random positions; along the path
+  of `MoveL` and `MoveC` from the previous point only). `confdata` (cf1, cf4, cf6, cfx)
+  follows the RAPID instructions manual: `MoveJ` reaches the programmed configuration,
   `MoveL` and `MoveC` stop the program if the end point has another configuration (as
   `ConfL \On` on the robot).
 - **Errors**: a point out of reach (`OutsideReach`), an axis out of its limits or a

@@ -98,11 +98,21 @@ PYRAPID_MOTION_LOG=1 python rapid2py.py -e demo.main -i examples/osj6/demo.mod -
 ```
 
 ```
+1. joints: the tube straight up, all the axes at 0 (singular position)
    1.79 s  MoveAbsJ fine      axes [0.0, 0.0, 0.0, 0.0, 0.0, 0.0] deg  max torque [0.1, 3.4, 0.7, 0.1, 0.4, 0.0] Nm
+2. joints: axis 2 at 180 degrees, the tube bends by 90 degrees
    4.58 s  MoveAbsJ fine      axes [0.0, 180.0, 0.0, 0.0, 0.0, 0.0] deg  max torque [0.4, 3.2, 1.9, 0.9, 0.2, 0.0] Nm
 ...
-pen at [20,50,30]
+7. linear: the edges of the 100 mm square, stop at each corner
+...
+10. circular: the circle inscribed in the square, two half circles
+...
 ```
+
+A message (`TPWrite`) before each step says the movement: the joints fold the tube
+(1 - 5), the pen goes down on the table (6), draws the edges of a 100 mm square with stop
+points (7) and with fly-by corners (8), then the circle inscribed in the square with two
+`MoveC` (9 - 11).
 
 In the browser, in real time, with the printed parts:
 

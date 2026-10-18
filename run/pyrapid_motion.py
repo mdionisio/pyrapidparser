@@ -1278,7 +1278,7 @@ class Controller:
                     )
                 path_axes.append(axes)
                 continue
-            solutions = robot.ik(target * tool.frame.inverse(), path_axes[-1])
+            solutions = robot.ik(target * tool.frame.inverse(), path_axes[-1], nearest=True)
             if not solutions:
                 raise OutsideReach(
                     "%s: position outside reach on the path: %s"
