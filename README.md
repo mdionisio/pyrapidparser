@@ -227,13 +227,43 @@ limits of the axes, coupled joints (see the comment at the top of `robotmodel.py
 | `MoveJ`                            | to a `robtarget`, with its `confdata` (`ConfJ \On`)      |
 | `MoveL`, `MoveC`                   | straight line and circle of the TCP                      |
 | `ConfJ`, `ConfL`                   | configuration supervision on or off                      |
+| `WaitTime`, `WaitRob`              | `\InPos`: wait for the robot to stop                     |
 | `CJointT`, `CRobT`                 | current position                                         |
 | `CalcJointT`, `CalcRobT`           | inverse and forward kinematics                           |
 | `Offs`, `RelTool`                  | displaced points                                         |
 
-The supported arguments are `\V`, `\T`, `\Z` and `\WObj`; `tooldata` (TCP and load) and
+The supported arguments are `\Conc`, `\V`, `\T`, `\Z` and `\WObj`; `tooldata` (TCP and load) and
 `wobjdata` (user and object frame) work as on the robot, `tool0`, `wobj0` and `load0` are
 predefined.
+
+### Program and robot
+
+As on the robot controller, the program and the robot run at the same time (RAPID
+overview 2.3, *Synchronization with logical instructions*). A movement instruction plans
+the movement (reach, configuration, speed) and passes it to the robot; then the program
+waits:
+
+| Zone of the instruction | The program continues                                        |
+| ----------------------- | ------------------------------------------------------------ |
+| `fine` (stop point)     | when the robot stands still on the point                     |
+| `z10`, ... (fly-by)     | 0.1 s before the robot enters the zone (planning time)       |
+| with `\Conc`            | at once; at most 5 movements with `\Conc` in succession       |
+
+If the next movement instruction arrives before the robot enters the zone, the robot
+does not stop: it starts the next movement inside the zone (corner path) and leaves the
+zone on the path that starts from the programmed point. The zone is `pzone_tcp` of the
+`zonedata` (or `\Z`), reduced to half the distance to the neighbor points. If the next
+movement arrives late, for example after a `WaitTime`, the fly-by point becomes a stop
+point and a warning says so (`corner path failure`, as on the robot).
+
+The logical instructions do not stop the robot: during `WaitTime` the robot continues its
+movements, `CRobT` and `CJointT` read the position of that moment. `WaitTime \InPos` and
+`WaitRob \InPos` wait for the robot to stop. At the end of the program the robot completes
+the movements.
+
+The time is simulated: the robot moves only while the program waits, the logical
+instructions take no time. The execution is fast and gives always the same result. With
+the viewer, or `PYRAPID_REALTIME=1`, the robot moves in real time while the program runs.
 
 How the movements are computed:
 
@@ -249,15 +279,16 @@ How the movements are computed:
   stop the program with `MotionError`.
 - **Dynamics**: with the inertial data the joint torques are computed along the path,
   including the load of the tool.
-- **Zones** are run as fine points: the robot stops at every point.
-- **Time**: the motion is simulated, the program does not wait; `WaitTime` advances the
-  time of the simulation.
+- **Corner paths** superpose the end of a movement and the start of the next one in the
+  space of the axes: the path in the zone is close to the parabola of the robot, not
+  equal to it; only the TCP zone is used (not the reorientation zone).
 
 ### Log and view
 
 | Environment variable      | Effect                                                      |
 | ------------------------- | ----------------------------------------------------------- |
-| `PYRAPID_MOTION_LOG=1`    | one line for each movement: time, axes, maximum torques     |
+| `PYRAPID_MOTION_LOG=1`    | one line at the end of each movement: time, zone, axes, torques |
+| `PYRAPID_REALTIME=1`      | the robot moves in real time                                |
 | `PYRAPID_VIEWER=meshcat`  | the robot in the browser, in real time, with the TCP path   |
 | `PYRAPID_VIEWER_HOLD=0`   | do not wait for Ctrl+C at the end of the program            |
 
@@ -266,19 +297,24 @@ the program runs at the speed of the robot.
 
 ### Examples
 
-`examples/irb120/demo.mod`: an ABB IRB 120 draws a square and a circle on a table with a
-pen, with joint, linear and circular movements, a work object and a tilted tool:
+`examples/irb120/demo.mod`: an ABB IRB 120 draws on a table with a pen: a square with stop
+points, a smaller square with fly-by corners (`z20`) and a circle, with joint, linear and
+circular movements, a work object and a tilted tool:
 
 ```sh
 PYRAPID_MOTION_LOG=1 python rapid2py.py -e demo.main -i examples/irb120/demo.mod -d out -f demo.py -r
 ```
 
 ```
-MoveAbsJ   0.43 s  axes [0.0, 0.0, 0.0, 0.0, 30.0, 0.0] deg  max torque [0.0, 5.8, 5.8, 0.0, 0.1, 0.0] Nm
-MoveAbsJ   0.93 s  axes [-60.0, 20.0, -20.0, 90.0, 60.0, 180.0] deg  max torque [2.0, 12.4, 6.1, 0.1, 0.1, 0.0] Nm
+   0.43 s  MoveAbsJ fine      axes [0.0, 0.0, 0.0, 0.0, 30.0, 0.0] deg  max torque [0.0, 5.8, 5.8, 0.0, 0.1, 0.0] Nm
+   1.37 s  MoveAbsJ fine      axes [-60.0, 20.0, -20.0, 90.0, 60.0, 180.0] deg  max torque [1.9, 12.4, 6.1, 0.1, 0.1, 0.0] Nm
 ...
-MoveC      1.77 s  axes [-16.4, 35.4, 0.1, 0.0, 54.6, -16.4] deg  max torque [0.7, 17.9, 7.2, 0.0, 0.0, 0.0] Nm
+   8.32 s  MoveL    z20       axes [-22.4, 38.8, -5.3, 0.0, 56.5, -22.4] deg  max torque [1.3, 19.9, 7.2, 0.0, 0.1, 0.0] Nm
+   8.83 s  MoveL    z20       axes [-10.0, 33.1, 3.5, 0.0, 53.3, -10.0] deg  max torque [1.5, 19.9, 7.2, 0.0, 0.1, 0.0] Nm
 ```
+
+The time is the end of the movement; a fly-by point that became a stop point is marked
+`stop` (`z20 stop`).
 
 To see it in the browser:
 
@@ -305,7 +341,7 @@ The missing features are listed in [todo.md](todo.md). Among them:
 - interrupts and `CONNECT`;
 - long jumps in error handlers;
 - semantics of `BACKWARD` and `UNDO`;
-- corner paths of the zones, external axes and the other motion instructions;
+- external axes, the reorientation zones and the other motion instructions;
 - installed data types such as `signaldi`.
 
 ## Layout

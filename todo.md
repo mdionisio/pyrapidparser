@@ -27,7 +27,12 @@ instructions = 3HAC050917-001.
 
 ## Motion (run/pyrapid_motion.py, robotmodel.py)
 
-- [ ] **Zones**: the corner paths (`zonedata` other than `fine`) are run as fine points.
+- [ ] **Corner paths**: computed in the space of the axes (superposition of the two
+  movements), not as the parabola of the TCP; the reorientation zone (`pzone_ori`,
+  `zone_ori`) is not used; during the corner path the axes may briefly exceed their
+  velocity limit.
+- [ ] **Servo lag**: the program continues PREFETCH_TIME (0.1 s) before the zone; the
+  robot adds a delay of 0 - 1 s depending on the speed (RAPID overview 2.3).
 - [ ] **External axes** (`extax`, `v_leax`, `v_reax`) are ignored.
 - [ ] **ConfL supervision**: the RAPID manual (confdata) checks that the axes 1, 4, 6 do
   not move more than 180 degrees and that cfx does not change; today only the
