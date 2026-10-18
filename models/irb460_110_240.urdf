@@ -21,9 +21,11 @@
   real working range can be reachable in the simulation. The top of the working range
   (1786 mm) is the one of the data sheet.
 
-  The geometry is made of boxes; models/irb460_110_240/build_cad.py downloads the
-  ABB CAD model and converts it to meshes (not distributed: ABB copyright), then
-  the meshes replace the boxes. No inertial data.
+  The geometry is stylized (irb460_110_240/stylized/, low polygon shapes with the
+  outline and the size of the parts, built by build_stylized.py);
+  irb460_110_240/build_cad.py downloads the ABB CAD model and converts it to meshes
+  (not distributed: ABB copyright), then they replace the stylized parts. No
+  inertial data.
 -->
 <robot name="irb460_110_240">
   <material name="robot_white">
@@ -38,8 +40,8 @@
 
   <link name="base_link">
     <visual>
-      <origin xyz="-0.12 0 0.14" rpy="0 0 0"/>
-      <geometry><box size="1.007 0.720 0.285"/></geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://irb460_110_240/stylized/foot.stl" scale="0.001 0.001 0.001"/></geometry>
       <material name="robot_dark"/>
     </visual>
   </link>
@@ -53,8 +55,8 @@
   <!-- axis 1 -->
   <link name="link_1">
     <visual>
-      <origin xyz="0 0 0.5" rpy="0 0 0"/>
-      <geometry><cylinder radius="0.3" length="0.5"/></geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://irb460_110_240/stylized/swing.stl" scale="0.001 0.001 0.001"/></geometry>
       <material name="robot_white"/>
     </visual>
   </link>
@@ -69,8 +71,8 @@
   <!-- axis 2: lower arm -->
   <link name="link_2">
     <visual>
-      <origin xyz="0 0 0.4725" rpy="0 0 0"/>
-      <geometry><box size="0.2 0.3 1.1"/></geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://irb460_110_240/stylized/lower_arm.stl" scale="0.001 0.001 0.001"/></geometry>
       <material name="robot_white"/>
     </visual>
   </link>
@@ -85,8 +87,8 @@
   <!-- upper arm: joint_3 = axis 3 - axis 2 -->
   <link name="link_3">
     <visual>
-      <origin xyz="0.45 0 0" rpy="0 0 0"/>
-      <geometry><box size="1.25 0.19 0.2"/></geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://irb460_110_240/stylized/upper_arm.stl" scale="0.001 0.001 0.001"/></geometry>
       <material name="robot_white"/>
     </visual>
   </link>
@@ -101,8 +103,8 @@
   <!-- wrist (tilt), kept horizontal: joint_4 = - axis 3 -->
   <link name="link_4">
     <visual>
-      <origin xyz="0.12 0 -0.06" rpy="0 0 0"/>
-      <geometry><box size="0.38 0.3 0.4"/></geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://irb460_110_240/stylized/tilt.stl" scale="0.001 0.001 0.001"/></geometry>
       <material name="robot_white"/>
     </visual>
   </link>
@@ -117,8 +119,8 @@
   <!-- axis 6: the flange -->
   <link name="link_6">
     <visual>
-      <origin xyz="0 0 0.02" rpy="0 0 0"/>
-      <geometry><cylinder radius="0.08" length="0.04"/></geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://irb460_110_240/stylized/disk.stl" scale="0.001 0.001 0.001"/></geometry>
       <material name="robot_dark"/>
     </visual>
   </link>
@@ -143,8 +145,8 @@
   <!-- plate on the axis 3 joint, kept horizontal: link_plate = - axis 2 -->
   <link name="link_plate">
     <visual>
-      <origin xyz="0.12 0 0.1" rpy="0 0 0"/>
-      <geometry><box size="0.55 0.14 0.3"/></geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://irb460_110_240/stylized/link_plate.stl" scale="0.001 0.001 0.001"/></geometry>
       <material name="robot_grey"/>
     </visual>
   </link>
@@ -159,8 +161,8 @@
   <!-- rod from the plate to the wrist, parallel to the upper arm: axis 3 -->
   <link name="upper_link">
     <visual>
-      <origin xyz="0.5125 -0.165 0" rpy="0 0 0"/>
-      <geometry><box size="1.1 0.045 0.08"/></geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://irb460_110_240/stylized/upper_link.stl" scale="0.001 0.001 0.001"/></geometry>
       <material name="robot_grey"/>
     </visual>
   </link>
@@ -176,8 +178,8 @@
        lever of the upper arm: axis 3 -->
   <link name="p_arm">
     <visual>
-      <origin xyz="-0.2 -0.03 0" rpy="0 0 0"/>
-      <geometry><box size="0.5 0.12 0.15"/></geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://irb460_110_240/stylized/p_arm.stl" scale="0.001 0.001 0.001"/></geometry>
       <material name="robot_grey"/>
     </visual>
   </link>
@@ -193,8 +195,8 @@
        axis 2 (relative to p_arm: axis 2 - axis 3) -->
   <link name="p_link">
     <visual>
-      <origin xyz="0 -0.035 0.4725" rpy="0 0 0"/>
-      <geometry><box size="0.08 0.05 1.0"/></geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://irb460_110_240/stylized/p_link.stl" scale="0.001 0.001 0.001"/></geometry>
       <material name="robot_grey"/>
     </visual>
   </link>
@@ -209,8 +211,8 @@
   <!-- rod from the swing to link_plate, parallel to the lower arm: axis 2 -->
   <link name="lower_link">
     <visual>
-      <origin xyz="0 -0.26 0.4725" rpy="0 0 0"/>
-      <geometry><box size="0.08 0.045 1.0"/></geometry>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry><mesh filename="package://irb460_110_240/stylized/lower_link.stl" scale="0.001 0.001 0.001"/></geometry>
       <material name="robot_grey"/>
     </visual>
   </link>

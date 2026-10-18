@@ -779,7 +779,8 @@ def main() -> None:
         files = list(cad.get("links", {}).values())
         found = sum(os.path.exists(os.path.join(MODELS_DIR, f)) for f in files)
         print(
-            "view:       CAD meshes %d of %d%s" % (found, len(files), "" if found else " (boxes)")
+            "view:       CAD meshes %d of %d%s"
+            % (found, len(files), "" if found else " (URDF geometry)")
         )
     for i, axis in enumerate(robot.rapid_axes):
         print(

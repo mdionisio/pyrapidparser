@@ -86,7 +86,8 @@ for the real time without the viewer.
 ## The robot with the ABB CAD model
 
 The robot model is `models/irb460_110_240.urdf`: the lengths come from the ABB CAD
-model, the geometry is made of boxes. ABB publishes the CAD model of the IRB 460-110/2.4
+model, the view uses the stylized parts of `models/irb460_110_240/stylized/` (see below).
+ABB publishes the CAD model of the IRB 460-110/2.4
 in the ABB Library (document 9AKK107992A7905, "CAD Model, STEP, IRB 460, ALL, 110-240,
 IRC5, rev01, joint"): it is ABB copyright, so it is not in the repository. The script
 `models/irb460_110_240/build_cad.py` downloads it and converts it to meshes for the
@@ -130,10 +131,28 @@ error if a part is missing in the archive.
 python robotmodel.py irb460_110_240
 ```
 
-prints `view:       CAD meshes 11 of 11` when the meshes are there (`0 of 11 (boxes)`
-otherwise). The meshes are used only by the viewer: the kinematics and the simulation are
-the same with and without them. Delete the folder `models/irb460_110_240/cad/` to go back
-to the boxes, run the script again to rebuild the meshes.
+prints `view:       CAD meshes 11 of 11` when the meshes are there (`0 of 11 (URDF
+geometry)` otherwise: the stylized parts). The meshes are used only by the viewer: the
+kinematics and the simulation are the same with and without them. Delete the folder
+`models/irb460_110_240/cad/` to go back to the stylized parts, run the script again to
+rebuild the meshes.
+
+### The stylized parts
+
+Without the CAD model the viewer shows the stylized parts of
+`models/irb460_110_240/stylized/` (in the repository, about 350 KB): low polygon shapes
+with the outline and the size of the real parts, so the geometry and the space taken by
+the robot are clear. Each part of the CAD model is cut in a few cells (along its two
+longest dimensions) and every cell is replaced by its convex hull, with the vertices
+snapped to a 12 mm grid. They are built from the CAD meshes by:
+
+```sh
+pip install scipy
+python models/irb460_110_240/build_stylized.py
+```
+
+`PARTS` in the script sets the number of cells of each part (more cells: closer to the
+real shape, more triangles).
 
 ### How the meshes are placed
 

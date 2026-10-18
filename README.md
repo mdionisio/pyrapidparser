@@ -200,10 +200,11 @@ one:
   `irb4600_60_205`, ...);
 - `irb460_110_240` in `models/`: the 4 axis palletizer ABB IRB 460-110/2.4, with the
   parallel linkage. There is no URDF of this robot: the lengths come from the ABB CAD
-  model, the geometry is made of boxes. `python models/irb460_110_240/build_cad.py`
-  (needs `pip install gmsh`) downloads the CAD model from the ABB Library and converts it
-  to meshes in `models/irb460_110_240/cad/` (not in the repository: ABB copyright); then
-  the viewer shows the real robot.
+  model, the view uses stylized parts (low polygon shapes with the outline and the size
+  of the real ones). `python models/irb460_110_240/build_cad.py` (needs `pip install
+  gmsh`) downloads the CAD model from the ABB Library and converts it to meshes in
+  `models/irb460_110_240/cad/` (not in the repository: ABB copyright); then the viewer
+  shows the real robot.
 
 The models contain the geometry, the limits and the maximum speed of the axes (from the ABB
 data sheets). The other data is often missing, and the loading prints a warning for each
