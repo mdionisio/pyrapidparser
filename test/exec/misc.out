@@ -1,0 +1,9 @@
+pi 31416
+dnum 14.5
+round 2.6
+to str 3.142
+num 7
+GetDataVal 5
+SetDataVal 42
+ErrRaise MYERR: my error
+booked error

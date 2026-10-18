@@ -14,9 +14,6 @@ instructions = 3HAC050917-001.
   ones that run) and the interrupts during the execution of the error handlers.
 - [ ] **BACKWARD and UNDO handlers** (kernel 6, 7.2): check the semantics of the generated
   code, no test runs them.
-- [ ] **`pi` and `dnum`**: the validator knows them (they are predefined in RAPID), the
-  runtime `run/pyrapid.py` does not: a program that uses `pi` passes the validation and
-  then fails at run time.
 - [ ] **DIV and MOD with negative operands**: rapid2py uses `//` and `%`, which in Python
   round towards minus infinity. Check the RAPID result in the instructions manual and fix
   it if different.
@@ -32,8 +29,7 @@ instructions = 3HAC050917-001.
   persistent variable (`PersBool`) and `\Sup` (more than one hit is not counted
   after the movement stops), `TriggRampAO`, `TriggCheckIO`, `MoveExtJ`, `EOffsSet`/`EOffsOn`,
   `DefDFrame`/`DefFrame`, `PathResol`, `MoveJSync`/`MoveLSync`, `PathAccLim`, `SpeedLimAxis`, `CirPathMode`.
-- [ ] **Math and general functions**: the `dnum` versions (`AbsDnum`, `BitAndDnum`, ...),
-  `StrFormat`, `StrDigCmp`/`StrDigCalc`, `ValidIO`, `RobName`, `OpMode`, `RunMode`;
+- [ ] **Math and general functions**: `StrFormat`, `StrDigCmp`/`StrDigCalc`, `ValidIO`, `RobName`, `OpMode`, `RunMode`;
   the bit functions work on bytes (0 to 255) only; `STR_UPPER` and `STR_LOWER` have only
   the ASCII letters; the argument errors (`ASin(2)`) raise a Python exception, not
   `ERR_ARGVALERR`.

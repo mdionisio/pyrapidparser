@@ -178,6 +178,8 @@ controller provides; `rapid2py.py` translates it with the program (`-s` leaves i
 | I/O signals         | `SetDO`, `Set`, `Reset`, `PulseDO`, `SetGO`, `SetAO`, `WaitDI`, `WaitDO`, `WaitGI`, `WaitGO`, `WaitAI`, `WaitAO`, `WaitUntil`, `InvertDO`, `AliasIO`, `ValidIO`, `GInputDnum`, `GOutputDnum`, `IODisable`/`IOEnable` (they do nothing), `DInput`, `DOutput`, `GInput`, `GOutput`, `AInput`, `AOutput`, `TestDI` |
 | Sockets             | `SocketCreate`, `SocketBind`, `SocketListen`, `SocketAccept`, `SocketConnect`, `SocketSend`, `SocketReceive`, `SocketClose`, `SocketGetStatus`, on TCP sockets; the errors `ERR_SOCK_TIMEOUT`, `ERR_SOCK_CLOSED`, `ERR_SOCK_CONNREF`, `ERR_SOCK_ISCON` |
 | Arithmetic          | `Abs`, `Round`, `Trunc` (with `\Dec`), `Sqrt`, `Exp`, `Pow`, `Max`, `Min`, `Rand`, `Incr`, `Decr`, `Add` |
+| `dnum`              | `dnum` is a Python float, as `num`: `AbsDnum`, `RoundDnum`, `TruncDnum`, `SqrtDnum`, `PowDnum`, `SinDnum`, ..., `NumToDnum`, `DnumToNum`, `DnumToStr` |
+| Data and errors     | `pi`, `GetDataVal`, `SetDataVal`, `BookErrNo`, `ErrRaise` |
 | Trigonometry        | `Sin`, `Cos`, `Tan`, `ASin`, `ACos`, `ATan`, `ATan2` (degrees) |
 | Vectors and poses   | `Distance`, `DotProd`, `CrossProd`, `VectMagn`, `PoseMult`, `PoseInv`, `PoseVect`, `NOrient`, `EulerZYX` |
 | Bits                | `BitAnd`, `BitOr`, `BitXOr`, `BitNeg`, `BitLSh`, `BitRSh`, `BitCheck`, `BitSet`, `BitClear` on bytes (0 to 255) |

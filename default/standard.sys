@@ -1145,6 +1145,119 @@ MODULE SYSTEMMODULE(SYSMODULE)
         !python:pyrapid_lib.call(_s("BitData").data, pyrapid_lib.bit_clear, _s("BitData").data, _s("BitPos").data)
     ENDPROC
 
+    FUNC num AbsDnum(num Value)
+        RETURN Abs(Value);
+    ENDFUNC
+
+    FUNC num RoundDnum(num Val \num Dec)
+        ! dnum is a float of Python, as num
+        IF Present(Dec) THEN
+            RETURN Round(Val \Dec:=Dec);
+        ENDIF
+        RETURN Round(Val);
+    ENDFUNC
+
+    FUNC num TruncDnum(num Val \num Dec)
+        ! dnum is a float of Python, as num
+        IF Present(Dec) THEN
+            RETURN Trunc(Val \Dec:=Dec);
+        ENDIF
+        RETURN Trunc(Val);
+    ENDFUNC
+
+    FUNC num SqrtDnum(num Value)
+        RETURN Sqrt(Value);
+    ENDFUNC
+
+    FUNC num SinDnum(num Angle)
+        RETURN Sin(Angle);
+    ENDFUNC
+
+    FUNC num CosDnum(num Angle)
+        RETURN Cos(Angle);
+    ENDFUNC
+
+    FUNC num TanDnum(num Angle)
+        RETURN Tan(Angle);
+    ENDFUNC
+
+    FUNC num ASinDnum(num Value)
+        RETURN ASin(Value);
+    ENDFUNC
+
+    FUNC num ACosDnum(num Value)
+        RETURN ACos(Value);
+    ENDFUNC
+
+    FUNC num ATanDnum(num Value)
+        RETURN ATan(Value);
+    ENDFUNC
+
+    FUNC num ATan2Dnum(num Y, num X)
+        RETURN ATan2(Y, X);
+    ENDFUNC
+
+    FUNC num PowDnum(num Base, num Exponent)
+        RETURN Pow(Base, Exponent);
+    ENDFUNC
+
+    FUNC num BitAndDnum(num BitData1, num BitData2)
+        RETURN BitAnd(BitData1, BitData2);
+    ENDFUNC
+
+    FUNC num BitOrDnum(num BitData1, num BitData2)
+        RETURN BitOr(BitData1, BitData2);
+    ENDFUNC
+
+    FUNC num BitXOrDnum(num BitData1, num BitData2)
+        RETURN BitXOr(BitData1, BitData2);
+    ENDFUNC
+
+    FUNC num NumToDnum(num Value)
+        RETURN Value;
+    ENDFUNC
+
+    FUNC num DnumToNum(num Value \switch Truncate)
+        RETURN Value;
+    ENDFUNC
+
+    FUNC string DnumToStr(num Val, num Dec \switch Exp)
+        IF Present(Exp) THEN
+            RETURN NumToStr(Val, Dec \Exp);
+        ENDIF
+        RETURN NumToStr(Val, Dec);
+    ENDFUNC
+
+    PROC BookErrNo(VAR errnum ErrorName)
+        ! books a new error number for ErrorName
+        !python:pyrapid.Symbols().GetSymbol("ErrorName").data.Set(pyrapid.rapid_errnum().Get())
+    ENDPROC
+
+    PROC ErrRaise(string ErrorName, num ErrorNumber, string Str1 \string Str2 \string Str3 \string Str4 \string Str5)
+        ! raises the error ErrorNumber of the program, with the message
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:print("ErrRaise %s: %s" % (_s("ErrorName").data.Get(), _s("Str1").data.Get()), flush=True)
+        RAISE ErrorNumber;
+    ENDPROC
+
+    PROC GetDataVal(string Object, VAR anytype Value)
+        ! the value of the data object with that name
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:_found = pyrapid.Symbols().GetSymbol(_s("Object").data.Get())
+        !python:if _found is None:
+        !python:    raise pyrapid.RapidException(_s("ERR_SYM_ACCESS").data.Get(), "GetDataVal: no data " + _s("Object").data.Get())
+        !python:_s("Value").data.Set(_found.data.Get())
+    ENDPROC
+
+    PROC SetDataVal(string Object, anytype Value)
+        ! assigns the value to the data object with that name
+        !python:_s = pyrapid.Symbols().GetSymbol
+        !python:_found = pyrapid.Symbols().GetSymbol(_s("Object").data.Get())
+        !python:if _found is None:
+        !python:    raise pyrapid.RapidException(_s("ERR_SYM_ACCESS").data.Get(), "SetDataVal: no data " + _s("Object").data.Get())
+        !python:_found.data.Set(_s("Value").data.Get())
+    ENDPROC
+
     !! Files and directories (run/pyrapid_files.py): the paths "HOME:/dir/file" are
     !! relative to PYRAPID_HOME (default: the current folder), "TEMP:" to the temporary
     !! folder; the serial channels are not supported.

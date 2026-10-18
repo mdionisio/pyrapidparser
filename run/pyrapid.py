@@ -1710,6 +1710,7 @@ Symbols().AddGlobalSym("socketdev", Symbol.CreateDataType(rapid_socketdev))
 
 
 Symbols().AddGlobalSym("WAIT_MAX", Symbol.CreateConst(rapid_num, rapid_num(-1)))
+Symbols().AddGlobalSym("pi", Symbol.CreateConst(rapid_num, rapid_num(3.1415926)))
 
 
 class rapid_rawbytes:
