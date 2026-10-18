@@ -2000,7 +2000,8 @@ if __name__ == "__main__":
     if options.standard:
         import glob
 
-        for i in glob.glob("./default/*.sys"):
+        default = os.path.join(os.path.dirname(os.path.abspath(__file__)), "default")
+        for i in sorted(glob.glob(os.path.join(default, "*.sys"))):
             with open(i, "r") as f:
                 ltext.append((i, f.read()))
 
