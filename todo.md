@@ -45,7 +45,11 @@ instructions = 3HAC050917-001.
   when the data is available (ABB does not publish it).
 - [ ] **IRB 460**: the model is approximate (link lengths estimated from the data sheet,
   no inertial data, axis 3 measured from the horizontal); replace it with a real model.
-- [ ] **Palletizer example**: write the movements of `examples/pallettizer`.
+- [ ] **Palletizer example**: `PlaceProduct` of two products at once (type 2),
+  `TakeSheet`/`PlaceSheet` and the pallet magazine (`TakePallet`/`PlacePallet`) only
+  write a message; the positions of `cell.py` repeat the points of `environment.mod`.
+- [ ] **I/O**: `AliasIO`, interrupts on signals (`ISignalDI`), the cross connections
+  and the device mapping of EIO.cfg are not supported.
 - [ ] **Interruption**: a motion error stops the program with a Python exception; ABB
   raises recoverable errors for some of them (ERR_ROBLIMIT with `\ErrorNumber`).
 

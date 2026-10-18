@@ -14,6 +14,7 @@ The project contains:
 | `run/pyrapid.py`   | runtime used by the generated code (symbols, types, scopes, errors)   |
 | `robotmodel.py`    | robot models (URDF) with kinematics and dynamics of Pinocchio         |
 | `run/pyrapid_motion.py` | simulated motion instructions, real time view with MeshCat       |
+| `eio.py`           | I/O signals of the controller configuration (EIO.cfg)                 |
 
 The reference for syntax and semantics is the ABB *Technical reference manual - RAPID
 kernel* (3HAC050946-001), together with the *RAPID Overview* (3HAC050947-001) and
@@ -99,6 +100,7 @@ The checks include:
 | ------------------ | --------------------------------------------------- |
 | `-s`               | do not load the standard modules                    |
 | `--check-standard` | also report the diagnostics of the standard modules |
+| `--eio FILE`       | I/O configuration: the signals of the task          |
 
 From Python:
 
@@ -132,6 +134,7 @@ PYTHONPATH=../run:.. python hello.py
 | `-e [MODULE.]PROC` | procedure called as entry point                                   |
 | `-r`               | run the program after the translation, exit with its exit code    |
 | `-s`               | do not include the standard symbols of `default/*.sys`            |
+| `--eio FILE`       | I/O configuration of the controller (see I/O signals)             |
 | `--no-validate`    | skip the checks of `rapidvalidate`                                |
 
 Comment lines starting with `!python:` are copied as they are into the generated code.
@@ -283,6 +286,46 @@ How the movements are computed:
   space of the axes: the path in the zone is close to the parabola of the robot, not
   equal to it; only the TCP zone is used (not the reorientation zone).
 
+### I/O signals
+
+On the robot the I/O signals are defined in the I/O configuration of the controller, not
+in the program: the program uses them by name. `--eio` (rapidvalidate and rapid2py) reads
+the signals from the section `EIO_SIGNAL` of an ABB configuration file:
+
+```
+EIO:CFG_1.0:6:1::
+EIO_SIGNAL:
+      -Name "doGripper" -SignalType "DO" -Device "d652" -DeviceMap "0"
+      -Name "diGripperClosed" -SignalType "DI" -Device "d652" -DeviceMap "0"
+```
+
+The signals have the types `signaldi`, `signaldo`, `signalgi`, `signalgo`, `signalai`,
+`signalao`; they are semi-value objects (kernel manual 2.16): in an expression they are
+their value (`IF diReady = 1 THEN`), they cannot be assigned. The instructions are
+`SetDO`, `Set`, `Reset`, `PulseDO`, `SetGO`, `SetAO`, `WaitDI`, `WaitDO`, `WaitGI`,
+`WaitUntil` (`\MaxTime`, `\TimeFlag`, `ERR_WAIT_MAXTIME`), and the functions `DInput`,
+`DOutput`, `GInput`, `GOutput`, `AInput`, `AOutput`, `TestDI`. The values are in
+`pyrapid.IO`; with a robot the waits follow the time of the robot.
+
+### Simulation of the cell
+
+The RAPID program talks with the equipment around the robot only through the movements and
+the I/O signals, as on the robot. The equipment is simulated by a Python file, given with
+`PYRAPID_SIMULATION=file.py`, that is not part of the program. The file has a function
+`setup(world)`; `world` gives:
+
+| `world.`                          |                                                          |
+| --------------------------------- | -------------------------------------------------------- |
+| `robot`, `time`, `axes()`, `flange()` | the robot model, the time, the axes, the flange (pin.SE3) |
+| `viewer()`                        | the MeshCat viewer (`meshcat.Visualizer`) or None        |
+| `signal(name)`, `set_signal(name, value)` | read the outputs, set the inputs of the program  |
+| `on_signal(action)`               | `action(world, name, value)` when a signal changes       |
+| `on_step(action)`, `on_frame(action)` | `action(world)` at every sample of the robot, at every frame of the viewer |
+| `on_finish(action)`               | `action(world)` at the end of the program                |
+| `after(delay, action)`            | `action()` after `delay` seconds of the robot time       |
+
+See `examples/pallettizer/cell.py`.
+
 ### Log and view
 
 | Environment variable      | Effect                                                      |
@@ -291,6 +334,7 @@ How the movements are computed:
 | `PYRAPID_REALTIME=1`      | the robot moves in real time                                |
 | `PYRAPID_VIEWER=meshcat`  | the robot in the browser, in real time, with the TCP path   |
 | `PYRAPID_VIEWER_HOLD=0`   | do not wait for Ctrl+C at the end of the program            |
+| `PYRAPID_SIMULATION=file` | the simulation of the cell                                  |
 
 With the viewer, MeshCat prints the address to open (`http://127.0.0.1:7000/static/`) and
 the program runs at the speed of the robot.
@@ -322,9 +366,41 @@ To see it in the browser:
 PYRAPID_VIEWER=meshcat python rapid2py.py -e demo.main -i examples/irb120/demo.mod -d out -f demo.py -r
 ```
 
-`examples/pallettizer/`: a palletizer for the ABB IRB 460 (`!robot: irb460_approx`). The
-program reads the commands and keeps the state of the pallets, the movements are not
-written yet.
+`examples/pallettizer/`: a palletizer with an ABB IRB 460 (4 axes, `irb460_approx`) that
+fills two pallets at the same time with different products and schemas:
+
+| File              |                                                                    |
+| ----------------- | ------------------------------------------------------------------ |
+| `maintask.mod`    | the program: it runs the commands of the schemas, line after line  |
+| `schema.mod`      | a schema for each pallet: product, pallet, take and place commands |
+| `environment.mod` | the data of the cell: pick points, pallet work objects, gripper, I/O |
+| `settings.mod`, `gloadschema.mod`, `types.mod` | data of the program                   |
+| `EIO.cfg`         | the I/O signals of the cell                                        |
+| `cell.py`         | the simulation of the cell (not part of the program)              |
+
+The program orders an empty pallet and the products; the cell brings them (the products on
+the pick points of the two conveyors, `diProduct1`, `diProduct2`); the robot takes a product
+closing the gripper (`doGripper`) and places it on the pallet of its line; a full pallet
+leaves with its products (`doPalletOut1`). In the viewer the products appear on the
+conveyors, travel with the gripper (green when it holds a product) and leave with the
+pallet; `floor.png` next to `cell.py` replaces the grid of the floor.
+
+```sh
+E=examples/pallettizer
+PYRAPID_SIMULATION=$E/cell.py PYRAPID_VIEWER=meshcat python rapid2py.py --eio $E/EIO.cfg \
+    -i $E/settings.mod -i $E/gloadschema.mod -i $E/schema.mod -i $E/types.mod \
+    -i $E/environment.mod -i $E/maintask.mod -e MAIN -d out -f pallettizer.py -r
+```
+
+Without the viewer the run takes a few seconds and ends with:
+
+```
+cell: station 1 shipped 1 pallets, 12 products
+cell: station 2 shipped 1 pallets, 14 products
+```
+
+`nPalletsToDo` in `environment.mod` sets the pallets of each line (0: the program never
+ends).
 
 ## Supported language
 
@@ -358,15 +434,16 @@ rapidvalidate.py      semantic validation
 rapid2rapid.py        AST -> RAPID
 rapid2py.py           AST -> Python
 run/pyrapid.py        runtime of the generated code
-run/pyrapid_motion.py motion instructions, viewer
+run/pyrapid_motion.py motion instructions, viewer, simulation of the cell
 robotmodel.py         robot models, kinematics, dynamics
+eio.py                I/O configuration (EIO.cfg)
 models/               robot models of this project (IRB 460) and data overrides
 third_party/abb/      ABB robot models of ROS-Industrial (git submodule)
 default/standard.sys  declarations and implementations of the standard types and routines
 test/                 RAPID test modules
 test/exec/            programs translated and run, with the expected output (.out)
 examples/irb120/      IRB 120 drawing with a pen
-examples/pallettizer/ palletizer for the IRB 460 (no movements yet)
+examples/pallettizer/ palletizer for the IRB 460 with the simulation of the cell
 doc/abb/official/     ABB manuals (not in the repository, see below)
 ```
 
