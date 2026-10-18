@@ -383,7 +383,7 @@ CASES = [
         ["present-argument"],
     ),
     ("dim", proc("        x := Dim(a, 1);", "    VAR num a{3};\n    VAR num x;"), []),
-    # --- !robot: directive (robotmodel.py)
+    # --- !robot: directive (run/robotmodel.py)
     ("robot directive", proc("        x := 1;", "!robot: irb120_3_58\n    VAR num x;"), []),
     ("robot directive case", module("    !ROBOT: IRB460_110_240\n    VAR num x;"), []),
     ("unknown robot", module("    !robot: irb999\n    VAR num x;"), ["unknown-robot"]),

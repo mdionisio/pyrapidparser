@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-# robot models, kinematics and motion instructions (robotmodel.py, run/pyrapid_motion.py)
+# robot models, kinematics and motion instructions (run/robotmodel.py, run/pyrapid_motion.py)
 motion = [
     "pin>=3",
     "numpy",
@@ -38,7 +38,6 @@ include = [
     "/rapid_lexer.py",
     "/rapid_parser.py",
     "/rapidvalidate.py",
-    "/robotmodel.py",
     "/models",
     "/run",
 ]
@@ -102,7 +101,6 @@ files = [
     "rapid_lexer.py",
     "rapid_parser.py",
     "rapidvalidate.py",
-    "robotmodel.py",
     "run",
     "test_quality.py",
     "test_case_insensitive.py",

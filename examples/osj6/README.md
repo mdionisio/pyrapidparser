@@ -30,7 +30,7 @@ What the geometry gives:
   are in one plane and the robot can move the flange in 3 directions only. The home
   position is bent (`[0, -90, -45, 45, 90, 0]`);
 - **no closed form inverse kinematics**: there is no spherical wrist, the positions are
-  found numerically (`robotmodel.py` tries random starting positions when the current
+  found numerically (`run/robotmodel.py` tries random starting positions when the current
   position and the home position do not converge). A straight line of the TCP can need
   large movements of the axes: in the demo the 100 mm square moves axis 2 by 80 degrees;
 - the `confdata` of the ABB arms (cf1, cf4, cf6, cfx) does not describe the solutions of

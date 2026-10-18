@@ -44,7 +44,7 @@ class Diagnostic:
 # 2.3 Identifiers: "The maximum length of an identifier is 32 characters."
 MAX_IDENTIFIER_LENGTH = 32
 
-# "!robot: <model>": the robot model of the task (robotmodel.py), not in the manual
+# "!robot: <model>": the robot model of the task (run/robotmodel.py), not in the manual
 ROBOT_DIRECTIVE = "robot:"
 
 # 9.2 Module declarations: attributes in table order
@@ -637,7 +637,7 @@ class Validator:
                     )
                     continue
                 # imported here: numpy and Pinocchio are needed only by the robot programs
-                import robotmodel
+                from run import robotmodel
 
                 try:
                     robotmodel.find_model(name)

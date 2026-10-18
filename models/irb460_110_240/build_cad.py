@@ -5,7 +5,7 @@ The CAD model (STEP, one file for each part, the robot at the zero position) is
 published by ABB in the ABB Library (document 9AKK107992A7905, "CAD Model, STEP, IRB
 460, ALL, 110-240, IRC5, rev01, joint"). It is ABB copyright, so the files are not in
 the repository: this script downloads them and writes the STL meshes in the folder
-cad/ next to it (ignored by git). Then robotmodel.py uses them in place of the boxes of
+cad/ next to it (ignored by git). Then run/robotmodel.py uses them in place of the boxes of
 irb460_110_240.urdf (see "cad_meshes" in irb460_110_240.json).
 
 The conversion needs gmsh (OpenCASCADE), not a dependency of the project:

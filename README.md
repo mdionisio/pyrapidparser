@@ -12,7 +12,7 @@ The project contains:
 | `rapid2rapid.py`        | writes the tree back as RAPID (formatting and round-trip check)       |
 | `rapid2py.py`           | translates RAPID modules into an executable Python program            |
 | `run/pyrapid.py`        | runtime used by the generated code (symbols, types, scopes, errors)   |
-| `robotmodel.py`         | robot models (URDF) with kinematics and dynamics of Pinocchio         |
+| `run/robotmodel.py`     | robot models (URDF) with kinematics and dynamics of Pinocchio         |
 | `run/pyrapid_motion.py` | simulated motion instructions, real time view with MeshCat            |
 | `eio.py`                | I/O signals of the controller configuration (EIO.cfg)                 |
 
@@ -191,7 +191,7 @@ that all the modules of the task name the same robot.
 
 ### Robot models
 
-`python robotmodel.py` lists the models, `python robotmodel.py <model>` shows the data of
+`python run/robotmodel.py` lists the models, `python run/robotmodel.py <model>` shows the data of
 one:
 
 - the 28 ABB models of [ROS-Industrial](https://github.com/ros-industrial/abb) (submodule
@@ -229,7 +229,7 @@ warning: irb4600_60_205: no inertial data, the joint torques are not computed
 
 `models/<model>.json` adds or overrides data of a model: accelerations, torque limits,
 limits of the axes, coupled joints, meshes of a CAD model (see the comment at the top of
-`robotmodel.py` and `models/irb460_110_240.json`).
+`run/robotmodel.py` and `models/irb460_110_240.json`).
 
 ### Motion instructions
 
@@ -402,7 +402,7 @@ rapid2rapid.py        AST -> RAPID
 rapid2py.py           AST -> Python
 run/pyrapid.py        runtime of the generated code
 run/pyrapid_motion.py motion instructions, viewer, simulation of the cell
-robotmodel.py         robot models, kinematics, dynamics
+run/robotmodel.py     robot models, kinematics, dynamics
 eio.py                I/O configuration (EIO.cfg)
 models/               robot models of this project (IRB 460, osj6) and data overrides
 third_party/abb/      ABB robot models of ROS-Industrial (git submodule)

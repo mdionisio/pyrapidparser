@@ -128,7 +128,7 @@ error if a part is missing in the archive.
 ### Check
 
 ```sh
-python robotmodel.py irb460_110_240
+python run/robotmodel.py irb460_110_240
 ```
 
 prints `view:       CAD meshes 11 of 11` when the meshes are there (`0 of 11 (URDF
@@ -157,7 +157,7 @@ real shape, more triangles).
 ### How the meshes are placed
 
 `models/irb460_110_240.json` lists the mesh of each link (`cad_meshes`). The parts of the
-CAD model are in the base frame of the robot at the zero position, in mm: `robotmodel.py`
+CAD model are in the base frame of the robot at the zero position, in mm: `run/robotmodel.py`
 scales them to m and places each one in its link with the inverse of the placement of the
 link at the zero position. The links of the parallel linkage (`p_arm`, `p_link`,
 `lower_link`, `link_plate`, `upper_link`) are joints of the URDF coupled to the axes, so

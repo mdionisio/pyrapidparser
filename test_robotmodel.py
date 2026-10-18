@@ -9,7 +9,7 @@ import pytest
 np = pytest.importorskip("numpy")
 pin = pytest.importorskip("pinocchio")
 
-import robotmodel  # noqa: E402
+from run import robotmodel  # noqa: E402
 
 if "irb120_3_58" not in robotmodel.available_models():
     pytest.skip(

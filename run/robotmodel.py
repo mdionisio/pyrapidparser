@@ -62,7 +62,7 @@ if TYPE_CHECKING:
 
     Vector = npt.NDArray[np.float64]
 
-PROJECT_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ABB_DIR = os.path.join(PROJECT_DIR, "third_party", "abb")
 MODELS_DIR = os.path.join(PROJECT_DIR, "models")
 

@@ -1,6 +1,6 @@
 """Motion of the robot for the programs translated by rapid2py.
 
-The comment "!robot: <model>" in a module selects the robot model (robotmodel.py);
+The comment "!robot: <model>" in a module selects the robot model (run/robotmodel.py);
 rapid2py translates it into a call of UseRobot. The motion instructions of
 default/standard.sys (MoveAbsJ, MoveJ, MoveL, MoveC, CJointT, CRobT, ...) call the
 functions of this module with the RAPID data objects.
@@ -51,7 +51,7 @@ from typing import Any, Callable, Optional
 import numpy as np
 import pinocchio as pin
 
-import robotmodel
+from run import robotmodel
 
 # trajectory sampling (s)
 SAMPLE_TIME = 0.01

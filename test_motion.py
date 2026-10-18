@@ -8,7 +8,7 @@ import pytest
 np = pytest.importorskip("numpy")
 pin = pytest.importorskip("pinocchio")
 
-import robotmodel  # noqa: E402
+from run import robotmodel  # noqa: E402
 import run.pyrapid as pyrapid  # noqa: E402
 from run import pyrapid_motion as motion  # noqa: E402
 

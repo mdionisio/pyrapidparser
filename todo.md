@@ -25,7 +25,7 @@ instructions = 3HAC050917-001.
   instructions other than MoveAbsJ, MoveJ, MoveL, MoveC (MoveExtJ, the Sync and DO
   variants, SearchL, TriggL, ...) and the I/O instructions.
 
-## Motion (run/pyrapid_motion.py, robotmodel.py)
+## Motion (run/pyrapid_motion.py, run/robotmodel.py)
 
 - [ ] **Corner paths**: computed in the space of the axes (superposition of the two
   movements), not as the parabola of the TCP; the reorientation zone (`pzone_ori`,

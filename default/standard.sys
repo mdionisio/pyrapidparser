@@ -848,7 +848,7 @@ MODULE SYSTEMMODULE(SYSMODULE)
     ENDFUNC
 
     !! Motion instructions: run/pyrapid_motion.py, the robot model is selected with
-    !! the comment !robot: <model> (robotmodel.py). Zones are run as fine points.
+    !! the comment !robot: <model> (run/robotmodel.py). Zones are run as fine points.
 
     PROC MoveAbsJ(\switch Conc, jointtarget ToJointPos, speeddata Speed \num V | num T, zonedata Zone \num Z, tooldata Tool \wobjdata WObj)
         VAR num mv_v := -1;
