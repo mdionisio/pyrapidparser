@@ -167,6 +167,29 @@ The command reads the module and writes it back with a uniform formatting. Paren
 added only where they are needed to keep the same expression tree. The tests check that
 rewriting the result a second time gives the same text.
 
+## Standard routines
+
+`default/standard.sys` declares and implements the routines and data types that the
+controller provides; `rapid2py.py` translates it with the program (`-s` leaves it out).
+
+| Area                | Routines                                                              |
+| ------------------- | --------------------------------------------------------------------- |
+| Motion              | `MoveAbsJ`, `MoveJ`, `MoveL`, `MoveC`, `ConfJ`, `ConfL`, `WaitRob`, `CJointT`, `CRobT`, `CalcJointT`, `CalcRobT`, `Offs`, `RelTool`, `OrientZYX` (see [Robot motion](#robot-motion)) |
+| I/O signals         | `SetDO`, `Set`, `Reset`, `PulseDO`, `SetGO`, `SetAO`, `WaitDI`, `WaitDO`, `WaitGI`, `WaitUntil`, `DInput`, `DOutput`, `GInput`, `GOutput`, `AInput`, `AOutput`, `TestDI` |
+| Sockets             | `SocketCreate`, `SocketBind`, `SocketListen`, `SocketAccept`, `SocketConnect`, `SocketSend`, `SocketReceive`, `SocketClose`, `SocketGetStatus`, on TCP sockets; the errors `ERR_SOCK_TIMEOUT`, `ERR_SOCK_CLOSED`, `ERR_SOCK_CONNREF`, `ERR_SOCK_ISCON` |
+| Arithmetic          | `Abs`, `Round`, `Trunc` (with `\Dec`), `Sqrt`, `Exp`, `Pow`, `Incr`, `Decr`, `Add` |
+| Strings             | `StrLen`, `StrPart`, `StrFind`, `StrMatch`, `NumToStr`, `ValToStr`, `StrToVal` |
+| Time and messages   | `WaitTime`, `ClkReset`, `ClkStart`, `ClkStop`, `ClkRead`, `TPWrite`, `ErrWrite`, `ExitCycle` |
+| Modules             | `Load`, `UnLoad` (the modules translated apart, `rapid2py -f <module>.py`) |
+| Raw data            | `ClearRawBytes`, `CopyRawBytes`, `PackRawBytes`, `UnPackRawBytes`, `RawBytesLen` |
+
+The sockets are real: `SocketBind`, `SocketListen` and `SocketAccept` open a TCP server on
+the machine, so a program can talk with a real client (a PLC, a vision system, a test
+script). The data of `SocketSend` and `SocketReceive` are strings (`\Str`, one character
+for each byte, as latin-1); `\RawData` and the byte arrays `\Data` are not supported.
+`TryInit`, the files and serial channels (`Open`, `Write`, `Close`), the interrupts and
+the other installed routines are missing: see [todo.md](todo.md).
+
 ## Robot motion
 
 The motion instructions move a simulated robot. The comment `!robot: <model>` in a module
@@ -436,7 +459,7 @@ The tests:
 | `test_rapidvalidate.py`    | one case for each diagnostic, and the invalid files in `test/`     |
 | `test_robotmodel.py`       | models, inverse kinematics of every model, confdata, torques       |
 | `test_motion.py`           | motion instructions: limits, paths, configurations, viewer         |
-| `test_rapid2py.py`         | the generated Python compiles, the `test/exec/` programs and the examples run right |
+| `test_rapid2py.py`         | the generated Python compiles, the `test/exec/` programs and the examples run right (the programs run: control flow, errors, GOTO, loops, records, strings, I/O, standard routines, sockets, motion) |
 | `test_quality.py`          | mypy strict and ruff formatting                                    |
 
 The project code is typed and must pass `mypy --strict`. The generated files are excluded
